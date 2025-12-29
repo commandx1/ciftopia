@@ -26,7 +26,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: any) {
     const { sub: id } = payload;
-    const user = await this.userModel.findById(id).select('-password').populate('coupleId');
+    const user = await this.userModel
+      .findById(id)
+      .select('-password')
+      .populate('coupleId');
 
     if (!user) {
       throw new UnauthorizedException();
@@ -35,4 +38,3 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     return user;
   }
 }
-

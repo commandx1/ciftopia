@@ -1,4 +1,12 @@
-import { Controller, Post, Body, UseGuards, Req, Get, Query } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Req,
+  Get,
+  Query,
+} from '@nestjs/common';
 import { OnboardingService } from './onboarding.service';
 import { CreateCoupleDto } from './dto/onboarding.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -19,7 +27,10 @@ export class OnboardingController {
     @Req() req: any,
     @Body() createCoupleDto: CreateCoupleDto,
   ) {
-    const result = await this.onboardingService.createCouple(req.user._id, createCoupleDto);
+    const result = await this.onboardingService.createCouple(
+      req.user._id,
+      createCoupleDto,
+    );
     return { success: true, data: result };
   }
 }

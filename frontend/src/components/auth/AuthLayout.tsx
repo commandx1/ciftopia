@@ -89,18 +89,6 @@ export const AuthLayout = ({ children, quote = "Aşk, iki kalbin bir ritimde atm
             ))}
           </div>
         </div>
-
-        <div className="absolute bottom-8 left-8 right-8 animate-in fade-in slide-in-from-bottom duration-700 delay-300">
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/20 flex items-center space-x-4">
-            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-              <ShieldCheck className="text-white" size={24} />
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-white font-bold text-sm">SSL Şifreli & Güvenli</p>
-              <p className="text-white/70 text-xs font-medium">Verileriniz 256-bit şifreleme ile korunur</p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -20,6 +20,43 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [isSubdomainAvailable, setIsSubdomainAvailable] = useState<boolean | null>(null);
+  const [showPlanSelection, setShowPlanSelection] = useState(false);
+  
+  const plans = [
+    {
+      id: 'monthly',
+      name: 'Aylık Plan',
+      setupFee: 249,
+      subscriptionFee: 49,
+      total: 298,
+      period: 'Aylık',
+      description: 'Tüm premium özellikler dahil',
+      color: 'rose'
+    },
+    {
+      id: 'yearly',
+      name: 'Yıllık Plan',
+      setupFee: 249,
+      subscriptionFee: 349,
+      total: 598,
+      period: 'Yıllık',
+      description: 'En popüler seçenek - Tasarruflu',
+      color: 'purple'
+    },
+    {
+      id: 'lifetime',
+      name: 'Ömür Boyu',
+      setupFee: 249,
+      subscriptionFee: 1050,
+      total: 1299,
+      period: 'Tek Seferlik',
+      description: 'Sonsuza kadar sizin olsun',
+      color: 'amber'
+    }
+  ];
+
+  const [selectedPlanId, setSelectedPlanId] = useState('monthly');
+  const selectedPlan = plans.find(p => p.id === selectedPlanId) || plans[0];
   
   // Registration State
   const [formData, setFormData] = useState({
@@ -171,7 +208,7 @@ export default function RegisterPage() {
         expireMonth: paymentData.expireMonth,
         expireYear: paymentData.expireYear,
         cvc: paymentData.cvc,
-        amount: 298,
+        amount: selectedPlan.total,
         subdomain: formData.subdomain,
       });
 
@@ -561,7 +598,7 @@ export default function RegisterPage() {
         );
       case 4:
         return (
-          <div className="animate-in fade-in slide-in-from-right duration-500 w-full lg:max-w-5xl lg:-ml-48">
+          <div className="animate-in fade-in slide-in-from-right duration-500 w-full">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2">
                 <div id="payment-form-container" className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-8 lg:p-10 border border-gray-100 dark:border-slate-700">
@@ -719,7 +756,7 @@ export default function RegisterPage() {
                         {isLoading ? <Loader2 className="animate-spin mx-auto" /> : (
                           <>
                             <Lock className="mr-3" size={20} />
-                            ₺298 Öde ve Başla
+                            ₺{selectedPlan.total} Öde ve Başla
                             <ArrowRight className="ml-3 group-hover:translate-x-1 transition-transform" />
                           </>
                         )}
@@ -752,30 +789,54 @@ export default function RegisterPage() {
                       </div>
                     </div>
                     
-                    <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20 rounded-2xl p-5 border-2 border-purple-100 dark:border-purple-900/30">
+                    <button 
+                      type="button"
+                      onClick={() => setShowPlanSelection(true)}
+                      className={cn(
+                        "w-full text-left transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer rounded-2xl p-5 border-2 shadow-sm",
+                        selectedPlan.color === 'rose' ? "bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-950/20 dark:to-pink-950/20 border-rose-100 dark:border-rose-900/30" :
+                        selectedPlan.color === 'purple' ? "bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20 border-purple-100 dark:border-purple-900/30" :
+                        "bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-100 dark:border-amber-900/30"
+                      )}
+                    >
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-bold text-gray-700 dark:text-gray-300">Plan</span>
-                        <span className="px-3 py-1 bg-purple-600 text-white text-[10px] font-bold rounded-full uppercase">Aylık</span>
+                        <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{selectedPlan.name}</span>
+                        <div className="flex items-center space-x-2">
+                          <span className={cn(
+                            "px-3 py-1 text-white text-[10px] font-bold rounded-full uppercase",
+                            selectedPlan.color === 'rose' ? "bg-rose-500" :
+                            selectedPlan.color === 'purple' ? "bg-purple-600" :
+                            "bg-amber-600"
+                          )}>
+                            {selectedPlan.period}
+                          </span>
+                          <RotateCcw size={14} className="text-gray-400" />
+                        </div>
                       </div>
-                      <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Tüm premium özellikler dahil</p>
-                    </div>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{selectedPlan.description}</p>
+                      <p className="text-[10px] text-rose-primary font-bold mt-2 flex items-center">
+                        Değiştirmek için tıklayın <ArrowRight size={10} className="ml-1" />
+                      </p>
+                    </button>
                   </div>
                   
                   <div className="space-y-4 py-6 border-t-2 border-b-2 border-gray-50 dark:border-slate-700">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Kurulum Ücreti</span>
-                      <span className="text-sm font-bold text-gray-900 dark:text-white">₺249</span>
+                      <span className="text-sm font-bold text-gray-900 dark:text-white">₺{selectedPlan.setupFee}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">İlk Ay Üyelik</span>
-                      <span className="text-sm font-bold text-gray-900 dark:text-white">₺49</span>
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        {selectedPlan.id === 'lifetime' ? 'Üyelik Ücreti' : `${selectedPlan.period} Üyelik`}
+                      </span>
+                      <span className="text-sm font-bold text-gray-900 dark:text-white">₺{selectedPlan.subscriptionFee}</span>
                     </div>
                   </div>
                   
                   <div className="flex items-center justify-between py-6">
                     <span className="text-lg font-bold text-gray-900 dark:text-white">Toplam</span>
                     <div className="text-right">
-                      <span className="text-3xl font-bold text-rose-primary">₺298</span>
+                      <span className="text-3xl font-bold text-rose-primary">₺{selectedPlan.total}</span>
                       <p className="text-[10px] text-gray-400 font-bold mt-1">KDV DAHİL</p>
                     </div>
                   </div>
@@ -843,6 +904,104 @@ export default function RegisterPage() {
               Giriş yapın
             </Link>
           </p>
+        </div>
+      )}
+
+      {/* Plan Selection Overlay */}
+      {showPlanSelection && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-8 lg:p-12 relative animate-in zoom-in-95 duration-300">
+            <button 
+              onClick={() => setShowPlanSelection(false)}
+              className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+            >
+              <CheckCircle className="rotate-45" size={32} />
+            </button>
+
+            <div className="text-center mb-10">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Planınızı Değiştirin</h2>
+              <p className="text-gray-600 dark:text-gray-400 font-medium">Size en uygun planı seçerek devam edebilirsiniz.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {plans.map((plan) => (
+                <div 
+                  key={plan.id}
+                  onClick={() => {
+                    setSelectedPlanId(plan.id);
+                    setShowPlanSelection(false);
+                  }}
+                  className={cn(
+                    "relative group cursor-pointer rounded-3xl p-8 border-2 transition-all duration-300 hover:shadow-2xl",
+                    selectedPlanId === plan.id 
+                      ? "border-rose-primary bg-rose-50/30 dark:bg-rose-950/10 scale-[1.02]" 
+                      : "border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-800 hover:border-rose-200 dark:hover:border-rose-900/30"
+                  )}
+                >
+                  {selectedPlanId === plan.id && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-rose-primary text-white text-[10px] font-bold px-4 py-1 rounded-full shadow-lg z-10">
+                      SEÇİLİ PLAN
+                    </div>
+                  )}
+
+                  <div className={cn(
+                    "w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-lg",
+                    plan.color === 'rose' ? "bg-gradient-to-br from-rose-500 to-pink-500 shadow-rose-200" :
+                    plan.color === 'purple' ? "bg-gradient-to-br from-purple-500 to-indigo-500 shadow-purple-200" :
+                    "bg-gradient-to-br from-amber-500 to-orange-500 shadow-amber-200"
+                  )}>
+                    {plan.id === 'monthly' ? <Calendar className="text-white" size={28} /> : 
+                     plan.id === 'yearly' ? <Rocket className="text-white" size={28} /> : 
+                     <Heart className="text-white fill-current" size={28} />}
+                  </div>
+
+                  <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{plan.name}</h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mb-6">{plan.description}</p>
+
+                  <div className="mb-6">
+                    <div className="flex items-baseline space-x-1">
+                      <span className="text-3xl font-black text-gray-900 dark:text-white">₺{plan.total}</span>
+                      <span className="text-xs font-bold text-gray-400 uppercase">{plan.period === 'Tek Seferlik' ? 'Toplam' : plan.period}</span>
+                    </div>
+                    <p className="text-[10px] text-gray-400 mt-1 font-bold">₺{plan.setupFee} Kurulum + ₺{plan.subscriptionFee} Üyelik</p>
+                  </div>
+
+                  <div className="space-y-3 mb-8">
+                    {[
+                      "Tüm premium özellikler",
+                      "Sınırsız fotoğraf yükleme",
+                      "Özel subdomain",
+                      plan.id === 'lifetime' ? "Ömür boyu erişim" : "7 gün ücretsiz deneme"
+                    ].map((feature, i) => (
+                      <div key={i} className="flex items-center space-x-2 text-[10px] font-bold text-gray-600 dark:text-gray-400">
+                        <Check size={12} className="text-green-500" />
+                        <span>{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className={cn(
+                    "w-full py-4 rounded-xl font-bold text-sm transition-all text-center",
+                    selectedPlanId === plan.id 
+                      ? "bg-rose-primary text-white" 
+                      : "bg-gray-50 dark:bg-slate-700 text-gray-600 dark:text-gray-300 group-hover:bg-rose-50 group-hover:text-rose-primary"
+                  )}>
+                    {selectedPlanId === plan.id ? 'Seçili Plan' : 'Bu Planı Seç'}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-12 text-center">
+              <button 
+                onClick={() => setShowPlanSelection(false)}
+                className="text-gray-500 dark:text-gray-400 font-bold hover:text-rose-primary transition-colors flex items-center space-x-2 mx-auto"
+              >
+                <ArrowLeft size={18} />
+                <span>Vazgeç ve Mevcut Planla Devam Et</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </AuthLayout>

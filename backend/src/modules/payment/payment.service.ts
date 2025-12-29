@@ -2,7 +2,7 @@ import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-const Iyzipay = require('iyzipay');
+import * as Iyzipay from 'iyzipay';
 import { CreatePaymentDto } from './dto/payment.dto';
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
 
@@ -17,20 +17,28 @@ export class PaymentService {
 
   private initIyzipay() {
     const apiKey = this.configService.get<string>('IYZICO_API_KEY')?.trim();
-    const secretKey = this.configService.get<string>('IYZICO_SECRET_KEY')?.trim();
+    const secretKey = this.configService
+      .get<string>('IYZICO_SECRET_KEY')
+      ?.trim();
     const uri = this.configService.get<string>('IYZICO_BASE_URL')?.trim();
 
-    Logger.log(`Initializing Iyzico with API Key: ${apiKey?.substring(0, 10)}... (Length: ${apiKey?.length})`);
+    Logger.log(
+      `Initializing Iyzico with API Key: ${apiKey?.substring(0, 10)}... (Length: ${apiKey?.length})`,
+    );
     Logger.log(`URI: ${uri}`);
 
     this.iyzipay = new Iyzipay({
-      apiKey: apiKey,
-      secretKey: secretKey,
-      uri: uri,
+      apiKey: apiKey ?? '',
+      secretKey: secretKey ?? '',
+      uri: uri ?? '',
     });
   }
 
-  async createPayment(createPaymentDto: CreatePaymentDto, user: any, ip: string = '127.0.0.1') {
+  async createPayment(
+    createPaymentDto: CreatePaymentDto,
+    user: any,
+    ip: string = '127.0.0.1',
+  ) {
     // Nesne henüz oluşturulmadıysa veya değerler yüklendiyse başlat
     if (!this.iyzipay) {
       this.initIyzipay();
@@ -48,7 +56,10 @@ export class PaymentService {
 
     // Ay ve yıl formatını doğrula (2 hane olmalı)
     const formattedMonth = expireMonth.toString().padStart(2, '0');
-    const formattedYear = expireYear.toString().length === 4 ? expireYear.toString().substring(2) : expireYear.toString();
+    const formattedYear =
+      expireYear.toString().length === 4
+        ? expireYear.toString().substring(2)
+        : expireYear.toString();
 
     const formattedAmount = Number(amount).toFixed(2);
 
@@ -118,9 +129,12 @@ export class PaymentService {
           Logger.error('Iyzico Request Error:', err);
           return reject(new BadRequestException(err.message));
         }
-        
+
         if (result.status === 'failure') {
-          Logger.warn('Iyzico Payment Failure:', JSON.stringify(result, null, 2));
+          Logger.warn(
+            'Iyzico Payment Failure:',
+            JSON.stringify(result, null, 2),
+          );
           return reject(new BadRequestException(result.errorMessage));
         }
 

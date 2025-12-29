@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsString, IsOptional, IsDateString, IsEnum } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+  IsDateString,
+  IsEnum,
+} from 'class-validator';
 
 export class CreateCoupleDto {
   @IsString()
@@ -38,4 +44,3 @@ export class CheckSubdomainDto {
   @IsNotEmpty()
   subdomain: string;
 }
-

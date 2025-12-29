@@ -32,4 +32,3 @@ export class CreatePaymentDto {
   @IsNotEmpty()
   subdomain: string;
 }
-

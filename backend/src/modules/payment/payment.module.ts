@@ -17,4 +17,3 @@ import { Couple, CoupleSchema } from '../../schemas/couple.schema';
   exports: [PaymentService],
 })
 export class PaymentModule {}
-

@@ -1,4 +1,12 @@
-import { Controller, Post, Body, Res, Get, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Res,
+  Get,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto } from './dto/auth.dto';
@@ -31,7 +39,8 @@ export class AuthController {
   @Post('logout')
   async logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('accessToken', {
-      domain: process.env.NODE_ENV === 'production' ? '.ciftopia.com' : 'localhost',
+      domain:
+        process.env.NODE_ENV === 'production' ? '.ciftopia.com' : 'localhost',
       path: '/',
     });
     return { success: true };
@@ -44,8 +53,9 @@ export class AuthController {
   }
 
   private setCookie(res: Response, token: string) {
-    const domain = process.env.NODE_ENV === 'production' ? '.ciftopia.com' : 'localhost';
-    
+    const domain =
+      process.env.NODE_ENV === 'production' ? '.ciftopia.com' : 'localhost';
+
     res.cookie('accessToken', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

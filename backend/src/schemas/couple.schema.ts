@@ -72,4 +72,3 @@ export class Couple {
 }
 
 export const CoupleSchema = SchemaFactory.createForClass(Couple);
-
