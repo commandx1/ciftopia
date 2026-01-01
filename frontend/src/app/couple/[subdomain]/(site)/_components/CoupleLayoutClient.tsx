@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { Heart, ChevronDown, Settings, LogOut } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -16,8 +16,7 @@ interface CoupleLayoutClientProps {
 }
 
 export default function CoupleLayoutClient({ children, user, subdomain }: CoupleLayoutClientProps) {
-    const pathname = usePathname()
-  const router = useRouter()
+  const pathname = usePathname()
   const [scrolled, setScrolled] = useState(false)
 
   const coupleNames = (subdomain || 'ahmet-ayse')
@@ -86,12 +85,7 @@ export default function CoupleLayoutClient({ children, user, subdomain }: Couple
                 <div className='relative group'>
                   <button className='flex items-center space-x-2'>
                     <div className='relative w-10 h-10 rounded-full overflow-hidden border-2 border-rose-200'>
-                      <Image
-                        src={getUserAvatar(user)}
-                        alt={user.firstName || 'User'}
-                        fill
-                        className='object-cover'
-                      />
+                      <Image src={getUserAvatar(user)} alt={user.firstName || 'User'} fill className='object-cover' />
                     </div>
                     <ChevronDown size={14} className={scrolled || !isHomePage ? 'text-gray-500' : 'text-white'} />
                   </button>
@@ -105,7 +99,7 @@ export default function CoupleLayoutClient({ children, user, subdomain }: Couple
                     </div>
                     <div className='py-2'>
                       <Link
-                        href="/dashboard"
+                        href='/dashboard'
                         className='flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 transition-colors text-gray-700'
                       >
                         <Settings size={18} className='text-gray-500' />
@@ -123,7 +117,7 @@ export default function CoupleLayoutClient({ children, user, subdomain }: Couple
                 </div>
               ) : (
                 <Link
-                  href="/login"
+                  href='/login'
                   className={`px-6 py-2 rounded-full font-semibold transition-all ${
                     scrolled || !isHomePage
                       ? 'bg-rose-primary text-white hover:bg-rose-600 shadow-md'

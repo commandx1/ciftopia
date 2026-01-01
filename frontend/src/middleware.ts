@@ -25,7 +25,6 @@ export async function middleware(request: NextRequest) {
 
   const isLoginPage = url.pathname === '/login'
   const isRegisterPage = url.pathname === '/register'
-  const isAuthPage = isLoginPage || isRegisterPage
 
   // No subdomain logic for Auth pages
   // We allow login/register on both root domain and subdomains
