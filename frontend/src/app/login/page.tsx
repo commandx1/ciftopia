@@ -125,7 +125,12 @@ function LoginForm() {
         localStorage.removeItem('remember_subdomain')
       }
 
-      router.push('/dashboard')
+      const returnUrl = searchParams.get('returnUrl')
+      if (returnUrl) {
+        router.push(returnUrl)
+      } else {
+        router.push('/dashboard')
+      }
     } catch (err) {
       setError((err as ApiError).response?.data?.message || 'Giriş yapılamadı. Lütfen bilgilerinizi kontrol edin.')
     } finally {

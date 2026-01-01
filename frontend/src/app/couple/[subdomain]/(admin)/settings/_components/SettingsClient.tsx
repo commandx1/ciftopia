@@ -36,7 +36,7 @@ export default function SettingsClient({ user }: SettingsClientProps) {
   const router = useRouter();
   const handleLogout = async () => {
     await authService.logout()
-    router.push(`${process.env.NEXT_PUBLIC_URL}/login`);
+    router.push('/login');
   }
 
   const handleDeleteConfirm = async () => {

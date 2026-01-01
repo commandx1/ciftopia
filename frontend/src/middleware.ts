@@ -17,6 +17,12 @@ export async function middleware(request: NextRequest) {
 
   const token = request.cookies.get('accessToken')?.value
   const isLoginPage = url.pathname === '/login'
+  const isRegisterPage = url.pathname === '/register'
+
+  // Protokolü belirle (Local'de http, prod'da https)
+  const protocol = request.headers.get('x-forwarded-proto') || (host.includes('localhost') || host.includes('.local') ? 'http' : 'https')
+  const baseAbsoluteUrl = `${protocol}://${host}`
+  const mainDomainUrl = process.env.NEXT_PUBLIC_URL || `${protocol}://${mainDomain}`
 
   // ═══════════════════════════════════════════════════════
   // ANA DOMAIN (ciftopia.com) - Marketing + Register
@@ -29,6 +35,11 @@ export async function middleware(request: NextRequest) {
   // COUPLE SUBDOMAIN (sinem-serhat.ciftopia.com)
   // ═══════════════════════════════════════════════════════
 
+  // 0. Register sayfası - her zaman ana domain'e yönlendir
+  if (isRegisterPage) {
+    return NextResponse.redirect(new URL('/register', mainDomainUrl))
+  }
+
   // 1. Login sayfası - her zaman erişilebilir
   if (isLoginPage) {
     // Token varsa ve subdomain eşleşiyorsa dashboard'a yönlendir
@@ -36,18 +47,20 @@ export async function middleware(request: NextRequest) {
       try {
         const payload = jose.decodeJwt(token) as { subdomain?: string }
         if (payload.subdomain?.toLowerCase() === subdomain.toLowerCase()) {
-          return NextResponse.redirect(new URL('/dashboard', request.url))
+          return NextResponse.redirect(new URL('/dashboard', baseAbsoluteUrl))
         }
       } catch (err) {
         // Token geçersiz, login'de kalsın
       }
     }
-    return NextResponse.rewrite(new URL(`/couple/${subdomain}/login`, request.url))
+    // Login sayfası kök dizinde olduğu için rewrite yapmaya gerek yok, 
+    // doğrudan orijinal login sayfasını kullanabiliriz.
+    return NextResponse.next()
   }
 
   // 2. Token yoksa login'e yönlendir
   if (!token) {
-    const loginUrl = new URL('/login', request.url)
+    const loginUrl = new URL('/login', baseAbsoluteUrl)
     loginUrl.searchParams.set('returnUrl', url.pathname)
     return NextResponse.redirect(loginUrl)
   }
@@ -58,13 +71,17 @@ export async function middleware(request: NextRequest) {
 
     // Token'da subdomain yoksa login'e
     if (!payload.subdomain) {
-      return NextResponse.redirect(new URL('/login', request.url))
+      return NextResponse.redirect(new URL('/login', baseAbsoluteUrl))
     }
 
     // Subdomain eşleşmiyorsa kendi sitesine yönlendir
     if (payload.subdomain.toLowerCase() !== subdomain.toLowerCase()) {
-      const correctUrl = `https://${payload.subdomain}.${mainDomain}/dashboard`
-      return NextResponse.redirect(new URL(correctUrl))
+      const correctUrl = `${protocol}://${payload.subdomain}.${mainDomain}/dashboard`
+      const redirectUrl = new URL(correctUrl)
+      if (url.pathname !== '/' && url.pathname !== '/dashboard') {
+        redirectUrl.searchParams.set('returnUrl', url.pathname)
+      }
+      return NextResponse.redirect(redirectUrl)
     }
 
     // ✅ Her şey OK - sayfayı göster
@@ -72,7 +89,7 @@ export async function middleware(request: NextRequest) {
   } catch (err) {
     console.error('Middleware JWT decode error:', err)
     // Token decode hatası - login'e yönlendir
-    const response = NextResponse.redirect(new URL('/login', request.url))
+    const response = NextResponse.redirect(new URL('/login', baseAbsoluteUrl))
     response.cookies.delete('accessToken')
     return response
   }

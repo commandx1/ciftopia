@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { Heart, ChevronDown, Settings, LogOut } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -18,7 +18,7 @@ interface CoupleLayoutClientProps {
 export default function CoupleLayoutClient({ children, user, subdomain }: CoupleLayoutClientProps) {
   const pathname = usePathname()
   const [scrolled, setScrolled] = useState(false)
-
+  const router = useRouter()  
   const coupleNames = (subdomain || 'ahmet-ayse')
     .split('-')
     .map(n => n.charAt(0).toUpperCase() + n.slice(1))
@@ -35,9 +35,9 @@ export default function CoupleLayoutClient({ children, user, subdomain }: Couple
   const handleLogout = async () => {
     try {
       await authService.logout()
-      window.location.href = `${process.env.NEXT_PUBLIC_URL}/login`
+      router.push('/login')
     } catch {
-      window.location.href = `${process.env.NEXT_PUBLIC_URL}/login`
+      router.push('/login')
     }
   }
 
