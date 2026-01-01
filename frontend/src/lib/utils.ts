@@ -20,7 +20,7 @@ export function getPublicAssetUrl(path: string) {
 
 export function getUserAvatar(user?: { avatar?: string; gender?: string }) {
   if (user?.avatar) return user.avatar
-  const defaultPic = user?.gender === 'female' ? '/assets/woman-pp.png' : '/assets/man-pp.png'
+  const defaultPic = user?.gender === 'female' ? '/woman-pp.png' : '/man-pp.png'
   return getPublicAssetUrl(defaultPic)
 }
 
