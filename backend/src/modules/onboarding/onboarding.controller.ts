@@ -44,11 +44,12 @@ export class OnboardingController {
     const result = await this.onboardingService.deleteSite(userId);
 
     // Clear the auth cookie since the user is now deleted
+    const isLocal = process.env.NODE_ENV !== 'production' && !process.env.COOKIE_DOMAIN;
     res.clearCookie('accessToken', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      domain: process.env.COOKIE_DOMAIN || '.ciftopia.local',
+      secure: true,
+      sameSite: isLocal ? 'lax' : 'none',
+      domain: process.env.COOKIE_DOMAIN, // Omit if not explicitly set
       path: '/',
     });
 

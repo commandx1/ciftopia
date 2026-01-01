@@ -54,11 +54,12 @@ export class AuthController {
 
   private setCookie(res: Response, token: string) {
     const domain = this.getCookieDomain();
+    const isLocal = process.env.NODE_ENV !== 'production' && !process.env.COOKIE_DOMAIN;
 
     res.cookie('accessToken', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true, // Always true for modern browsers & HTTPS
+      sameSite: isLocal ? 'lax' : 'none', 
       domain: domain,
       path: '/',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
@@ -69,6 +70,8 @@ export class AuthController {
     const host = process.env.COOKIE_DOMAIN;
     if (host) return host;
 
-    return process.env.NODE_ENV === 'production' ? '.ciftopia.com' : undefined;
+    // Eğer local'de değilsek ve özel bir domain tanımlanmamışsa 
+    // browser'ın default (backend domain) kullanmasına izin ver
+    return undefined;
   }
 }

@@ -22,15 +22,15 @@ async function bootstrap() {
   const allowedOrigins =
     configService.get<string>('ALLOWED_ORIGINS')?.split(',') || [];
 
-  // Wildcard pattern: *.ciftopia.com
-  const wildcardPattern = /^https:\/\/([a-z0-9-]+)\.ciftopia\.com$/;
+  // Wildcard pattern: *.ciftopia.com ve ciftopia.com (root)
+  const wildcardPattern = /^https:\/\/(?:[a-z0-9-]+\.)?ciftopia\.com$/;
 
   app.enableCors({
     origin: (
       origin: string | undefined,
       callback: (err: Error | null, allow?: boolean) => void,
     ) => {
-      // No origin (server-to-server, Postman, etc.)
+      // No origin (server-to-server, Postman, vb.)
       if (!origin) {
         callback(null, true);
         return;
@@ -41,12 +41,13 @@ async function bootstrap() {
         origin.includes(allowed.trim()),
       );
 
-      // Check wildcard subdomain pattern
+      // Check wildcard subdomain pattern (root domain dahil: ciftopia.com ve *.ciftopia.com)
       const isWildcardMatch = wildcardPattern.test(origin);
 
       if (isAllowedOrigin || isWildcardMatch) {
         callback(null, true);
       } else {
+        console.log('CORS Rejected for origin:', origin);
         callback(new Error('Not allowed by CORS'));
       }
     },
