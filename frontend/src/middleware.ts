@@ -49,7 +49,7 @@ export async function middleware(request: NextRequest) {
         if (payload.subdomain?.toLowerCase() === subdomain.toLowerCase()) {
           return NextResponse.redirect(new URL('/dashboard', baseAbsoluteUrl))
         }
-      } catch (err) {
+      } catch {
         // Token geçersiz, login'de kalsın
       }
     }
