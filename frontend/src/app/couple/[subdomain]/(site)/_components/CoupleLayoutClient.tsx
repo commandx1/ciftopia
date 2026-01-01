@@ -30,7 +30,8 @@ export default function CoupleLayoutClient({ children, user, subdomain }: Couple
         setCoupleNames(response.data?.data?.couple || '')
       }
     })()
-  }, [])
+  }, [setCoupleNames, subdomain])
+
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 50)

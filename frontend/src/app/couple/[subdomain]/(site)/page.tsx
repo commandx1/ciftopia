@@ -76,7 +76,7 @@ export default async function CouplePage() {
             </div>
           </div>
 
-          <CoupleNamesClient subdomain={user?.coupleId?.subdomain} />
+          <CoupleNamesClient />
           <div className='inline-block bg-white/20 backdrop-blur-md rounded-full px-8 py-3 mb-8'>
             <p className='text-white text-lg font-medium'>Tanışma: 14 Şubat 2023</p>
           </div>

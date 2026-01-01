@@ -77,7 +77,7 @@ function LoginForm() {
           setIsChecking(false)
         })
     }
-  }, [isMounted, isRootDomain, currentSubdomain])
+  }, [isMounted, isRootDomain, currentSubdomain, setCoupleNames])
 
   useEffect(() => {
     if (errorParam === 'unauthorized_subdomain') {
