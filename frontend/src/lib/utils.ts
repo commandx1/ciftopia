@@ -13,13 +13,14 @@ export function getBaseUrl() {
 }
 
 export function getPublicAssetUrl(path: string) {
-  const cleanPath = path.startsWith('/') ? path : `/${path}`
-  return `${getBaseUrl()}${cleanPath}`
+  return path;
+  // const cleanPath = path.startsWith('/') ? path : `/${path}`
+  // return `${getBaseUrl()}${cleanPath}`
 }
 
 export function getUserAvatar(user?: { avatar?: string; gender?: string }) {
   if (user?.avatar) return user.avatar
-  const defaultPic = user?.gender === 'female' ? '/woman-pp.png' : '/man-pp.png'
+  const defaultPic = user?.gender === 'female' ? '/assets/woman-pp.png' : '/assets/man-pp.png'
   return getPublicAssetUrl(defaultPic)
 }
 
