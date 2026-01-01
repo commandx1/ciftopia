@@ -21,7 +21,7 @@ export default async function NotFound() {
   const isCoupleSite = hostname.endsWith(`.${mainDomain}`) && hostname !== `www.${mainDomain}` && hostname !== `app.${mainDomain}`
 
   return (
-    <div className='min-h-screen bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 overflow-x-hidden flex items-center justify-center relative font-sans'>
+    <div className='min-h-screen bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 overflow-x-hidden flex items-center justify-center relative'>
       <div className='absolute inset-0 overflow-hidden'>
         <div className='absolute top-20 left-20 w-96 h-96 bg-rose-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse'></div>
         <div
@@ -62,7 +62,7 @@ export default async function NotFound() {
             </div>
 
             <div className='relative inline-block'>
-              <div className='text-[150px] md:text-[200px] font-serif font-bold text-transparent bg-clip-text bg-gradient-to-br from-rose-primary via-coral-warm to-purple-500 leading-none'>
+              <div className='text-[150px] md:text-[200px]  font-bold text-transparent bg-clip-text bg-gradient-to-br from-rose-primary via-coral-warm to-purple-500 leading-none'>
                 404
               </div>
               <div className='absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2'>
@@ -72,7 +72,7 @@ export default async function NotFound() {
           </div>
 
           <div className='mb-8 animate-fade-in-up' style={{ animationDelay: '0.2s' }}>
-            <h1 className='font-serif text-4xl md:text-6xl font-bold text-gray-800 mb-4'>Kayıp Bir Anı mı?</h1>
+            <h1 className=' text-4xl md:text-6xl font-bold text-gray-800 mb-4'>Kayıp Bir Anı mı?</h1>
             <p className='text-lg md:text-2xl text-gray-600 mb-6'>
               Aradığınız sayfa bulunamadı veya taşınmış olabilir.
             </p>
@@ -116,7 +116,7 @@ export default async function NotFound() {
                 <div className='w-16 h-16 bg-gradient-to-br from-rose-100 to-pink-100 rounded-2xl flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform'>
                   <Images className='text-rose-primary w-8 h-8' />
                 </div>
-                <h3 className='font-serif text-xl font-bold text-gray-800 mb-2'>Anılar</h3>
+                <h3 className=' text-xl font-bold text-gray-800 mb-2'>Anılar</h3>
                 <p className='text-gray-600 text-sm'>Özel anılarınızı keşfedin</p>
               </Link>
 
@@ -127,7 +127,7 @@ export default async function NotFound() {
                 <div className='w-16 h-16 bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform'>
                   <Camera className='text-purple-600 w-8 h-8' />
                 </div>
-                <h3 className='font-serif text-xl font-bold text-gray-800 mb-2'>Galeri</h3>
+                <h3 className=' text-xl font-bold text-gray-800 mb-2'>Galeri</h3>
                 <p className='text-gray-600 text-sm'>Fotoğraf albümlerinize göz atın</p>
               </Link>
 
@@ -138,7 +138,7 @@ export default async function NotFound() {
                 <div className='w-16 h-16 bg-gradient-to-br from-coral-warm/20 to-rose-100 rounded-2xl flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform'>
                   <History className='text-coral-warm w-8 h-8' />
                 </div>
-                <h3 className='font-serif text-xl font-bold text-gray-800 mb-2'>Panel</h3>
+                <h3 className=' text-xl font-bold text-gray-800 mb-2'>Panel</h3>
                 <p className='text-gray-600 text-sm'>Sitenizi yönetin</p>
               </Link>
             </div>

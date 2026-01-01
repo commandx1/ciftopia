@@ -16,8 +16,16 @@ import {
 import Link from 'next/link'
 import Image from 'next/image'
 import CoupleNamesClient from './_components/CoupleNamesClient'
+import { authServiceServer } from '@/services/api-server'
+import { redirect } from 'next/navigation'
 
-export default function CouplePage() {
+export default async function CouplePage() {
+  const user = await authServiceServer.me()
+
+  if (!user) {
+    redirect('/login')
+  }
+
   return (
     <div className='bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50'>
       {/* Hero Section */}
@@ -68,7 +76,7 @@ export default function CouplePage() {
             </div>
           </div>
 
-          <CoupleNamesClient />
+          <CoupleNamesClient subdomain={user?.coupleId?.subdomain} />
           <div className='inline-block bg-white/20 backdrop-blur-md rounded-full px-8 py-3 mb-8'>
             <p className='text-white text-lg font-medium'>Tanışma: 14 Şubat 2023</p>
           </div>

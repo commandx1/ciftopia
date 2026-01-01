@@ -27,7 +27,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    const { sub: id } = payload;
+    const { sub: id, coupleNames } = payload;
     const user = await this.userModel
       .findById(id)
       .select('-password')
@@ -40,6 +40,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const userObj = user.toObject();
     if (userObj.avatar) {
       userObj.avatar = await this.uploadService.getPresignedUrl(userObj.avatar);
+    }
+
+    // Token içindeki coupleNames'i user objesine ekle (frontend'de me isteğiyle ulaşabilmek için)
+    if (coupleNames) {
+      (userObj as any).coupleNames = coupleNames;
     }
 
     return userObj;

@@ -71,3 +71,7 @@
 ::-webkit-scrollbar {
   display: none;
 }
+
+.font-playfair-display {
+  font-family: var(--font-playfair-display);
+}

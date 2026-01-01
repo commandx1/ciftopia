@@ -11,6 +11,7 @@ import { Couple, CoupleDocument } from '../../schemas/couple.schema';
 import { Memory, MemoryDocument } from '../../schemas/memory.schema';
 import { CreateCoupleDto } from './dto/onboarding.dto';
 import { UploadService } from '../upload/upload.service';
+import capitalizeFirstLetter from '../../utils/capitalizeFirstLetter';
 
 @Injectable()
 export class OnboardingService {
@@ -22,12 +23,22 @@ export class OnboardingService {
   ) {}
 
   async checkSubdomain(subdomain: string) {
-    const existingCouple = await this.coupleModel.findOne({
-      subdomain: subdomain.toLowerCase(),
-    });
+    // add user names via partner1 and partner2 from couple collection
+    const existingCouple = await this.coupleModel
+      .findOne({
+        subdomain: subdomain.toLowerCase(),
+      })
+      .populate('partner1')
+      .populate('partner2')
+      .lean();
     // available: true -> Bu subdomain boş, kullanılabilir.
     // available: false -> Bu subdomain dolu, zaten alınmış.
-    return { available: !existingCouple };
+    return {
+      available: !existingCouple,
+      couple: existingCouple
+        ? `${capitalizeFirstLetter((existingCouple.partner1 as unknown as User).firstName)} & ${capitalizeFirstLetter((existingCouple.partner2 as unknown as User).firstName)}`
+        : null,
+    };
   }
 
   async createCouple(userId: string, createCoupleDto: CreateCoupleDto) {

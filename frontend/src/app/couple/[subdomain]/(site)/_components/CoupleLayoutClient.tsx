@@ -5,9 +5,10 @@ import { usePathname, useRouter } from 'next/navigation'
 import { Heart, ChevronDown, Settings, LogOut } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { authService } from '@/services/api'
+import { authService, onboardingService } from '@/services/api'
 import { User } from '@/lib/type'
 import { getUserAvatar } from '@/lib/utils'
+import { useUserStore } from '@/store/userStore'
 
 interface CoupleLayoutClientProps {
   children: React.ReactNode
@@ -18,12 +19,18 @@ interface CoupleLayoutClientProps {
 export default function CoupleLayoutClient({ children, user, subdomain }: CoupleLayoutClientProps) {
   const pathname = usePathname()
   const [scrolled, setScrolled] = useState(false)
-  const router = useRouter()  
-  const coupleNames = (subdomain || 'ahmet-ayse')
-    .split('-')
-    .map(n => n.charAt(0).toUpperCase() + n.slice(1))
-    .join(' & ')
+  const { coupleNames, setCoupleNames } = useUserStore()
+  const router = useRouter()
 
+  useEffect(() => {
+    ;(async () => {
+      if (!subdomain) setCoupleNames('Çiftopia')
+      else {
+        const response = await onboardingService.checkSubdomain(subdomain)
+        setCoupleNames(response.data?.data?.couple || '')
+      }
+    })()
+  }, [])
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 50)
@@ -58,7 +65,7 @@ export default function CoupleLayoutClient({ children, user, subdomain }: Couple
       <header className={`fixed top-0 w-full z-50 transition-all duration-300 ${navBgClass}`}>
         <nav className='max-w-7xl mx-auto px-6'>
           <div className='flex items-center justify-between'>
-            <Link href='/' className={` text-2xl font-bold transition-colors ${logoClass}`}>
+            <Link href='/' className={`font-playfair-display text-2xl font-bold transition-colors ${logoClass}`}>
               {coupleNames}
             </Link>
 
@@ -142,7 +149,7 @@ export default function CoupleLayoutClient({ children, user, subdomain }: Couple
               <div className='w-12 h-12 bg-gradient-to-br from-rose-primary to-coral-warm rounded-full flex items-center justify-center'>
                 <Heart size={24} fill='white' />
               </div>
-              <span className=' text-2xl font-bold'>{coupleNames}</span>
+              <span className=' text-2xl font-bold font-playfair-display'>{coupleNames}</span>
             </div>
             <p className='text-gray-400 text-lg'>14 Şubat 2023&apos;ten beri birlikte 💕</p>
           </div>

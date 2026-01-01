@@ -13,6 +13,7 @@ interface User {
   email: string;
   avatar: string;
   gender: string;
+  coupleNames?: string; // Token veya /auth/me üzerinden gelen çift isimleri
   coupleId?: {
     subdomain?: string
   }

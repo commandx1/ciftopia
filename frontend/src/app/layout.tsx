@@ -1,11 +1,17 @@
 import type { Metadata } from 'next'
-import { Indie_Flower } from 'next/font/google'
+import { Indie_Flower, Playfair_Display } from 'next/font/google'
 import './globals.css'
 
 const indieFlower = Indie_Flower({
   subsets: ['latin'],
   variable: '--font-indie-flower',
   weight: ['400']
+})
+
+const playfairDisplay = Playfair_Display({
+  subsets: ['latin'],
+  variable: '--font-playfair-display',
+  weight: ['400', '500', '600', '700', '800']
 })
 
 export const metadata: Metadata = {
@@ -20,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang='en' suppressHydrationWarning>
-      <body className={`${indieFlower.className} antialiased`} suppressHydrationWarning>
+      <body className={`${indieFlower.className} ${playfairDisplay.variable}`} suppressHydrationWarning>
         {children}
       </body>
     </html>

@@ -12,6 +12,7 @@ import { User, UserDocument } from '../../schemas/user.schema';
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
 import { RegisterDto, LoginDto } from './dto/auth.dto';
 import { UploadService } from '../upload/upload.service';
+import capitalizeFirstLetter from '../../utils/capitalizeFirstLetter';
 
 @Injectable()
 export class AuthService {
@@ -106,11 +107,20 @@ export class AuthService {
 
   private async generateToken(user: UserDocument) {
     let subdomain: string | undefined;
+    let coupleNames: string | undefined;
 
     if (user.coupleId) {
-      const couple = await this.coupleModel.findById(user.coupleId);
+      const couple = await this.coupleModel
+        .findById(user.coupleId)
+        .populate('partner1')
+        .populate('partner2');
       if (couple) {
         subdomain = couple.subdomain;
+        const p1 = couple.partner1 as unknown as UserDocument;
+        const p2 = couple.partner2 as unknown as UserDocument;
+        if (p1 && p2) {
+          coupleNames = `${capitalizeFirstLetter(p1.firstName)} & ${capitalizeFirstLetter(p2.firstName)}`;
+        }
       }
     }
 
@@ -119,7 +129,8 @@ export class AuthService {
       email: user.email,
       role: user.role,
       coupleId: user.coupleId,
-      subdomain: subdomain, // Subdomain added to payload
+      subdomain: subdomain,
+      coupleNames: coupleNames, // Token içine eklendi
     };
     return this.jwtService.sign(payload);
   }
