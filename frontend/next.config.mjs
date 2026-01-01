@@ -28,8 +28,12 @@ const nextConfig = {
       },
       {
         protocol: 'http',
-        hostname: 'ciftopia.local',
+        hostname: '**.ciftopia.local',
       },
+      {
+        protocol: 'https',
+        hostname: '**.ciftopia.com',
+      }
     ],
   },
 };
