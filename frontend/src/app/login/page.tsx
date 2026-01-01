@@ -251,8 +251,9 @@ function LoginForm() {
           <p className='text-gray-600 dark:text-gray-400 font-medium'>
             Hesabınız yok mu?
             <Link
-              href='/register'
+              href={`${process.env.NEXT_PUBLIC_URL}/register`}
               className='text-rose-primary hover:text-coral-warm font-bold transition-colors ml-2 underline underline-offset-4'
+              prefetch={false}
             >
               Hemen oluşturun
             </Link>
