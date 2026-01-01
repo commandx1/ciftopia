@@ -20,6 +20,9 @@ export class User {
   @Prop()
   avatar?: string;
 
+  @Prop({ enum: ['male', 'female', 'other'], default: 'male' })
+  gender: string;
+
   @Prop({ type: Types.ObjectId, ref: 'Couple', index: true })
   coupleId?: Types.ObjectId;
 

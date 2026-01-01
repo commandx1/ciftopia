@@ -7,10 +7,11 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
-import { Response, Request } from 'express';
+import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { UserDocument } from 'src/schemas/user.schema';
 
 @Controller('auth')
 export class AuthController {
@@ -37,10 +38,9 @@ export class AuthController {
   }
 
   @Post('logout')
-  async logout(@Res({ passthrough: true }) res: Response) {
+  logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('accessToken', {
-      domain:
-        process.env.NODE_ENV === 'production' ? '.ciftopia.com' : 'localhost',
+      domain: this.getCookieDomain(),
       path: '/',
     });
     return { success: true };
@@ -48,13 +48,12 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  async getMe(@Req() req: any) {
+  getMe(@Req() req: { user: UserDocument }) {
     return { success: true, data: { user: req.user } };
   }
 
   private setCookie(res: Response, token: string) {
-    const domain =
-      process.env.NODE_ENV === 'production' ? '.ciftopia.com' : 'localhost';
+    const domain = this.getCookieDomain();
 
     res.cookie('accessToken', token, {
       httpOnly: true,
@@ -64,5 +63,12 @@ export class AuthController {
       path: '/',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
+  }
+
+  private getCookieDomain() {
+    const host = process.env.COOKIE_DOMAIN;
+    if (host) return host;
+
+    return process.env.NODE_ENV === 'production' ? '.ciftopia.com' : undefined;
   }
 }

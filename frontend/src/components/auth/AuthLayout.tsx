@@ -1,7 +1,7 @@
-/* eslint-disable @next/next/no-img-element */
 import React from 'react';
-import { Heart, Star, ShieldCheck } from 'lucide-react';
+import { Heart, Star } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 interface AuthLayoutProps {
@@ -22,7 +22,7 @@ export const AuthLayout = ({ children, quote = "Aşk, iki kalbin bir ritimde atm
           isWide ? "max-w-5xl" : "max-w-md"
         )}>
           <div className="mb-12 text-center">
-            <Link href="/" className="inline-flex items-center justify-center space-x-3 mb-4 group">
+            <Link href={process.env.NEXT_PUBLIC_URL ?? '/'} className="inline-flex items-center justify-center space-x-3 mb-4 group">
               <div className="w-14 h-14 bg-gradient-to-br from-rose-primary to-coral-warm rounded-full flex items-center justify-center group-hover:rotate-12 transition-transform">
                 <Heart className="text-white w-8 h-8 fill-current" />
               </div>
@@ -60,12 +60,14 @@ export const AuthLayout = ({ children, quote = "Aşk, iki kalbin bir ritimde atm
             <div className="flex items-center justify-center space-x-4 mb-6">
               <div className="flex -space-x-4">
                 {[1, 2, 3, 4].map((i) => (
-                  <img 
-                    key={i}
-                    src={`https://i.pravatar.cc/150?u=user${i}`} 
-                    alt="User" 
-                    className="w-14 h-14 rounded-full border-4 border-white/30 object-cover" 
-                  />
+                  <div key={i} className="relative w-14 h-14 rounded-full border-4 border-white/30 overflow-hidden">
+                    <Image 
+                      src={`https://i.pravatar.cc/150?u=user${i}`} 
+                      alt={`User ${i}`} 
+                      fill
+                      className="object-cover" 
+                    />
+                  </div>
                 ))}
               </div>
             </div>
@@ -93,4 +95,3 @@ export const AuthLayout = ({ children, quote = "Aşk, iki kalbin bir ritimde atm
     </div>
   );
 };
-

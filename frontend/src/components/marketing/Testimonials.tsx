@@ -1,6 +1,6 @@
-/* eslint-disable @next/next/no-img-element */
 import React from 'react';
 import { Star, Quote } from 'lucide-react';
+import Image from 'next/image';
 
 interface TestimonialProps {
   name: string;
@@ -18,8 +18,10 @@ const TestimonialCard = ({ name, avatar, text, duration, rating }: TestimonialPr
     
     <div className="flex items-center mb-8 relative">
       <div className="relative">
-        <img src={avatar} alt={name} className="w-16 h-16 rounded-full mr-5 object-cover border-2 border-rose-100 dark:border-rose-900/30" />
-        <div className="absolute -bottom-1 -right-1 bg-rose-500 rounded-full p-1 border-2 border-white dark:border-slate-900">
+        <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-rose-100 dark:border-rose-900/30">
+          <Image src={avatar} alt={name} fill className="object-cover" />
+        </div>
+        <div className="absolute -bottom-1 -right-1 bg-rose-500 rounded-full p-1 border-2 border-white dark:border-slate-900 z-10">
           <Star size={10} className="text-white fill-current" />
         </div>
       </div>
@@ -89,12 +91,14 @@ export const Testimonials = () => {
           <div className="inline-flex flex-col sm:flex-row items-center gap-6 bg-white dark:bg-slate-900 rounded-[2.5rem] px-10 py-6 shadow-xl border border-rose-100 dark:border-rose-900/20">
             <div className="flex -space-x-4">
               {[1, 2, 3, 4, 5].map((i) => (
-                <img 
-                  key={i} 
-                  src={`https://i.pravatar.cc/150?u=user${i}`} 
-                  alt="User" 
-                  className="w-12 h-12 rounded-full border-4 border-white dark:border-slate-900 object-cover shadow-md" 
-                />
+                <div key={i} className="relative w-12 h-12 rounded-full border-4 border-white dark:border-slate-900 overflow-hidden shadow-md">
+                  <Image 
+                    src={`https://i.pravatar.cc/150?u=user${i}`} 
+                    alt={`User ${i}`} 
+                    fill
+                    className="object-cover" 
+                  />
+                </div>
               ))}
             </div>
             <div className="h-8 w-px bg-gray-200 dark:bg-slate-800 hidden sm:block"></div>
@@ -116,4 +120,3 @@ export const Testimonials = () => {
     </section>
   );
 };
-

@@ -6,6 +6,8 @@ import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { PaymentModule } from './modules/payment/payment.module';
+import { MemoriesModule } from './modules/memories/memories.module';
+import { UploadModule } from './modules/upload/upload.module';
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import { PaymentModule } from './modules/payment/payment.module';
     AuthModule,
     OnboardingModule,
     PaymentModule,
+    MemoriesModule,
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [AppService],

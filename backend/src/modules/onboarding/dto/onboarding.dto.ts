@@ -27,6 +27,14 @@ export class CreateCoupleDto {
   @IsNotEmpty()
   partnerPassword: string;
 
+  @IsString()
+  @IsOptional()
+  partnerGender?: string;
+
+  @IsString()
+  @IsOptional()
+  partnerAvatar?: string;
+
   @IsOptional()
   @IsDateString()
   relationshipStartDate?: string;

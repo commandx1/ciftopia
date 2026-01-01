@@ -1,8 +1,8 @@
-/* eslint-disable @next/next/no-img-element */
 import React from 'react';
 import { ArrowRight, Play, Star, Heart, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export const Hero = () => {
   return (
@@ -53,10 +53,12 @@ export const Hero = () => {
           
           <div className="relative hidden lg:block animate-in fade-in slide-in-from-right duration-1000">
             <div className="relative w-full h-[550px] rounded-[3rem] overflow-hidden shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-700">
-              <img 
-                className="w-full h-full object-cover" 
+              <Image 
+                className="object-cover" 
                 src="https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=2070&auto=format&fit=crop" 
                 alt="Romantic couple" 
+                fill
+                priority
               />
             </div>
             
@@ -85,4 +87,3 @@ export const Hero = () => {
     </section>
   );
 };
-

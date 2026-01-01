@@ -8,19 +8,25 @@ import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User, UserDocument } from '../../schemas/user.schema';
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
+import { Memory, MemoryDocument } from '../../schemas/memory.schema';
 import { CreateCoupleDto } from './dto/onboarding.dto';
+import { UploadService } from '../upload/upload.service';
 
 @Injectable()
 export class OnboardingService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
+    @InjectModel(Memory.name) private memoryModel: Model<MemoryDocument>,
+    private uploadService: UploadService,
   ) {}
 
   async checkSubdomain(subdomain: string) {
     const existingCouple = await this.coupleModel.findOne({
       subdomain: subdomain.toLowerCase(),
     });
+    // available: true -> Bu subdomain boş, kullanılabilir.
+    // available: false -> Bu subdomain dolu, zaten alınmış.
     return { available: !existingCouple };
   }
 
@@ -31,6 +37,8 @@ export class OnboardingService {
       partnerLastName,
       partnerEmail,
       partnerPassword,
+      partnerGender,
+      partnerAvatar,
       relationshipStartDate,
       relationshipStatus,
       paymentTransactionId,
@@ -82,6 +90,8 @@ export class OnboardingService {
       password: hashedPassword,
       firstName: partnerFirstName,
       lastName: partnerLastName,
+      gender: partnerGender as string,
+      avatar: partnerAvatar as string,
       role: 'partner2',
       coupleId: couple._id,
     });
@@ -97,5 +107,53 @@ export class OnboardingService {
     await user.save();
 
     return couple;
+  }
+
+  async deleteSite(userId: string) {
+    const user = await this.userModel.findById(userId);
+    if (!user || !user.coupleId) {
+      throw new NotFoundException('Silinecek site bulunamadı.');
+    }
+
+    const coupleId = user.coupleId;
+    const couple = await this.coupleModel.findById(coupleId);
+    if (!couple) {
+      throw new NotFoundException('Çift hesabı bulunamadı.');
+    }
+
+    // 1. Get all memories to delete their photos from S3
+    const memories = await this.memoryModel.find({ coupleId });
+    const photoKeys: string[] = [];
+    memories.forEach((memory) => {
+      if (memory.photos && memory.photos.length > 0) {
+        photoKeys.push(...memory.photos);
+      }
+    });
+
+    // 2. Add user avatars to delete list if they exist
+    const partners = await this.userModel.find({ coupleId });
+    partners.forEach((p) => {
+      if (p.avatar && !p.avatar.startsWith('http')) {
+        photoKeys.push(p.avatar);
+      }
+    });
+
+    // 3. Delete all files from S3
+    if (photoKeys.length > 0) {
+      await Promise.all(
+        photoKeys.map((key) => this.uploadService.deleteFile(key)),
+      );
+    }
+
+    // 4. Delete all memories from DB
+    await this.memoryModel.deleteMany({ coupleId });
+
+    // 5. Delete all users associated with this couple
+    await this.userModel.deleteMany({ coupleId });
+
+    // 6. Delete the couple record itself
+    await this.coupleModel.findByIdAndDelete(coupleId);
+
+    return { success: true };
   }
 }

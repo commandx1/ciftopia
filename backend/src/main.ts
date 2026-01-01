@@ -18,7 +18,20 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: true, // In production, replace with specific domains
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      if (
+        !origin ||
+        origin.includes('ciftopia.local') ||
+        origin.includes('localhost')
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
   });
 

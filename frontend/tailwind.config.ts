@@ -86,11 +86,48 @@ const config: Config = {
   				to: {
   					height: '0'
   				}
+  			},
+  			'heartbeat': {
+  				'0%, 100%': { transform: 'scale(1)' },
+  				'25%': { transform: 'scale(1.1)' },
+  				'50%': { transform: 'scale(1)' },
+  				'75%': { transform: 'scale(1.15)' },
+  			},
+  			'pulse-ring': {
+  				'0%': { transform: 'scale(0.8)', opacity: '1' },
+  				'50%': { transform: 'scale(1.2)', opacity: '0.5' },
+  				'100%': { transform: 'scale(1.5)', opacity: '0' },
+  			},
+  			'float': {
+  				'0%, 100%': { transform: 'translateY(0px)' },
+  				'50%': { transform: 'translateY(-20px)' },
+  			},
+  			'fade-in-up': {
+  				from: { 
+  					opacity: '0',
+  					transform: 'translateY(20px)'
+  				},
+  				to: { 
+  					opacity: '1',
+  					transform: 'translateY(0)'
+  				},
+  			},
+  			'dot-pulse': {
+  				'0%, 80%, 100%': { opacity: '0.3', transform: 'scale(0.8)' },
+  				'40%': { opacity: '1', transform: 'scale(1)' },
   			}
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
+  			'accordion-up': 'accordion-up 0.2s ease-out',
+  			'heartbeat': 'heartbeat 1.5s ease-in-out infinite',
+  			'pulse-ring': 'pulse-ring 2s ease-out infinite',
+  			'float': 'float 3s ease-in-out infinite',
+  			'spin-slow': 'spin 3s linear infinite',
+  			'fade-in-up': 'fade-in-up 0.6s ease-out forwards',
+  			'dot-pulse1': 'dot-pulse 1.5s infinite ease-in-out -0.3s',
+  			'dot-pulse2': 'dot-pulse 1.5s infinite ease-in-out',
+  			'dot-pulse3': 'dot-pulse 1.5s infinite ease-in-out 0.3s',
   		}
   	}
   },
