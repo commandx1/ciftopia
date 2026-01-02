@@ -15,10 +15,7 @@ import {
   Download,
   ArrowDown,
   Sparkles,
-  HeartOff,
-  Smile,
-  Mountain,
-  Loader2,
+  HeartOff,  Loader2,
   Star
 } from 'lucide-react'
 import { memoriesService } from '@/services/api'
@@ -33,23 +30,9 @@ import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 import { Memory } from '@/lib/type'
 import { MemoryMoodBadge, MemoryMoodIcon, moodConfigs } from '@/components/couple/MemoryMoodBadge'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useUserStore } from '@/store/userStore'
-
-// Kategori çevirileri
-const moodMap: Record<string, string> = {
-  romantic: 'Romantik',
-  fun: 'Eğlenceli',
-  emotional: 'Duygusal',
-  adventure: 'Macera'
-}
 
 // Skeleton loading bileşeni
 const MemorySkeleton = ({ side }: { side: 'left' | 'right' }) => (
@@ -145,6 +128,7 @@ export default function MemoriesPage() {
   const [editingMemory, setEditingMemory] = useState<Memory | null>(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [togglingFavorite, setTogglingFavorite] = useState<string | null>(null)
+  const [isDownloading, setIsDownloading] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [expandedMemories, setExpandedMemories] = useState<Record<string, boolean>>({})
 
@@ -207,6 +191,26 @@ export default function MemoriesPage() {
     setIsModalOpen(true)
   }
 
+  const handleDownloadPdf = async () => {
+    try {
+      setIsDownloading(true)
+      const response = await memoriesService.exportPdf(subdomain as string)
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `Anilarimiz-${subdomain}.pdf`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+    } catch (err) {
+      console.error('PDF indirilirken hata oluştu:', err)
+      alert('PDF indirilirken bir hata oluştu. Lütfen tekrar deneyin.')
+    } finally {
+      setIsDownloading(false)
+    }
+  }
+
   const handleToggleFavorite = async (memory: Memory) => {
     if (togglingFavorite || !user) return
     try {
@@ -219,9 +223,7 @@ export default function MemoriesPage() {
         : [...memory.favorites, user._id]
 
       // Yerel state'i güncelle
-      setMemories(prev =>
-        prev.map(m => (m._id === memory._id ? { ...m, favorites: newFavorites } : m))
-      )
+      setMemories(prev => prev.map(m => (m._id === memory._id ? { ...m, favorites: newFavorites } : m)))
 
       // İstatistikleri güncelle
       setStats(prev => ({
@@ -319,9 +321,17 @@ export default function MemoriesPage() {
                   <span className='text-lg'>Yeni Anı Ekle</span>
                   <Sparkles className='text-yellow-300 animate-pulse' size={20} />
                 </button>
-                <button className='bg-white border-2 border-gray-200 hover:border-rose-300 text-gray-700 hover:text-rose-600 px-8 py-3 rounded-2xl font-semibold transition-all flex items-center justify-center space-x-2'>
-                  <Download size={18} />
-                  <span>Anıları İndir</span>
+                <button
+                  onClick={handleDownloadPdf}
+                  disabled={isDownloading}
+                  className='bg-white border-2 border-gray-200 hover:border-rose-300 text-gray-700 hover:text-rose-600 px-8 py-3 rounded-2xl font-semibold transition-all flex items-center justify-center space-x-2 disabled:opacity-50'
+                >
+                  {isDownloading ? (
+                    <Loader2 className='animate-spin' size={18} />
+                  ) : (
+                    <Download size={18} />
+                  )}
+                  <span>{isDownloading ? 'Hazırlanıyor...' : 'Anıları İndir'}</span>
                 </button>
               </div>
             </div>
@@ -333,12 +343,12 @@ export default function MemoriesPage() {
                     <Filter className='text-rose-500' size={18} />
                     <span>Filtrele & Sırala</span>
                   </h3>
-                  <div className="flex items-center space-x-4">
+                  <div className='flex items-center space-x-4'>
                     <button
                       onClick={() => setOnlyFavorites(!onlyFavorites)}
                       className={`flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${
-                        onlyFavorites 
-                          ? 'bg-amber-100 text-amber-600 border-amber-200' 
+                        onlyFavorites
+                          ? 'bg-amber-100 text-amber-600 border-amber-200'
                           : 'bg-gray-50 text-gray-500 border-gray-100'
                       } border-2`}
                     >
@@ -374,8 +384,12 @@ export default function MemoriesPage() {
                       <SelectItem value='all'>🎭 Tüm Kategoriler</SelectItem>
                       {Object.entries(moodConfigs).map(([key, config]) => (
                         <SelectItem key={key} value={key}>
-                          <div className="flex items-center space-x-2">
-                            <config.icon size={16} className={config.iconColor} fill={key === 'romantic' ? 'currentColor' : 'none'} />
+                          <div className='flex items-center space-x-2'>
+                            <config.icon
+                              size={16}
+                              className={config.iconColor}
+                              fill={key === 'romantic' ? 'currentColor' : 'none'}
+                            />
                             <span>{config.label}</span>
                           </div>
                         </SelectItem>
@@ -473,7 +487,10 @@ export default function MemoriesPage() {
                               className={`flex items-center ${side === 'left' ? 'justify-end' : 'justify-start'} space-x-4 text-sm text-gray-600`}
                             >
                               <div className='flex items-center space-x-2'>
-                                <Calendar className={moodConfigs[memory.mood]?.iconColor || 'text-rose-400'} size={16} />
+                                <Calendar
+                                  className={moodConfigs[memory.mood]?.iconColor || 'text-rose-400'}
+                                  size={16}
+                                />
                                 <span>
                                   {dateObj.toLocaleDateString('tr-TR', {
                                     day: 'numeric',
@@ -484,7 +501,10 @@ export default function MemoriesPage() {
                               </div>
                               {memory.location?.name && (
                                 <div className='flex items-center space-x-2'>
-                                  <MapPin className={moodConfigs[memory.mood]?.iconColor || 'text-rose-400'} size={16} />
+                                  <MapPin
+                                    className={moodConfigs[memory.mood]?.iconColor || 'text-rose-400'}
+                                    size={16}
+                                  />
                                   <span>{memory.location.name}</span>
                                 </div>
                               )}

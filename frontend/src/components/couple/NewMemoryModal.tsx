@@ -10,9 +10,6 @@ import {
   Calendar as CalendarIcon,
   MapPin,
   Smile,
-  Laugh,
-  Frown,
-  Mountain,
   AlignLeft,
   Lock,
   Star,
@@ -69,7 +66,7 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess, editingMemo
     }
   }, [editingMemory, isOpen, user])
 
-  const memoryObjContent = (content: any) => {
+  const memoryObjContent = (content: string) => {
     if (typeof content === 'string') return content
     return ''
   }

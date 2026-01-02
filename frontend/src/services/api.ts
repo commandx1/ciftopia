@@ -76,6 +76,7 @@ export const memoriesService = {
   createMemory: (data: CreateMemoryData) => api.post('/memories', data),
   updateMemory: (id: string, data: Partial<CreateMemoryData>) => api.patch(`/memories/${id}`, data),
   toggleFavorite: (id: string) => api.post(`/memories/${id}/toggle-favorite`),
+  exportPdf: (subdomain: string) => api.get(`/memories/${subdomain}/export-pdf`, { responseType: 'blob' }),
   deleteMemory: (id: string) => api.delete(`/memories/${id}`)
 }
 

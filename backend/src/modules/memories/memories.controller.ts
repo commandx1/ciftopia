@@ -9,12 +9,13 @@ import {
   Query,
   UseGuards,
   Req,
+  Res,
 } from '@nestjs/common';
 import { MemoriesService } from './memories.service';
 import { CreateMemoryDto } from './dto/memories.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CoupleOwnerGuard } from '../auth/guards/couple-owner.guard';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 
 interface AuthRequest extends Request {
   user: {
@@ -76,6 +77,23 @@ export class MemoriesController {
   @Post(':id/toggle-favorite')
   async toggleFavorite(@Req() req: AuthRequest, @Param('id') id: string) {
     return this.memoriesService.toggleFavorite(req.user._id, id);
+  }
+
+  @UseGuards(JwtAuthGuard, CoupleOwnerGuard)
+  @Get(':subdomain/export-pdf')
+  async exportPdf(
+    @Param('subdomain') subdomain: string,
+    @Res() res: Response,
+  ) {
+    const pdfBuffer = await this.memoriesService.exportAsPdf(subdomain);
+    
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename=Anilarimiz-${subdomain}.pdf`,
+      'Content-Length': pdfBuffer.length,
+    });
+
+    res.end(pdfBuffer);
   }
 
   @UseGuards(JwtAuthGuard)

@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, SortOrder } from 'mongoose';
+import * as PDFDocument from 'pdfkit';
+import axios from 'axios';
+import * as path from 'path';
 import { Memory, MemoryDocument } from '../../schemas/memory.schema';
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
 import { CreateMemoryDto } from './dto/memories.dto';
 import { UploadService } from '../upload/upload.service';
+import { User } from '../../schemas/user.schema';
 
 interface QueryParams {
   mood?: string;
@@ -32,7 +36,7 @@ export class MemoriesService {
         const memoryObj = memory.toObject();
 
         // Keep raw photo keys for editing
-        memoryObj.rawPhotos = memoryObj.photos || [];
+        (memoryObj as any).rawPhotos = memoryObj.photos || [];
 
         // Transform memory photos to pre-signed URLs
         if (memoryObj.photos && memoryObj.photos.length > 0) {
@@ -45,9 +49,10 @@ export class MemoriesService {
 
         // Transform author avatar if populated
         if (memoryObj.authorId && (memoryObj.authorId as any).avatar) {
-          (memoryObj.authorId as any).avatar = await this.uploadService.getPresignedUrl(
-            (memoryObj.authorId as any).avatar,
-          );
+          (memoryObj.authorId as any).avatar =
+            await this.uploadService.getPresignedUrl(
+              (memoryObj.authorId as any).avatar,
+            );
         }
 
         return memoryObj;
@@ -235,6 +240,173 @@ export class MemoriesService {
 
     await memory.save();
     return { isFavorite: index === -1 };
+  }
+
+  async exportAsPdf(subdomain: string): Promise<Buffer> {
+    const couple = await this.coupleModel
+      .findOne({ subdomain: subdomain.toLowerCase() })
+      .populate('partner1')
+      .populate('partner2');
+
+    if (!couple) {
+      throw new NotFoundException('Çift bulunamadı.');
+    }
+
+    const memories = await this.memoryModel
+      .find({ coupleId: couple._id })
+      .sort({ date: -1 })
+      .exec();
+
+    return new Promise(async (resolve, reject) => {
+      try {
+        const doc = new (PDFDocument as any)({
+          margin: 50,
+          size: 'A4',
+          bufferPages: true,
+          info: {
+            Title: `Anılarımız - ${subdomain}`,
+            Author: 'Çiftopia',
+          },
+        });
+
+        // ⭐ Türkçe destekli font ekle
+        const fontPath = path.join(__dirname, '../../../src/assets/fonts');
+        doc.registerFont('IndieFlower', path.join(fontPath, 'IndieFlower-Regular.ttf'));
+
+        // Varsayılan font olarak ayarla
+        doc.font('IndieFlower');
+
+        const chunks: Buffer[] = [];
+        doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', (err: any) => reject(err));
+
+        // Header - Bold font
+        doc
+          .font('IndieFlower')
+          .fillColor('#E91E63')
+          .fontSize(32)
+          .text('Anı Kitabımız', { align: 'center' });
+
+        const p1 = couple.partner1 as unknown as User;
+        const p2 = couple.partner2 as unknown as User;
+        doc
+          .font('IndieFlower')
+          .fillColor('#666666')
+          .fontSize(16)
+          .text(`${p1.firstName} & ${p2.firstName}`, { align: 'center' })
+          .moveDown(2);
+
+        // Memories loop
+        for (const [index, memory] of memories.entries()) {
+          if (index > 0) {
+            doc.addPage();
+          }
+
+          const dateStr = new Date(memory.date).toLocaleDateString('tr-TR', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          });
+
+          const moodColors: Record<string, string> = {
+            romantic: '#E91E63',
+            fun: '#FFB300',
+            emotional: '#3F51B5',
+            adventure: '#4CAF50',
+          };
+          const moodColor = moodColors[memory.mood || ''] || '#666666';
+
+          const moodLabels: Record<string, string> = {
+            romantic: 'Romantik',
+            fun: 'Eğlenceli',
+            emotional: 'Duygusal',
+            adventure: 'Macera',
+          };
+
+          // Title
+          doc
+            .font('IndieFlower')
+            .fillColor('#333333')
+            .fontSize(28)
+            .text(memory.title, { underline: true });
+
+          // Date & Mood
+          doc
+            .font('IndieFlower')
+            .fontSize(12)
+            .fillColor('#999999')
+            .text(`${dateStr}  |  `, { continued: true })
+            .fillColor(moodColor)
+            .text(moodLabels[memory.mood || ''] || 'Anı');
+
+          doc.moveDown(1);
+
+          // Location
+          if (memory.location?.name) {
+            doc
+              .font('IndieFlower')
+              .fillColor('#666666')
+              .fontSize(10)
+              .text(`📍 ${memory.location.name}`);
+            doc.moveDown(1);
+          }
+
+          // Image
+          if (memory.photos && memory.photos.length > 0) {
+            try {
+              const photoKey = memory.photos[0];
+              const url = await this.uploadService.getPresignedUrl(photoKey);
+              const response = await axios.get(url, {
+                responseType: 'arraybuffer',
+                timeout: 5000,
+              });
+              const imageBuffer = Buffer.from(response.data, 'binary');
+
+              doc.image(imageBuffer, {
+                fit: [350, 180],
+                align: 'center',
+              } as any);
+              doc.moveDown(1);
+            } catch (err) {
+              console.warn('PDF resim yüklenemedi, atlanıyor');
+            }
+          }
+
+          // Content
+          doc
+            .font('IndieFlower')
+            .fillColor('#444444')
+            .fontSize(14)
+            .text(memory.content, {
+              align: 'justify',
+              lineGap: 5,
+            } as any);
+
+          doc.moveDown(2);
+        }
+
+        // Footer
+        const range = doc.bufferedPageRange();
+        for (let i = 0; i < range.count; i++) {
+          doc.switchToPage(i);
+          doc
+            .font('IndieFlower')
+            .fillColor('#cccccc')
+            .fontSize(10)
+            .text(
+              `Sayfa ${i + 1} / ${range.count}  •  Çiftopia ile sevgiyle hazırlandı`,
+              50,
+              doc.page.height - 50,
+              { align: 'center' },
+            );
+        }
+
+        doc.end();
+      } catch (err) {
+        reject(err);
+      }
+    });
   }
 
   async delete(userId: string, memoryId: string) {
