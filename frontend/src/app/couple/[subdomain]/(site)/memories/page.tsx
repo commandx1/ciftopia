@@ -32,6 +32,16 @@ import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 import { Memory } from '@/lib/type'
+import { MemoryMoodBadge, MemoryMoodIcon, moodConfigs } from '@/components/couple/MemoryMoodBadge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
+import { useDebounce } from '@/hooks/useDebounce'
+import { useUserStore } from '@/store/userStore'
 
 // Kategori çevirileri
 const moodMap: Record<string, string> = {
@@ -75,7 +85,13 @@ const MemorySkeleton = ({ side }: { side: 'left' | 'right' }) => (
 
 // Fotoğraf galerisi için yardımcı bileşen
 const ImageGallery = ({ photos, title }: { photos: string[]; title: string }) => {
+  const [loadingImages, setLoadingImages] = useState<Record<number, boolean>>({})
+
   if (!photos || photos.length === 0) return null
+
+  const handleImageLoad = (index: number) => {
+    setLoadingImages(prev => ({ ...prev, [index]: false }))
+  }
 
   return (
     <div className='h-64 rounded-2xl overflow-hidden mb-4 relative group/gallery bg-gray-100'>
@@ -94,8 +110,21 @@ const ImageGallery = ({ photos, title }: { photos: string[]; title: string }) =>
       >
         {photos.map((photo, index) => (
           <SwiperSlide key={index}>
-            <div className="relative w-full h-full">
-              <Image src={photo} alt={`${title} - ${index + 1}`} fill className='object-cover select-none' />
+            <div className='relative w-full h-full'>
+              {loadingImages[index] !== false && (
+                <div className='absolute inset-0 flex items-center justify-center bg-gray-50 z-10'>
+                  <Loader2 className='w-8 h-8 animate-spin text-rose-300 opacity-50' />
+                </div>
+              )}
+              <Image
+                src={photo}
+                alt={`${title} - ${index + 1}`}
+                fill
+                className={`object-cover select-none transition-opacity duration-500 ${
+                  loadingImages[index] === false ? 'opacity-100' : 'opacity-0'
+                }`}
+                onLoad={() => handleImageLoad(index)}
+              />
             </div>
           </SwiperSlide>
         ))}
@@ -113,13 +142,22 @@ export default function MemoriesPage() {
   const [hasMore, setHasMore] = useState(false)
 
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingMemory, setEditingMemory] = useState<Memory | null>(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const [togglingFavorite, setTogglingFavorite] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [expandedMemories, setExpandedMemories] = useState<Record<string, boolean>>({})
 
   // Filtre ve Sıralama State'leri
   const [sortBy, setSortBy] = useState('newest')
   const [filterMood, setFilterMood] = useState('all')
+  const [onlyFavorites, setOnlyFavorites] = useState(false)
+
+  const debouncedSortBy = useDebounce(sortBy, 500)
+  const debouncedFilterMood = useDebounce(filterMood, 500)
+  const debouncedOnlyFavorites = useDebounce(onlyFavorites, 500)
+
+  const { user } = useUserStore()
 
   const fetchMemories = useCallback(
     async (isLoadMore = false) => {
@@ -129,8 +167,9 @@ export default function MemoriesPage() {
 
         const skip = isLoadMore ? memories.length : 0
         const res = await memoriesService.getMemories(subdomain as string, {
-          mood: filterMood,
-          sortBy,
+          mood: debouncedFilterMood,
+          sortBy: debouncedSortBy,
+          onlyFavorites: debouncedOnlyFavorites,
           limit: 5,
           skip
         })
@@ -150,7 +189,7 @@ export default function MemoriesPage() {
         setLoadingMore(false)
       }
     },
-    [subdomain, sortBy, filterMood, memories.length]
+    [subdomain, debouncedSortBy, debouncedFilterMood, debouncedOnlyFavorites, memories.length]
   )
 
   // İlk yükleme ve filtre değişimi
@@ -160,11 +199,46 @@ export default function MemoriesPage() {
 
   const handleSuccess = () => {
     fetchMemories(false)
+    setEditingMemory(null)
+  }
+
+  const handleEdit = (memory: Memory) => {
+    setEditingMemory(memory)
+    setIsModalOpen(true)
+  }
+
+  const handleToggleFavorite = async (memory: Memory) => {
+    if (togglingFavorite || !user) return
+    try {
+      setTogglingFavorite(memory._id)
+      await memoriesService.toggleFavorite(memory._id)
+
+      const isCurrentlyFavorite = memory.favorites.includes(user._id)
+      const newFavorites = isCurrentlyFavorite
+        ? memory.favorites.filter(id => id !== user._id)
+        : [...memory.favorites, user._id]
+
+      // Yerel state'i güncelle
+      setMemories(prev =>
+        prev.map(m => (m._id === memory._id ? { ...m, favorites: newFavorites } : m))
+      )
+
+      // İstatistikleri güncelle
+      setStats(prev => ({
+        ...prev,
+        favorites: isCurrentlyFavorite ? prev.favorites - 1 : prev.favorites + 1
+      }))
+    } catch (err) {
+      console.error('Favori güncellenirken hata oluştu:', err)
+    } finally {
+      setTogglingFavorite(null)
+    }
   }
 
   const handleResetFilters = () => {
     setSortBy('newest')
     setFilterMood('all')
+    setOnlyFavorites(false)
   }
 
   const toggleExpand = (id: string) => {
@@ -191,14 +265,10 @@ export default function MemoriesPage() {
   }
 
   return (
-    <div className='min-h-screen pt-24 pb-12'>
+    <div className='min-h-screen pt-24 pb-12 bg-gray-100'>
       <main className='max-w-7xl mx-auto px-6 py-8'>
         {/* Page Header Section */}
-        <section className='mb-12 relative overflow-hidden'>
-          <div className='absolute inset-0 bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 opacity-60'></div>
-          <div className='absolute top-0 right-0 w-96 h-96 bg-rose-200 rounded-full blur-3xl opacity-20 -translate-y-1/2 translate-x-1/2'></div>
-          <div className='absolute bottom-0 left-0 w-96 h-96 bg-purple-200 rounded-full blur-3xl opacity-20 translate-y-1/2 -translate-x-1/2'></div>
-
+        <section className='mb-12 relative rounded-3xl overflow-hidden'>
           <div className='relative bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-white'>
             <div className='flex flex-col md:flex-row items-center justify-between mb-8 gap-6'>
               <div className='flex items-center space-x-6'>
@@ -238,7 +308,10 @@ export default function MemoriesPage() {
 
               <div className='flex flex-col space-y-3 w-full md:w-auto'>
                 <button
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={() => {
+                    setEditingMemory(null)
+                    setIsModalOpen(true)
+                  }}
                   className='group bg-gradient-to-r from-[#E91E63] to-[#FF6B6B] text-white px-8 py-4 rounded-2xl font-bold hover:shadow-2xl transition-all flex items-center justify-center space-x-3 relative overflow-hidden'
                 >
                   <div className='absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity'></div>
@@ -257,51 +330,58 @@ export default function MemoriesPage() {
               <div className='bg-gradient-to-br from-white to-gray-50 rounded-2xl p-6 border-2 border-gray-100 hover:border-rose-200 transition-all'>
                 <div className='flex items-center justify-between mb-4'>
                   <h3 className='font-bold text-gray-900 flex items-center space-x-2'>
-                    <Filter className='text-rose-50' size={18} />
+                    <Filter className='text-rose-500' size={18} />
                     <span>Filtrele & Sırala</span>
                   </h3>
-                  <button
-                    onClick={handleResetFilters}
-                    className='text-sm text-rose-600 hover:text-rose-700 font-semibold'
-                  >
-                    Sıfırla
-                  </button>
+                  <div className="flex items-center space-x-4">
+                    <button
+                      onClick={() => setOnlyFavorites(!onlyFavorites)}
+                      className={`flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${
+                        onlyFavorites 
+                          ? 'bg-amber-100 text-amber-600 border-amber-200' 
+                          : 'bg-gray-50 text-gray-500 border-gray-100'
+                      } border-2`}
+                    >
+                      <Star size={14} fill={onlyFavorites ? 'currentColor' : 'none'} />
+                      <span>Sadece Favoriler</span>
+                    </button>
+                    <button
+                      onClick={handleResetFilters}
+                      className='text-sm text-rose-600 hover:text-rose-700 font-semibold'
+                    >
+                      Sıfırla
+                    </button>
+                  </div>
                 </div>
 
                 <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
-                  <div className='relative'>
-                    <select
-                      value={sortBy}
-                      onChange={e => setSortBy(e.target.value)}
-                      className='w-full appearance-none bg-white border-2 border-gray-200 hover:border-rose-300 rounded-xl px-4 py-3 pr-10 font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-primary focus:border-transparent cursor-pointer transition-all'
-                    >
-                      <option value='newest'>🆕 En yeni</option>
-                      <option value='oldest'>🕰️ En eski</option>
-                      <option value='alphabetical'>🔤 Alfabetik</option>
-                    </select>
-                    <ChevronDown
-                      className='absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none'
-                      size={16}
-                    />
-                  </div>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className='w-full bg-white border-2 border-gray-200 hover:border-rose-300 rounded-xl px-4 py-6 font-medium text-gray-700 transition-all'>
+                      <SelectValue placeholder='Sıralama' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='newest'>🆕 En yeni</SelectItem>
+                      <SelectItem value='oldest'>🕰️ En eski</SelectItem>
+                      <SelectItem value='alphabetical'>🔤 Alfabetik</SelectItem>
+                    </SelectContent>
+                  </Select>
 
-                  <div className='relative'>
-                    <select
-                      value={filterMood}
-                      onChange={e => setFilterMood(e.target.value)}
-                      className='w-full appearance-none bg-white border-2 border-gray-200 hover:border-rose-300 rounded-xl px-4 py-3 pr-10 font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-primary focus:border-transparent cursor-pointer transition-all'
-                    >
-                      <option value='all'>🎭 Tüm Kategoriler</option>
-                      <option value='romantic'>💕 Romantik</option>
-                      <option value='fun'>😄 Eğlenceli</option>
-                      <option value='emotional'>😢 Duygusal</option>
-                      <option value='adventure'>🏔️ Macera</option>
-                    </select>
-                    <ChevronDown
-                      className='absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none'
-                      size={16}
-                    />
-                  </div>
+                  <Select value={filterMood} onValueChange={setFilterMood}>
+                    <SelectTrigger className='w-full bg-white border-2 border-gray-200 hover:border-rose-300 rounded-xl px-4 py-6 font-medium text-gray-700 transition-all'>
+                      <SelectValue placeholder='Kategori' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='all'>🎭 Tüm Kategoriler</SelectItem>
+                      {Object.entries(moodConfigs).map(([key, config]) => (
+                        <SelectItem key={key} value={key}>
+                          <div className="flex items-center space-x-2">
+                            <config.icon size={16} className={config.iconColor} fill={key === 'romantic' ? 'currentColor' : 'none'} />
+                            <span>{config.label}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -353,6 +433,7 @@ export default function MemoriesPage() {
                 const dateObj = new Date(memory.date)
                 const monthYear = dateObj.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })
                 const isExpanded = expandedMemories[memory._id]
+                const isUserFavorite = user ? memory.favorites.includes(user._id) : false
 
                 return (
                   <React.Fragment key={memory._id}>
@@ -374,21 +455,14 @@ export default function MemoriesPage() {
                       className={`grid grid-cols-1 md:grid-cols-2 gap-12 items-center pt-8 ${index === 0 ? 'mt-8' : ''}`}
                     >
                       <div className={`${side === 'right' ? 'md:order-2 md:pl-12' : 'md:pr-12 text-right'}`}>
-                        <div className='bg-white rounded-3xl shadow-xl p-6 hover:shadow-2xl transition-all relative group'>
+                        <div
+                          className={`${moodConfigs[memory.mood]?.cardBg || 'bg-white'} rounded-3xl shadow-xl p-6 hover:shadow-2xl transition-all relative group border border-transparent hover:border-white/50 backdrop-blur-sm`}
+                        >
                           {/* Circle Icon */}
-                          <div
-                            className={`absolute ${side === 'left' ? '-right-6' : '-left-6'} top-1/2 transform -translate-y-1/2 w-12 h-12 bg-gradient-to-br from-[#E91E63] to-[#FF6B6B] rounded-full flex items-center justify-center shadow-lg z-20`}
-                          >
-                            {memory.mood === 'romantic' ? (
-                              <Heart className='text-white' size={20} fill='white' />
-                            ) : memory.mood === 'fun' ? (
-                              <Smile className='text-white' size={20} />
-                            ) : memory.mood === 'adventure' ? (
-                              <Mountain className='text-white' size={20} />
-                            ) : (
-                              <Clock className='text-white' size={20} />
-                            )}
-                          </div>
+                          <MemoryMoodIcon
+                            mood={memory.mood}
+                            className={`absolute ${side === 'left' ? '-right-6' : '-left-6'} top-1/2 transform -translate-y-1/2`}
+                          />
 
                           <ImageGallery photos={memory.photos} title={memory.title} />
 
@@ -399,7 +473,7 @@ export default function MemoriesPage() {
                               className={`flex items-center ${side === 'left' ? 'justify-end' : 'justify-start'} space-x-4 text-sm text-gray-600`}
                             >
                               <div className='flex items-center space-x-2'>
-                                <Calendar className='text-rose-400' size={16} />
+                                <Calendar className={moodConfigs[memory.mood]?.iconColor || 'text-rose-400'} size={16} />
                                 <span>
                                   {dateObj.toLocaleDateString('tr-TR', {
                                     day: 'numeric',
@@ -410,7 +484,7 @@ export default function MemoriesPage() {
                               </div>
                               {memory.location?.name && (
                                 <div className='flex items-center space-x-2'>
-                                  <MapPin className='text-rose-400' size={16} />
+                                  <MapPin className={moodConfigs[memory.mood]?.iconColor || 'text-rose-400'} size={16} />
                                   <span>{memory.location.name}</span>
                                 </div>
                               )}
@@ -430,7 +504,7 @@ export default function MemoriesPage() {
                             {memory.content.length > 150 && (
                               <button
                                 onClick={() => toggleExpand(memory._id)}
-                                className='text-[#E91E63] font-semibold hover:underline flex items-center space-x-1 ml-auto'
+                                className={`font-semibold hover:underline flex items-center space-x-1 ${side === 'left' ? 'ml-auto' : 'mr-auto'} ${moodConfigs[memory.mood]?.iconColor || 'text-[#E91E63]'}`}
                               >
                                 <span>{isExpanded ? 'Daha Az Gör' : 'Devamını Oku'}</span>
                                 <ChevronDown
@@ -442,11 +516,8 @@ export default function MemoriesPage() {
 
                             <div className='flex items-center justify-between pt-4 border-t border-gray-100'>
                               <div className='flex items-center space-x-2'>
-                                <span className='inline-block bg-rose-50 text-rose-600 px-4 py-1.5 rounded-full text-sm font-semibold'>
-                                  <Heart className='inline mr-1' size={14} fill='currentColor' />
-                                  {moodMap[memory.mood] || 'Anı'}
-                                </span>
-                                {memory.isFavorite && (
+                                <MemoryMoodBadge mood={memory.mood} />
+                                {isUserFavorite && (
                                   <span className='inline-block bg-amber-50 text-amber-600 px-3 py-1.5 rounded-full text-sm font-semibold'>
                                     <Star className='inline mr-1' size={14} fill='currentColor' />
                                     Favori
@@ -455,7 +526,26 @@ export default function MemoriesPage() {
                               </div>
 
                               <div className='flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity'>
-                                <button className='w-8 h-8 bg-gray-100 hover:bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 transition-colors'>
+                                <button
+                                  onClick={() => handleToggleFavorite(memory)}
+                                  disabled={togglingFavorite === memory._id}
+                                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                                    isUserFavorite
+                                      ? 'bg-amber-100 text-amber-600 shadow-sm'
+                                      : 'bg-gray-100 hover:bg-amber-50 text-gray-400 hover:text-amber-600'
+                                  } disabled:opacity-70`}
+                                  title={isUserFavorite ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
+                                >
+                                  {togglingFavorite === memory._id ? (
+                                    <Loader2 size={14} className='animate-spin' />
+                                  ) : (
+                                    <Star size={14} fill={isUserFavorite ? 'currentColor' : 'none'} />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => handleEdit(memory)}
+                                  className='w-8 h-8 bg-gray-100 hover:bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 transition-colors'
+                                >
                                   <Pen size={14} />
                                 </button>
                                 <button
@@ -499,7 +589,15 @@ export default function MemoriesPage() {
       </main>
 
       {/* New Memory Modal */}
-      <NewMemoryModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={handleSuccess} />
+      <NewMemoryModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false)
+          setEditingMemory(null)
+        }}
+        onSuccess={handleSuccess}
+        editingMemory={editingMemory}
+      />
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmId && (

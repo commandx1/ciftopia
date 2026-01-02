@@ -21,47 +21,102 @@ import {
 } from 'lucide-react'
 import { memoriesService, uploadService } from '@/services/api'
 import Image from 'next/image'
+import { moodConfigs } from './MemoryMoodBadge'
+import { Memory } from '@/lib/type'
+import { useUserStore } from '@/store/userStore'
 
 interface NewMemoryModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess: () => void
+  editingMemory?: Memory | null
 }
 
-export default function NewMemoryModal({ isOpen, onClose, onSuccess }: NewMemoryModalProps) {
+export default function NewMemoryModal({ isOpen, onClose, onSuccess, editingMemory }: NewMemoryModalProps) {
   const [loading, setLoading] = useState(false)
   const [title, setTitle] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [locationName, setLocationName] = useState('')
   const [mood, setMood] = useState('romantic')
   const [content, setContent] = useState('')
-  const [isPrivate, setIsPrivate] = useState(false)
-  const [isFavorite, setIsFavorite] = useState(false)
+  const [isUserFavorite, setIsUserFavorite] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [previewUrls, setPreviewUrls] = useState<string[]>([])
+  const [existingPhotos, setExistingPhotos] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { user } = useUserStore()
+
+  React.useEffect(() => {
+    if (editingMemory && user) {
+      setTitle(editingMemory.title)
+      setDate(new Date(editingMemory.date).toISOString().split('T')[0])
+      setLocationName(editingMemory.location?.name || '')
+      setMood(editingMemory.mood)
+      setContent(memoryObjContent(editingMemory.content))
+      setIsUserFavorite(editingMemory.favorites?.includes(user._id) || false)
+      setExistingPhotos(editingMemory.rawPhotos || [])
+      setPreviewUrls(editingMemory.photos || [])
+    } else {
+      setTitle('')
+      setDate(new Date().toISOString().split('T')[0])
+      setLocationName('')
+      setMood('romantic')
+      setContent('')
+      setIsUserFavorite(false)
+      setSelectedFiles([])
+      setPreviewUrls([])
+      setExistingPhotos([])
+    }
+  }, [editingMemory, isOpen, user])
+
+  const memoryObjContent = (content: any) => {
+    if (typeof content === 'string') return content
+    return ''
+  }
 
   if (!isOpen) return null
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files)
-      const newFiles = [...selectedFiles, ...files].slice(0, 5)
-      setSelectedFiles(newFiles)
+      // Toplamda en fazla 5 fotoğraf olabilir (mevcut + yeniler)
+      const currentTotal = existingPhotos.length + selectedFiles.length
+      const remainingSlots = 5 - currentTotal
+      
+      if (remainingSlots <= 0) return
 
-      const newUrls = newFiles.map(file => URL.createObjectURL(file))
-      setPreviewUrls(newUrls)
+      const newFilesToSelect = files.slice(0, remainingSlots)
+      setSelectedFiles(prev => [...prev, ...newFilesToSelect])
+
+      const newUrls = newFilesToSelect.map(file => URL.createObjectURL(file))
+      setPreviewUrls(prev => [...prev, ...newUrls])
     }
   }
 
   const removeFile = (index: number) => {
-    const newFiles = [...selectedFiles]
-    newFiles.splice(index, 1)
-    setSelectedFiles(newFiles)
-
-    const newUrls = [...previewUrls]
-    newUrls.splice(index, 1)
-    setPreviewUrls(newUrls)
+    // Determine if it's an existing photo or a new file
+    const totalExisting = existingPhotos.length
+    
+    if (index < totalExisting) {
+      // It's an existing photo
+      const newExisting = [...existingPhotos]
+      newExisting.splice(index, 1)
+      setExistingPhotos(newExisting)
+      
+      const newUrls = [...previewUrls]
+      newUrls.splice(index, 1)
+      setPreviewUrls(newUrls)
+    } else {
+      // It's a new file
+      const fileIndex = index - totalExisting
+      const newFiles = [...selectedFiles]
+      newFiles.splice(fileIndex, 1)
+      setSelectedFiles(newFiles)
+      
+      const newUrls = [...previewUrls]
+      newUrls.splice(index, 1)
+      setPreviewUrls(newUrls)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -69,25 +124,43 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess }: NewMemory
     setLoading(true)
 
     try {
-      let photoUrls: string[] = []
+      let photoUrls: string[] = [...existingPhotos]
 
-      // Upload photos first
+      // Upload new photos
       if (selectedFiles.length > 0) {
         const uploadRes = await uploadService.uploadMemories(selectedFiles)
-        photoUrls = uploadRes.data.urls
+        photoUrls = [...photoUrls, ...uploadRes.data.urls]
       }
 
-      // Create memory
-      await memoriesService.createMemory({
-        title,
-        content,
-        date,
-        locationName,
-        mood,
-        photos: photoUrls,
-        isPrivate,
-        isFavorite
-      })
+      if (editingMemory) {
+        // Prepare new favorites array for update
+        const otherFavorites = editingMemory.favorites?.filter(id => id !== user?._id) || []
+        const newFavorites = isUserFavorite && user 
+          ? [...otherFavorites, user._id] 
+          : otherFavorites
+
+        // Update memory
+        await memoriesService.updateMemory(editingMemory._id, {
+          title,
+          content,
+          date,
+          locationName,
+          mood,
+          photos: photoUrls,
+          favorites: newFavorites
+        })
+      } else {
+        // Create memory
+        await memoriesService.createMemory({
+          title,
+          content,
+          date,
+          locationName,
+          mood,
+          photos: photoUrls,
+          favorites: isUserFavorite && user ? [user._id] : []
+        })
+      }
 
       onSuccess()
       onClose()
@@ -96,6 +169,7 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess }: NewMemory
       setContent('')
       setSelectedFiles([])
       setPreviewUrls([])
+      setExistingPhotos([])
     } catch (err) {
       console.error('Anı kaydedilirken hata oluştu:', err)
       alert('Anı kaydedilirken bir hata oluştu. Lütfen tekrar deneyin.')
@@ -127,8 +201,12 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess }: NewMemory
             <div className='inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-[#E91E63] to-[#FF6B6B] rounded-3xl shadow-lg mb-4'>
               <Heart className='text-white' size={40} fill='white' />
             </div>
-            <h2 className=' text-4xl font-bold text-gray-900 mb-3'>Yeni Anı Ekle</h2>
-            <p className='text-gray-600 text-lg'>Özel anınızı ölümsüzleştirin ve sevdiklerinizle paylaşın</p>
+            <h2 className=' text-4xl font-bold text-gray-900 mb-3'>
+              {editingMemory ? 'Anıyı Düzenle' : 'Yeni Anı Ekle'}
+            </h2>
+            <p className='text-gray-600 text-lg'>
+              {editingMemory ? 'Anılarınızı güncelleyin ve hikayenizi tazeleyin' : 'Özel anınızı ölümsüzleştirin ve sevdiklerinizle paylaşın'}
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className='space-y-8 max-w-3xl mx-auto'>
@@ -160,19 +238,23 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess }: NewMemory
                 {previewUrls.map((url, index) => (
                   <div
                     key={index}
-                    className='aspect-square relative rounded-2xl overflow-hidden border-2 border-gray-100 group'
+                    className='aspect-square relative rounded-2xl overflow-hidden border-2 border-gray-100 group bg-gray-50'
                   >
                     <Image
                       src={url}
                       alt={`Preview ${index}`}
-                      className='w-full h-full object-cover'
+                      className='w-full h-full object-cover transition-opacity duration-300'
                       width={100}
                       height={100}
+                      onLoad={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.classList.remove('opacity-0');
+                      }}
                     />
                     <button
                       type='button'
                       onClick={() => removeFile(index)}
-                      className='absolute top-1 right-1 p-1 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity'
+                      className='absolute top-1 right-1 p-1 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10'
                     >
                       <X size={14} />
                     </button>
@@ -236,61 +318,39 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess }: NewMemory
                 <span>Ruh Hali</span>
               </label>
               <div className='grid grid-cols-2 sm:grid-cols-4 gap-4'>
-                {[
-                  {
-                    value: 'romantic',
-                    label: 'Romantik',
-                    icon: Heart,
-                    color: 'peer-checked:from-rose-50 peer-checked:to-pink-50 peer-checked:border-rose-400',
-                    iconColor: 'peer-checked:text-[#E91E63]'
-                  },
-                  {
-                    value: 'fun',
-                    label: 'Eğlenceli',
-                    icon: Laugh,
-                    color: 'peer-checked:from-amber-50 peer-checked:to-orange-50 peer-checked:border-amber-400',
-                    iconColor: 'peer-checked:text-amber-500'
-                  },
-                  {
-                    value: 'emotional',
-                    label: 'Duygusal',
-                    icon: Frown,
-                    color: 'peer-checked:from-blue-50 peer-checked:to-indigo-50 peer-checked:border-blue-400',
-                    iconColor: 'peer-checked:text-blue-500'
-                  },
-                  {
-                    value: 'adventure',
-                    label: 'Macera',
-                    icon: Mountain,
-                    color: 'peer-checked:from-green-50 peer-checked:to-emerald-50 peer-checked:border-green-400',
-                    iconColor: 'peer-checked:text-green-500'
-                  }
-                ].map(m => (
-                  <label key={m.value} className='cursor-pointer group'>
-                    <input
-                      type='radio'
-                      name='mood'
-                      value={m.value}
-                      checked={mood === m.value}
-                      onChange={e => setMood(e.target.value)}
-                      className='peer hidden'
-                    />
-                    <div
-                      className={`p-4 bg-gray-50 border-2 border-gray-200 rounded-xl text-center transition-all peer-checked:bg-gradient-to-br peer-checked:shadow-lg group-hover:border-gray-300 ${m.color}`}
-                    >
-                      <m.icon
-                        className={`mx-auto mb-2 text-gray-400 transition-all ${m.iconColor}`}
-                        size={32}
-                        fill={mood === m.value && m.value === 'romantic' ? 'currentColor' : 'none'}
+                {Object.entries(moodConfigs).map(([key, config]) => {
+                  const Icon = config.icon
+                  const isSelected = mood === key
+                  return (
+                    <label key={key} className='cursor-pointer group'>
+                      <input
+                        type='radio'
+                        name='mood'
+                        value={key}
+                        checked={isSelected}
+                        onChange={e => setMood(e.target.value)}
+                        className='peer hidden'
                       />
-                      <p
-                        className={`text-sm font-bold text-gray-600 transition-all ${mood === m.value ? 'text-gray-900' : ''}`}
+                      <div
+                        className={`p-4 rounded-xl text-center transition-all border-2 flex flex-col items-center justify-center space-y-2 h-full
+                          ${isSelected 
+                            ? `${config.cardBg} border-current ${config.iconColor} shadow-md` 
+                            : 'bg-gray-50 border-gray-100 text-gray-400 hover:border-gray-200'
+                          }`}
+                        style={{ borderColor: isSelected ? undefined : '' }}
                       >
-                        {m.label}
-                      </p>
-                    </div>
-                  </label>
-                ))}
+                        <Icon
+                          className={`transition-all ${isSelected ? 'scale-110' : 'group-hover:scale-105'}`}
+                          size={28}
+                          fill={isSelected && key === 'romantic' ? 'currentColor' : 'none'}
+                        />
+                        <p className={`text-xs font-bold transition-all ${isSelected ? 'text-gray-900' : 'text-gray-500'}`}>
+                          {config.label}
+                        </p>
+                      </div>
+                    </label>
+                  )
+                })}
               </div>
             </div>
 
@@ -319,24 +379,7 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess }: NewMemory
                 <span>Özel Seçenekler</span>
               </h3>
 
-              <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-                <label className='flex items-center justify-between cursor-pointer bg-white rounded-xl p-4 hover:shadow-md transition-all'>
-                  <div className='flex items-center space-x-3'>
-                    <Lock className='text-purple-500' size={18} />
-                    <span className='font-semibold text-gray-900'>Gizli Anı</span>
-                  </div>
-                  <div className='relative'>
-                    <input
-                      type='checkbox'
-                      checked={isPrivate}
-                      onChange={e => setIsPrivate(e.target.checked)}
-                      className='peer sr-only'
-                    />
-                    <div className='w-12 h-6 bg-gray-200 rounded-full peer-checked:bg-purple-500 transition-all'></div>
-                    <div className='absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-6'></div>
-                  </div>
-                </label>
-
+              <div className='grid grid-cols-1 gap-4'>
                 <label className='flex items-center justify-between cursor-pointer bg-white rounded-xl p-4 hover:shadow-md transition-all'>
                   <div className='flex items-center space-x-3'>
                     <Star className='text-rose-500' size={18} />
@@ -345,8 +388,8 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess }: NewMemory
                   <div className='relative'>
                     <input
                       type='checkbox'
-                      checked={isFavorite}
-                      onChange={e => setIsFavorite(e.target.checked)}
+                      checked={isUserFavorite}
+                      onChange={e => setIsUserFavorite(e.target.checked)}
                       className='peer sr-only'
                     />
                     <div className='w-12 h-6 bg-gray-200 rounded-full peer-checked:bg-rose-500 transition-all'></div>
@@ -375,7 +418,7 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess }: NewMemory
                 ) : (
                   <>
                     <Heart className='group-hover:scale-110 transition-transform' size={24} fill='currentColor' />
-                    <span>Anıyı Kaydet</span>
+                    <span>{editingMemory ? 'Anıyı Güncelle' : 'Anıyı Kaydet'}</span>
                     <Sparkles className='text-yellow-300 animate-pulse' size={20} />
                   </>
                 )}

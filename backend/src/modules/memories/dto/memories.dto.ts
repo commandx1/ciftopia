@@ -33,8 +33,6 @@ export class CreateMemoryDto {
   mood?: string;
 
   @IsOptional()
-  isPrivate?: boolean;
-
-  @IsOptional()
-  isFavorite?: boolean;
+  @IsArray()
+  favorites?: string[];
 }

@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Delete,
   Body,
   Param,
@@ -30,18 +31,22 @@ export class MemoriesController {
   @Get(':subdomain')
   @UseGuards(JwtAuthGuard, CoupleOwnerGuard)
   async getMemories(
+    @Req() req: AuthRequest,
     @Param('subdomain') subdomain: string,
     @Query('mood') mood?: string,
     @Query('sortBy') sortBy?: string,
     @Query('limit') limit?: string,
     @Query('skip') skip?: string,
+    @Query('onlyFavorites') onlyFavorites?: string,
   ) {
     return this.memoriesService.findAllBySubdomain(subdomain, {
       mood,
       sortBy,
       limit: limit ? parseInt(limit) : 5,
       skip: skip ? parseInt(skip) : 0,
-    });
+      userId: req.user._id,
+      onlyFavorites,
+    } as any);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -55,6 +60,22 @@ export class MemoriesController {
       createMemoryDto,
     );
     return result;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id')
+  async updateMemory(
+    @Req() req: AuthRequest,
+    @Param('id') id: string,
+    @Body() updateMemoryDto: Partial<CreateMemoryDto>,
+  ) {
+    return this.memoriesService.update(req.user._id, id, updateMemoryDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/toggle-favorite')
+  async toggleFavorite(@Req() req: AuthRequest, @Param('id') id: string) {
+    return this.memoriesService.toggleFavorite(req.user._id, id);
   }
 
   @UseGuards(JwtAuthGuard)

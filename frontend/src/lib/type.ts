@@ -33,11 +33,11 @@ interface Memory {
   };
   content: string;
   date: Date;
-  isPrivate: boolean;
-  isFavorite: boolean;
+  favorites: string[];
   authorId: string;
   coupleId: string;
   photos: string[];
+  rawPhotos?: string[];
 }
 
 export type { ApiError, User, Memory }

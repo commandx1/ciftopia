@@ -42,11 +42,8 @@ export class Memory {
   })
   mood?: string;
 
-  @Prop({ default: false })
-  isPrivate: boolean;
-
-  @Prop({ default: false })
-  isFavorite: boolean;
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
+  favorites: Types.ObjectId[];
 }
 
 export const MemorySchema = SchemaFactory.createForClass(Memory);

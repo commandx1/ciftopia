@@ -146,7 +146,7 @@ function LoginForm() {
       if (returnUrl) {
         router.push(returnUrl)
       } else {
-        router.push('/dashboard')
+        router.push('/')
       }
     } catch (err) {
       setError((err as ApiError).response?.data?.message || 'Giriş yapılamadı. Lütfen bilgilerinizi kontrol edin.')

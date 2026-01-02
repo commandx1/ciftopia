@@ -11,6 +11,8 @@ interface QueryParams {
   sortBy?: string;
   limit?: number;
   skip?: number;
+  userId?: string;
+  onlyFavorites?: string;
 }
 
 @Injectable()
@@ -29,7 +31,10 @@ export class MemoriesService {
       memoryList.map(async (memory) => {
         const memoryObj = memory.toObject();
 
-        // Transform memory photos
+        // Keep raw photo keys for editing
+        memoryObj.rawPhotos = memoryObj.photos || [];
+
+        // Transform memory photos to pre-signed URLs
         if (memoryObj.photos && memoryObj.photos.length > 0) {
           memoryObj.photos = await Promise.all(
             memoryObj.photos.map((key: string) =>
@@ -39,9 +44,9 @@ export class MemoriesService {
         }
 
         // Transform author avatar if populated
-        if (memoryObj.authorId && memoryObj.authorId.avatar) {
-          memoryObj.authorId.avatar = await this.uploadService.getPresignedUrl(
-            memoryObj.authorId.avatar,
+        if (memoryObj.authorId && (memoryObj.authorId as any).avatar) {
+          (memoryObj.authorId as any).avatar = await this.uploadService.getPresignedUrl(
+            (memoryObj.authorId as any).avatar,
           );
         }
 
@@ -65,6 +70,10 @@ export class MemoriesService {
     };
     if (query.mood && query.mood !== 'all') {
       filter.mood = query.mood;
+    }
+
+    if (query.onlyFavorites === 'true' && query.userId) {
+      filter.favorites = new Types.ObjectId(query.userId);
     }
 
     // Prepare sort object
@@ -98,7 +107,10 @@ export class MemoriesService {
         ...filter,
         date: { $gte: startOfMonth },
       }),
-      this.memoryModel.countDocuments({ ...filter, isFavorite: true }),
+      this.memoryModel.countDocuments({
+        ...filter,
+        favorites: query.userId ? new Types.ObjectId(query.userId) : undefined,
+      }),
     ]);
 
     const transformedMemories = (await this.transformPhotos(memories)) as any[];
@@ -134,12 +146,95 @@ export class MemoriesService {
       location: createMemoryDto.locationName
         ? { name: createMemoryDto.locationName }
         : undefined,
-      isPrivate: createMemoryDto.isPrivate || false,
-      isFavorite: createMemoryDto.isFavorite || false,
+      favorites: createMemoryDto.favorites
+        ? createMemoryDto.favorites.map((id) => new Types.ObjectId(id))
+        : [],
     });
 
     const savedMemory = await memory.save();
     return this.transformPhotos(savedMemory);
+  }
+
+  async update(
+    userId: string,
+    memoryId: string,
+    updateMemoryDto: Partial<CreateMemoryDto>,
+  ) {
+    const memory = await this.memoryModel.findById(memoryId);
+    if (!memory) {
+      throw new NotFoundException('Anı bulunamadı.');
+    }
+
+    const couple = await this.coupleModel.findOne({
+      $or: [
+        { partner1: new Types.ObjectId(userId) },
+        { partner2: new Types.ObjectId(userId) },
+      ],
+    });
+
+    if (!couple || memory.coupleId.toString() !== couple._id.toString()) {
+      throw new NotFoundException('Bu anıyı güncelleme yetkiniz yok.');
+    }
+
+    // Update fields
+    if (updateMemoryDto.title) memory.title = updateMemoryDto.title;
+    if (updateMemoryDto.content) memory.content = updateMemoryDto.content;
+    if (updateMemoryDto.date) memory.date = new Date(updateMemoryDto.date);
+    if (updateMemoryDto.mood) memory.mood = updateMemoryDto.mood;
+
+    if (updateMemoryDto.favorites) {
+      memory.favorites = updateMemoryDto.favorites.map(
+        (id) => new Types.ObjectId(id),
+      );
+    }
+
+    if (updateMemoryDto.locationName !== undefined) {
+      memory.location = updateMemoryDto.locationName
+        ? { name: updateMemoryDto.locationName }
+        : undefined;
+    }
+
+    if (updateMemoryDto.photos) {
+      if (updateMemoryDto.photos.length > 0) {
+        // Logic for updating photos: delete old ones that are no longer present
+        const removedPhotos = memory.photos.filter(
+          (p: string) => !updateMemoryDto.photos?.includes(p),
+        );
+        if (removedPhotos.length > 0) {
+          await Promise.all(
+            removedPhotos.map((key) => this.uploadService.deleteFile(key)),
+          );
+        }
+        memory.photos = updateMemoryDto.photos;
+      } else {
+        await Promise.all(
+          memory.photos.map((key) => this.uploadService.deleteFile(key)),
+        );
+        memory.photos = [];
+      }
+    }
+
+    const updatedMemory = await memory.save();
+    return this.transformPhotos(updatedMemory);
+  }
+
+  async toggleFavorite(userId: string, memoryId: string) {
+    const memory = await this.memoryModel.findById(memoryId);
+    if (!memory) {
+      throw new NotFoundException('Anı bulunamadı.');
+    }
+
+    const userObjectId = new Types.ObjectId(userId);
+    const index = memory.favorites.findIndex((id) => id.equals(userObjectId));
+
+    if (index > -1) {
+      memory.favorites.splice(index, 1);
+    } else {
+      memory.favorites.push(userObjectId);
+    }
+
+    await memory.save();
+    return { isFavorite: index === -1 };
   }
 
   async delete(userId: string, memoryId: string) {

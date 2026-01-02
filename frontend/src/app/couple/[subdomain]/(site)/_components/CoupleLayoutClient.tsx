@@ -19,8 +19,12 @@ interface CoupleLayoutClientProps {
 export default function CoupleLayoutClient({ children, user, subdomain }: CoupleLayoutClientProps) {
   const pathname = usePathname()
   const [scrolled, setScrolled] = useState(false)
-  const { coupleNames, setCoupleNames } = useUserStore()
+  const { coupleNames, setCoupleNames, setUser } = useUserStore()
   const router = useRouter()
+
+  useEffect(() => {
+    setUser(user)
+  }, [user, setUser])
 
   useEffect(() => {
     ;(async () => {

@@ -50,8 +50,7 @@ export interface CreateMemoryData {
   locationName?: string
   photos?: string[]
   mood?: 'romantic' | 'fun' | 'emotional' | 'adventure' | string
-  isPrivate?: boolean
-  isFavorite?: boolean
+  favorites?: string[]
 }
 
 export const authService = {
@@ -72,9 +71,11 @@ export const paymentService = {
 }
 
 export const memoriesService = {
-  getMemories: (subdomain: string, params?: { mood?: string; sortBy?: string; limit?: number; skip?: number }) =>
+  getMemories: (subdomain: string, params?: { mood?: string; sortBy?: string; limit?: number; skip?: number; onlyFavorites?: boolean }) =>
     api.get(`/memories/${subdomain}`, { params }),
   createMemory: (data: CreateMemoryData) => api.post('/memories', data),
+  updateMemory: (id: string, data: Partial<CreateMemoryData>) => api.patch(`/memories/${id}`, data),
+  toggleFavorite: (id: string) => api.post(`/memories/${id}/toggle-favorite`),
   deleteMemory: (id: string) => api.delete(`/memories/${id}`)
 }
 
