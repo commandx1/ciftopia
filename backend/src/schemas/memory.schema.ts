@@ -32,8 +32,22 @@ export class Memory {
     coordinates?: [number, number];
   };
 
-  @Prop([String])
-  photos: string[];
+  @Prop({
+    type: [
+      {
+        url: String,
+        width: Number,
+        height: Number,
+        size: Number,
+      },
+    ],
+  })
+  photos: {
+    url: string;
+    width?: number;
+    height?: number;
+    size?: number;
+  }[];
 
   @Prop({
     type: String,

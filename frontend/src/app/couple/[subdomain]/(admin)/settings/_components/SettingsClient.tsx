@@ -22,9 +22,9 @@ import { authService, onboardingService } from '@/services/api'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 import DeleteSiteModal from './DeleteSiteModal'
-import { User as UserType } from '@/lib/type'
+import { PhotoMetadata, User as UserType } from '@/lib/type'
 import { getUserAvatar } from '@/lib/utils'
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation'
 
 interface SettingsClientProps {
   user: UserType
@@ -33,16 +33,16 @@ interface SettingsClientProps {
 export default function SettingsClient({ user }: SettingsClientProps) {
   const [activeTab, setActiveTab] = useState('profil')
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
-  const router = useRouter();
+  const router = useRouter()
   const handleLogout = async () => {
     await authService.logout()
-    router.push('/login');
+    router.push('/login')
   }
 
   const handleDeleteConfirm = async () => {
     try {
       await onboardingService.deleteSite()
-      router.push(process.env.NEXT_PUBLIC_URL || 'http://ciftopia.local:3000');
+      router.push(process.env.NEXT_PUBLIC_URL || 'http://ciftopia.local:3000')
     } catch (error) {
       throw error // Re-throw to be handled by the modal's catch block
     }
@@ -57,9 +57,9 @@ export default function SettingsClient({ user }: SettingsClientProps) {
   ]
 
   const userDisplayName = user?.firstName + ' ' + (user?.lastName || '')
-  const userAvatar = getUserAvatar(user)
+  const userAvatar = getUserAvatar({ avatar: user?.avatar as PhotoMetadata, gender: user?.gender })
   const subdomain = user?.coupleId?.subdomain
-  const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'ciftopia.local'
+  const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN
 
   return (
     <div id='main-content' className='max-w-7xl mx-auto px-6 py-8'>

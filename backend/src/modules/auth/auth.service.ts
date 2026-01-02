@@ -53,7 +53,16 @@ export class AuthService {
 
     // Transform avatar to URL if exists
     if (result.avatar) {
-      result.avatar = await this.uploadService.getPresignedUrl(result.avatar);
+      if (typeof result.avatar === 'string') {
+        result.avatar = {
+          url: await this.uploadService.getPresignedUrl(result.avatar),
+        };
+      } else if (result.avatar && (result.avatar as any).url) {
+        result.avatar = {
+          ...result.avatar,
+          url: await this.uploadService.getPresignedUrl((result.avatar as any).url),
+        };
+      }
     }
 
     return {
@@ -96,7 +105,16 @@ export class AuthService {
 
     // Transform avatar to URL if exists
     if (result.avatar) {
-      result.avatar = await this.uploadService.getPresignedUrl(result.avatar);
+      if (typeof result.avatar === 'string') {
+        result.avatar = {
+          url: await this.uploadService.getPresignedUrl(result.avatar),
+        };
+      } else if (result.avatar && (result.avatar as any).url) {
+        result.avatar = {
+          ...result.avatar,
+          url: await this.uploadService.getPresignedUrl((result.avatar as any).url),
+        };
+      }
     }
 
     return {

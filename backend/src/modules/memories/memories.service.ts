@@ -35,24 +35,39 @@ export class MemoriesService {
       memoryList.map(async (memory) => {
         const memoryObj = memory.toObject();
 
-        // Keep raw photo keys for editing
+        // Keep raw photo keys/objects for editing
         (memoryObj as any).rawPhotos = memoryObj.photos || [];
 
         // Transform memory photos to pre-signed URLs
         if (memoryObj.photos && memoryObj.photos.length > 0) {
           memoryObj.photos = await Promise.all(
-            memoryObj.photos.map((key: string) =>
-              this.uploadService.getPresignedUrl(key),
-            ),
+            memoryObj.photos.map(async (photo: any) => {
+              if (typeof photo === 'string') {
+                return {
+                  url: await this.uploadService.getPresignedUrl(photo),
+                };
+              }
+              return {
+                ...photo,
+                url: await this.uploadService.getPresignedUrl(photo.url),
+              };
+            }),
           );
         }
 
         // Transform author avatar if populated
         if (memoryObj.authorId && (memoryObj.authorId as any).avatar) {
-          (memoryObj.authorId as any).avatar =
-            await this.uploadService.getPresignedUrl(
-              (memoryObj.authorId as any).avatar,
-            );
+          const authorAvatar = (memoryObj.authorId as any).avatar;
+          if (typeof authorAvatar === 'string') {
+            (memoryObj.authorId as any).avatar = {
+              url: await this.uploadService.getPresignedUrl(authorAvatar),
+            };
+          } else if (authorAvatar && authorAvatar.url) {
+            (memoryObj.authorId as any).avatar = {
+              ...authorAvatar,
+              url: await this.uploadService.getPresignedUrl(authorAvatar.url),
+            };
+          }
         }
 
         return memoryObj;
@@ -202,18 +217,22 @@ export class MemoriesService {
     if (updateMemoryDto.photos) {
       if (updateMemoryDto.photos.length > 0) {
         // Logic for updating photos: delete old ones that are no longer present
+        const currentUrls = memory.photos.map((p: any) => p.url);
+        const newUrls = updateMemoryDto.photos.map((p: any) => p.url);
+
         const removedPhotos = memory.photos.filter(
-          (p: string) => !updateMemoryDto.photos?.includes(p),
+          (p: any) => !newUrls.includes(p.url),
         );
+
         if (removedPhotos.length > 0) {
           await Promise.all(
-            removedPhotos.map((key) => this.uploadService.deleteFile(key)),
+            removedPhotos.map((p: any) => this.uploadService.deleteFile(p.url)),
           );
         }
         memory.photos = updateMemoryDto.photos;
       } else {
         await Promise.all(
-          memory.photos.map((key) => this.uploadService.deleteFile(key)),
+          memory.photos.map((p: any) => this.uploadService.deleteFile(p.url)),
         );
         memory.photos = [];
       }
@@ -355,8 +374,9 @@ export class MemoriesService {
           // Image
           if (memory.photos && memory.photos.length > 0) {
             try {
-              const photoKey = memory.photos[0];
-              const url = await this.uploadService.getPresignedUrl(photoKey);
+              const photo = memory.photos[0];
+              const photoUrl = typeof photo === 'string' ? photo : photo.url;
+              const url = await this.uploadService.getPresignedUrl(photoUrl);
               const response = await axios.get(url, {
                 responseType: 'arraybuffer',
                 timeout: 5000,
@@ -428,7 +448,9 @@ export class MemoriesService {
 
     if (memory.photos && memory.photos.length > 0) {
       await Promise.all(
-        memory.photos.map((key) => this.uploadService.deleteFile(key)),
+        memory.photos.map((p: any) =>
+          this.uploadService.deleteFile(typeof p === 'string' ? p : p.url),
+        ),
       );
     }
 

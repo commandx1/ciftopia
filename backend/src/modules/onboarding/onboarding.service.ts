@@ -102,7 +102,7 @@ export class OnboardingService {
       firstName: partnerFirstName,
       lastName: partnerLastName,
       gender: partnerGender as string,
-      avatar: partnerAvatar as string,
+      avatar: partnerAvatar,
       role: 'partner2',
       coupleId: couple._id,
     });
@@ -137,15 +137,21 @@ export class OnboardingService {
     const photoKeys: string[] = [];
     memories.forEach((memory) => {
       if (memory.photos && memory.photos.length > 0) {
-        photoKeys.push(...memory.photos);
+        memory.photos.forEach((photo: any) => {
+          const key = typeof photo === 'string' ? photo : photo.url;
+          if (key) photoKeys.push(key);
+        });
       }
     });
 
     // 2. Add user avatars to delete list if they exist
     const partners = await this.userModel.find({ coupleId });
     partners.forEach((p) => {
-      if (p.avatar && !p.avatar.startsWith('http')) {
-        photoKeys.push(p.avatar);
+      if (p.avatar) {
+        const key = typeof p.avatar === 'string' ? p.avatar : p.avatar.url;
+        if (key && !key.startsWith('http')) {
+          photoKeys.push(key);
+        }
       }
     });
 

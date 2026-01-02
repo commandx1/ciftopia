@@ -6,7 +6,7 @@ import { Heart, ChevronDown, Settings, LogOut } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { authService, onboardingService } from '@/services/api'
-import { User } from '@/lib/type'
+import { PhotoMetadata, User } from '@/lib/type'
 import { getUserAvatar } from '@/lib/utils'
 import { useUserStore } from '@/store/userStore'
 
@@ -97,7 +97,7 @@ export default function CoupleLayoutClient({ children, user, subdomain }: Couple
                 <div className='relative group'>
                   <button className='flex items-center space-x-2'>
                     <div className='relative w-10 h-10 rounded-full overflow-hidden border-2 border-rose-200'>
-                      <Image src={getUserAvatar(user)} alt={user.firstName || 'User'} fill className='object-cover' />
+                      <Image src={getUserAvatar({ avatar: user?.avatar as PhotoMetadata, gender: user?.gender })} alt={user.firstName || 'User'} fill className='object-cover' />
                     </div>
                     <ChevronDown size={14} className={scrolled || !isHomePage ? 'text-gray-500' : 'text-white'} />
                   </button>

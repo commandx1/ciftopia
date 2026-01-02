@@ -17,8 +17,21 @@ export class User {
   @Prop({ required: true })
   lastName: string;
 
-  @Prop()
-  avatar?: string;
+  @Prop({
+    type: {
+      url: String,
+      width: Number,
+      height: Number,
+      size: Number,
+    },
+    required: false,
+  })
+  avatar?: {
+    url: string;
+    width?: number;
+    height?: number;
+    size?: number;
+  };
 
   @Prop({ enum: ['male', 'female', 'other'], default: 'male' })
   gender: string;

@@ -186,10 +186,16 @@ export default function RegisterPage() {
 
     setIsLoading(true)
     try {
-      let avatarKey = ''
+      let avatarMetadata = undefined
       if (avatarFile) {
         const uploadRes = await uploadService.uploadAvatar(avatarFile)
-        avatarKey = uploadRes.data.key
+        const meta = uploadRes.data.metadata
+        avatarMetadata = {
+          url: meta.key,
+          width: meta.width,
+          height: meta.height,
+          size: meta.size
+        }
       }
 
       await authService.register({
@@ -198,7 +204,7 @@ export default function RegisterPage() {
         firstName: formData.firstName,
         lastName: formData.lastName,
         gender: formData.gender,
-        avatar: avatarKey
+        avatar: avatarMetadata
       })
       setStep(2)
     } catch (err) {
@@ -268,10 +274,16 @@ export default function RegisterPage() {
     setIsLoading(true)
     try {
       // 1. Upload Partner Avatar if exists
-      let partnerAvatarKey = ''
+      let partnerAvatarMetadata = undefined
       if (partnerAvatarFile) {
         const uploadRes = await uploadService.uploadAvatar(partnerAvatarFile)
-        partnerAvatarKey = uploadRes.data.key
+        const meta = uploadRes.data.metadata
+        partnerAvatarMetadata = {
+          url: meta.key,
+          width: meta.width,
+          height: meta.height,
+          size: meta.size
+        }
       }
 
       // 2. Process Payment
@@ -293,7 +305,7 @@ export default function RegisterPage() {
         partnerEmail: formData.partnerEmail,
         partnerPassword: formData.partnerPassword,
         partnerGender: formData.partnerGender,
-        partnerAvatar: partnerAvatarKey,
+        partnerAvatar: partnerAvatarMetadata,
         relationshipStartDate: formData.relationshipStartDate || undefined,
         relationshipStatus: formData.relationshipStatus,
         paymentTransactionId: paymentResponse.data.paymentId // Pass the transaction ID

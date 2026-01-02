@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { PhotoMetadata } from '@/lib/type'
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -11,7 +12,7 @@ export interface RegisterData {
   firstName: string
   lastName: string
   gender?: string
-  avatar?: string
+  avatar?: PhotoMetadata
 }
 
 export interface LoginData {
@@ -27,7 +28,7 @@ export interface CreateCoupleData {
   partnerEmail: string
   partnerPassword: string
   partnerGender?: string
-  partnerAvatar?: string
+  partnerAvatar?: PhotoMetadata
   relationshipStartDate?: string
   relationshipStatus: 'dating' | 'engaged' | 'married' | string
   paymentTransactionId?: string
@@ -48,7 +49,7 @@ export interface CreateMemoryData {
   content: string
   date: string
   locationName?: string
-  photos?: string[]
+  photos?: PhotoMetadata[]
   mood?: 'romantic' | 'fun' | 'emotional' | 'adventure' | string
   favorites?: string[]
 }

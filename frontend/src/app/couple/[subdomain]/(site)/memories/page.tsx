@@ -28,7 +28,7 @@ import Image from 'next/image'
 import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
-import { Memory } from '@/lib/type'
+import { Memory, PhotoMetadata } from '@/lib/type'
 import { MemoryMoodBadge, MemoryMoodIcon, moodConfigs } from '@/components/couple/MemoryMoodBadge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useDebounce } from '@/hooks/useDebounce'
@@ -67,14 +67,8 @@ const MemorySkeleton = ({ side }: { side: 'left' | 'right' }) => (
 )
 
 // Fotoğraf galerisi için yardımcı bileşen
-const ImageGallery = ({ photos, title }: { photos: string[]; title: string }) => {
-  const [loadingImages, setLoadingImages] = useState<Record<number, boolean>>({})
-
+const ImageGallery = ({ photos, title }: { photos: PhotoMetadata[]; title: string }) => {
   if (!photos || photos.length === 0) return null
-
-  const handleImageLoad = (index: number) => {
-    setLoadingImages(prev => ({ ...prev, [index]: false }))
-  }
 
   return (
     <div className='h-64 rounded-2xl overflow-hidden mb-4 relative group/gallery bg-gray-100'>
@@ -91,26 +85,23 @@ const ImageGallery = ({ photos, title }: { photos: string[]; title: string }) =>
           } as React.CSSProperties
         }
       >
-        {photos.map((photo, index) => (
-          <SwiperSlide key={index}>
-            <div className='relative w-full h-full'>
-              {loadingImages[index] !== false && (
-                <div className='absolute inset-0 flex items-center justify-center bg-gray-50 z-10'>
-                  <Loader2 className='w-8 h-8 animate-spin text-rose-300 opacity-50' />
-                </div>
-              )}
-              <Image
-                src={photo}
-                alt={`${title} - ${index + 1}`}
-                fill
-                className={`object-cover select-none transition-opacity duration-500 ${
-                  loadingImages[index] === false ? 'opacity-100' : 'opacity-0'
-                }`}
-                onLoad={() => handleImageLoad(index)}
-              />
-            </div>
-          </SwiperSlide>
-        ))}
+        {photos.map((photo, index) => {
+          const src = typeof photo === 'string' ? photo : photo.url
+          if (!src) return null
+
+          return (
+            <SwiperSlide key={index}>
+              <div className='relative w-full h-full'>
+                <Image
+                  src={src}
+                  alt={`${title} - ${index + 1}`}
+                  fill
+                  className='object-cover select-none'
+                />
+              </div>
+            </SwiperSlide>
+          )
+        })}
       </Swiper>
     </div>
   )

@@ -1,5 +1,6 @@
-import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { type ClassValue, clsx } from 'clsx'
+import { twMerge } from 'tailwind-merge'
+import { PhotoMetadata } from './type'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -13,17 +14,16 @@ export function getBaseUrl() {
 }
 
 export function getPublicAssetUrl(path: string) {
-  return path;
+  return path
   // const cleanPath = path.startsWith('/') ? path : `/${path}`
   // return `${getBaseUrl()}${cleanPath}`
 }
 
-export function getUserAvatar(user?: { avatar?: string; gender?: string }) {
-  if (user?.avatar) return user.avatar
+export function getUserAvatar(user?: { avatar?: PhotoMetadata; gender?: string }) {
+  if (user?.avatar) {
+    if (typeof user.avatar === 'string') return user.avatar
+    if (user.avatar.url) return user.avatar.url
+  }
   const defaultPic = user?.gender === 'female' ? '/woman-pp.png' : '/man-pp.png'
   return getPublicAssetUrl(defaultPic)
 }
-
-
-
-

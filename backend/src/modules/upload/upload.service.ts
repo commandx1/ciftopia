@@ -8,6 +8,15 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'crypto';
+import * as sharp from 'sharp';
+
+export interface FileMetadata {
+  key: string;
+  width?: number;
+  height?: number;
+  size: number;
+  mimetype: string;
+}
 
 @Injectable()
 export class UploadService {
@@ -28,8 +37,21 @@ export class UploadService {
   async uploadFile(
     file: Express.Multer.File,
     folder: string = 'uploads',
-  ): Promise<string> {
+  ): Promise<FileMetadata> {
     const key = `${folder}/${randomUUID()}-${file.originalname}`;
+    let width: number | undefined;
+    let height: number | undefined;
+
+    // Get image dimensions if it's an image
+    if (file.mimetype.startsWith('image/')) {
+      try {
+        const metadata = await sharp(file.buffer).metadata();
+        width = metadata.width;
+        height = metadata.height;
+      } catch (err) {
+        console.error('Resim metadata hatası:', err);
+      }
+    }
 
     await this.s3Client.send(
       new PutObjectCommand({
@@ -40,8 +62,13 @@ export class UploadService {
       }),
     );
 
-    // Return the key instead of the public URL for private access
-    return key;
+    return {
+      key,
+      width,
+      height,
+      size: file.size,
+      mimetype: file.mimetype,
+    };
   }
 
   async getPresignedUrl(key: string): Promise<string> {

@@ -28,9 +28,13 @@ export class RegisterDto {
   @IsOptional()
   gender?: string;
 
-  @IsString()
   @IsOptional()
-  avatar?: string;
+  avatar?: {
+    url: string;
+    width?: number;
+    height?: number;
+    size?: number;
+  };
 }
 
 export class LoginDto {

@@ -26,7 +26,12 @@ export class CreateMemoryDto {
 
   @IsOptional()
   @IsArray()
-  photos?: string[];
+  photos?: {
+    url: string;
+    width?: number;
+    height?: number;
+    size?: number;
+  }[];
 
   @IsOptional()
   @IsEnum(['romantic', 'fun', 'emotional', 'adventure'])

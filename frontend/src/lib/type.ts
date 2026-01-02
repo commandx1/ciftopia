@@ -6,12 +6,20 @@ type ApiError = {
   }
 }
 
+interface PhotoMetadata {
+  key?: string;
+  url: string;
+  width?: number;
+  height?: number;
+  size?: number;
+}
+
 interface User {
   _id: string;
   firstName: string;
   lastName: string;
   email: string;
-  avatar: string;
+  avatar: PhotoMetadata | string;
   gender: string;
   coupleNames?: string; // Token veya /auth/me üzerinden gelen çift isimleri
   coupleId?: {
@@ -36,8 +44,8 @@ interface Memory {
   favorites: string[];
   authorId: string;
   coupleId: string;
-  photos: string[];
-  rawPhotos?: string[];
+  photos: PhotoMetadata[];
+  rawPhotos?: PhotoMetadata[];
 }
 
-export type { ApiError, User, Memory }
+export type { ApiError, User, Memory, PhotoMetadata }

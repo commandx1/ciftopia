@@ -31,9 +31,13 @@ export class CreateCoupleDto {
   @IsOptional()
   partnerGender?: string;
 
-  @IsString()
   @IsOptional()
-  partnerAvatar?: string;
+  partnerAvatar?: {
+    url: string;
+    width?: number;
+    height?: number;
+    size?: number;
+  };
 
   @IsOptional()
   @IsDateString()

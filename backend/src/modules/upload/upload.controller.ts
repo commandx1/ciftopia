@@ -26,9 +26,9 @@ export class UploadController {
     const uploadPromises = files.map((file) =>
       this.uploadService.uploadFile(file, 'memories'),
     );
-    const urls = await Promise.all(uploadPromises);
+    const photos = await Promise.all(uploadPromises);
 
-    return { urls };
+    return { photos };
   }
 
   @Post('avatar')
@@ -38,7 +38,7 @@ export class UploadController {
       throw new BadRequestException('Lütfen bir dosya seçin.');
     }
 
-    const key = await this.uploadService.uploadFile(file, 'avatars');
-    return { key };
+    const metadata = await this.uploadService.uploadFile(file, 'avatars');
+    return { metadata };
   }
 }

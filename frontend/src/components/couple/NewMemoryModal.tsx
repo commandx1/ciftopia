@@ -19,7 +19,7 @@ import {
 import { memoriesService, uploadService } from '@/services/api'
 import Image from 'next/image'
 import { moodConfigs } from './MemoryMoodBadge'
-import { Memory } from '@/lib/type'
+import { Memory, PhotoMetadata } from '@/lib/type'
 import { useUserStore } from '@/store/userStore'
 
 interface NewMemoryModalProps {
@@ -39,7 +39,7 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess, editingMemo
   const [isUserFavorite, setIsUserFavorite] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [previewUrls, setPreviewUrls] = useState<string[]>([])
-  const [existingPhotos, setExistingPhotos] = useState<string[]>([])
+  const [existingPhotos, setExistingPhotos] = useState<PhotoMetadata[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { user } = useUserStore()
 
@@ -52,7 +52,7 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess, editingMemo
       setContent(memoryObjContent(editingMemory.content))
       setIsUserFavorite(editingMemory.favorites?.includes(user._id) || false)
       setExistingPhotos(editingMemory.rawPhotos || [])
-      setPreviewUrls(editingMemory.photos || [])
+      setPreviewUrls(editingMemory.photos?.map(p => (typeof p === 'string' ? p : p.url)) || [])
     } else {
       setTitle('')
       setDate(new Date().toISOString().split('T')[0])
@@ -121,12 +121,19 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess, editingMemo
     setLoading(true)
 
     try {
-      let photoUrls: string[] = [...existingPhotos]
+      let photoMetadatas: PhotoMetadata[] = [...existingPhotos]
 
       // Upload new photos
       if (selectedFiles.length > 0) {
         const uploadRes = await uploadService.uploadMemories(selectedFiles)
-        photoUrls = [...photoUrls, ...uploadRes.data.urls]
+        // Backend returns { photos: PhotoMetadata[] } where each metadata has { key, width, height, size, mimetype }
+        const newPhotos = uploadRes.data.photos.map((p: PhotoMetadata) => ({
+          url: p.key,
+          width: p.width,
+          height: p.height,
+          size: p.size
+        }))
+        photoMetadatas = [...photoMetadatas, ...newPhotos]
       }
 
       if (editingMemory) {
@@ -143,7 +150,7 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess, editingMemo
           date,
           locationName,
           mood,
-          photos: photoUrls,
+          photos: photoMetadatas,
           favorites: newFavorites
         })
       } else {
@@ -154,7 +161,7 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess, editingMemo
           date,
           locationName,
           mood,
-          photos: photoUrls,
+          photos: photoMetadatas,
           favorites: isUserFavorite && user ? [user._id] : []
         })
       }
@@ -240,9 +247,9 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess, editingMemo
                     <Image
                       src={url}
                       alt={`Preview ${index}`}
-                      className='w-full h-full object-cover transition-opacity duration-300'
-                      width={100}
-                      height={100}
+                      className='w-full h-full object-cover opacity-0 transition-opacity duration-300'
+                      width={editingMemory?.photos.find(p => p.url === url)?.width || 100}
+                      height={editingMemory?.photos.find(p => p.url === url)?.height || 100}
                       onLoad={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.classList.remove('opacity-0');
