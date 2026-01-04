@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import {
   Heart,
   X,
@@ -17,7 +17,7 @@ import {
   Loader2,
   Database
 } from 'lucide-react'
-import api, { memoriesService, uploadService } from '@/services/api'
+import { memoriesService, uploadService } from '@/services/api'
 import Image from 'next/image'
 import { moodConfigs } from './MemoryMoodBadge'
 import { Memory, PhotoMetadata, ApiError } from '@/lib/type'
@@ -60,7 +60,7 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess, editingMemo
   const usagePercentage = storageLimit > 0 ? (Math.min(projectedUsage, storageLimit) / storageLimit) * 100 : 0
   const isOverLimit = projectedUsage > storageLimit
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (editingMemory && user) {
       const initialSize = editingMemory.photos?.reduce((acc, p) => acc + (Number(p.size) || 0), 0) || 0
       setInitialMemorySize(initialSize)
