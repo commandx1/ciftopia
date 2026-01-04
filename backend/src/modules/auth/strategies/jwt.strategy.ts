@@ -38,17 +38,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     const userObj = user.toObject();
-    if (userObj.avatar) {
-      if (typeof userObj.avatar === 'string') {
-        userObj.avatar = {
-          url: await this.uploadService.getPresignedUrl(userObj.avatar),
-        };
-      } else if (userObj.avatar && (userObj.avatar as any).url) {
-        userObj.avatar = {
-          ...userObj.avatar,
-          url: await this.uploadService.getPresignedUrl((userObj.avatar as any).url),
-        };
-      }
+    if (userObj.avatar && (userObj.avatar as any).url) {
+      userObj.avatar = {
+        ...(userObj.avatar as any),
+        url: await this.uploadService.getPresignedUrl((userObj.avatar as any).url),
+      };
     }
 
     // Token içindeki coupleNames'i user objesine ekle (frontend'de me isteğiyle ulaşabilmek için)

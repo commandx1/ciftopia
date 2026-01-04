@@ -49,20 +49,14 @@ export class AuthService {
     const token = await this.generateToken(user);
 
     const userResponse = user.toObject();
-    const { password: _, ...result } = userResponse;
+    const { password: _password, ...result } = userResponse;
 
     // Transform avatar to URL if exists
-    if (result.avatar) {
-      if (typeof result.avatar === 'string') {
-        result.avatar = {
-          url: await this.uploadService.getPresignedUrl(result.avatar),
-        };
-      } else if (result.avatar && (result.avatar as any).url) {
-        result.avatar = {
-          ...result.avatar,
-          url: await this.uploadService.getPresignedUrl((result.avatar as any).url),
-        };
-      }
+    if (result.avatar && (result.avatar as any).url) {
+      result.avatar = {
+        ...(result.avatar as any),
+        url: await this.uploadService.getPresignedUrl((result.avatar as any).url),
+      };
     }
 
     return {
@@ -101,20 +95,14 @@ export class AuthService {
     const token = await this.generateToken(user);
 
     const userResponse = user.toObject();
-    const { password: _, ...result } = userResponse;
+    const { password: _password, ...result } = userResponse;
 
     // Transform avatar to URL if exists
-    if (result.avatar) {
-      if (typeof result.avatar === 'string') {
-        result.avatar = {
-          url: await this.uploadService.getPresignedUrl(result.avatar),
-        };
-      } else if (result.avatar && (result.avatar as any).url) {
-        result.avatar = {
-          ...result.avatar,
-          url: await this.uploadService.getPresignedUrl((result.avatar as any).url),
-        };
-      }
+    if (result.avatar && (result.avatar as any).url) {
+      result.avatar = {
+        ...(result.avatar as any),
+        url: await this.uploadService.getPresignedUrl((result.avatar as any).url),
+      };
     }
 
     return {

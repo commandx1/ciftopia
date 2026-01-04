@@ -139,6 +139,12 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess, editingMemo
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (isOverLimit) {
+      showCustomToast.error('Limit Aşıldı', 'Depolama limitini aşıyorsunuz! Lütfen bazı fotoğrafları çıkarın.', 5000)
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -213,7 +219,7 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess, editingMemo
       console.error('Anı kaydedilirken hata oluştu:', err)
       const apiError = err as ApiError
       const errorMessage = apiError.response?.data?.message || 'Anı kaydedilirken bir hata oluştu. Lütfen tekrar deneyin.'
-      showCustomToast.error('Hata', errorMessage, 10000)
+      showCustomToast.error('Hata', errorMessage, 5000)
     } finally {
       setLoading(false)
     }
@@ -501,7 +507,7 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess, editingMemo
               </button>
               <button
                 type='submit'
-                disabled={loading}
+                disabled={loading || isOverLimit}
                 className='w-full sm:flex-1 px-8 py-4 bg-gradient-to-r from-rose-500 via-pink-500 to-purple-500 hover:from-rose-600 hover:via-pink-600 hover:to-purple-600 text-white font-bold rounded-2xl transition-all shadow-lg hover:shadow-2xl flex items-center justify-center space-x-3 group disabled:opacity-70 disabled:cursor-not-allowed'
               >
                 {loading ? (

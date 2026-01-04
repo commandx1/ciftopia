@@ -6,7 +6,7 @@ import axios from 'axios';
 import * as path from 'path';
 import { Memory, MemoryDocument } from '../../schemas/memory.schema';
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
-import { PhotoMetadata, CreateMemoryDto } from './dto/memories.dto';
+import { CreateMemoryDto } from './dto/memories.dto';
 import { UploadService } from '../upload/upload.service';
 import { User } from '../../schemas/user.schema';
 
@@ -42,11 +42,6 @@ export class MemoriesService {
         if (memoryObj.photos && memoryObj.photos.length > 0) {
           memoryObj.photos = await Promise.all(
             memoryObj.photos.map(async (photo: any) => {
-              if (typeof photo === 'string') {
-                return {
-                  url: await this.uploadService.getPresignedUrl(photo),
-                };
-              }
               return {
                 ...photo,
                 url: await this.uploadService.getPresignedUrl(photo.url),
@@ -58,16 +53,10 @@ export class MemoriesService {
         // Transform author avatar if populated
         if (memoryObj.authorId && (memoryObj.authorId as any).avatar) {
           const authorAvatar = (memoryObj.authorId as any).avatar;
-          if (typeof authorAvatar === 'string') {
-            (memoryObj.authorId as any).avatar = {
-              url: await this.uploadService.getPresignedUrl(authorAvatar),
-            };
-          } else if (authorAvatar && authorAvatar.url) {
-            (memoryObj.authorId as any).avatar = {
-              ...authorAvatar,
-              url: await this.uploadService.getPresignedUrl(authorAvatar.url),
-            };
-          }
+          (memoryObj.authorId as any).avatar = {
+            ...authorAvatar,
+            url: await this.uploadService.getPresignedUrl(authorAvatar.url),
+          };
         }
 
         return memoryObj;
