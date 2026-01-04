@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Indie_Flower, Playfair_Display } from 'next/font/google'
+import { Toaster } from 'sonner'
 import './globals.css'
 
 const indieFlower = Indie_Flower({
@@ -26,8 +27,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang='en' suppressHydrationWarning>
-      <body className={`${indieFlower.className} ${playfairDisplay.variable}`} suppressHydrationWarning>
+      <body className={`${indieFlower.className} ${playfairDisplay.variable} ${indieFlower.variable}`} suppressHydrationWarning>
         {children}
+        <Toaster position="top-right" expand={false} visibleToasts={5} />
       </body>
     </html>
   )

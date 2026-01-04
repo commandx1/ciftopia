@@ -13,6 +13,7 @@ import { ApiError } from '@/lib/type'
 import { useRouter } from 'next/navigation'
 import CoupleNames from '@/components/couple/CoupleNames'
 import { useUserStore } from '@/store/userStore'
+import { showCustomToast } from '@/components/ui/CustomToast'
 
 function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
@@ -134,6 +135,8 @@ function LoginForm() {
         subdomain: currentSubdomain || undefined
       })
 
+      showCustomToast.success('Giriş Başarılı', 'Hoş geldiniz ❤️')
+
       if (rememberMe) {
         localStorage.setItem('remember_email', email)
         localStorage.setItem('remember_subdomain', currentSubdomain || '')
@@ -149,7 +152,9 @@ function LoginForm() {
         router.push('/')
       }
     } catch (err) {
-      setError((err as ApiError).response?.data?.message || 'Giriş yapılamadı. Lütfen bilgilerinizi kontrol edin.')
+      const msg = (err as ApiError).response?.data?.message || 'Giriş yapılamadı. Lütfen bilgilerinizi kontrol edin.'
+      setError(msg)
+      showCustomToast.error('Hata', msg)
     } finally {
       setIsLoading(false)
     }

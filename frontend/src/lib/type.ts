@@ -23,7 +23,9 @@ interface User {
   gender: string;
   coupleNames?: string; // Token veya /auth/me üzerinden gelen çift isimleri
   coupleId?: {
-    subdomain?: string
+    subdomain?: string;
+    storageUsed?: number;
+    storageLimit?: number;
   }
 }
 

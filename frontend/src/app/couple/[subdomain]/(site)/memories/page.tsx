@@ -33,6 +33,7 @@ import { MemoryMoodBadge, MemoryMoodIcon, moodConfigs } from '@/components/coupl
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useUserStore } from '@/store/userStore'
+import { showCustomToast } from '@/components/ui/CustomToast'
 
 // Skeleton loading bileşeni
 const MemorySkeleton = ({ side }: { side: 'left' | 'right' }) => (
@@ -196,7 +197,7 @@ export default function MemoriesPage() {
       link.remove()
     } catch (err) {
       console.error('PDF indirilirken hata oluştu:', err)
-      alert('PDF indirilirken bir hata oluştu. Lütfen tekrar deneyin.')
+      showCustomToast.error('Hata', 'PDF indirilirken bir hata oluştu. Lütfen tekrar deneyin.')
     } finally {
       setIsDownloading(false)
     }
@@ -221,8 +222,15 @@ export default function MemoriesPage() {
         ...prev,
         favorites: isCurrentlyFavorite ? prev.favorites - 1 : prev.favorites + 1
       }))
+
+      if (isCurrentlyFavorite) {
+        showCustomToast.love('Favori', 'Favorilerden çıkarıldı.')
+      } else {
+        showCustomToast.love('Favori', 'Favorilere eklendi ❤️')
+      }
     } catch (err) {
       console.error('Favori güncellenirken hata oluştu:', err)
+      showCustomToast.error('Hata', 'Favori durumu güncellenirken bir hata oluştu.')
     } finally {
       setTogglingFavorite(null)
     }
@@ -247,11 +255,12 @@ export default function MemoriesPage() {
     setIsDeleting(true)
     try {
       await memoriesService.deleteMemory(deleteConfirmId)
+      showCustomToast.success('Başarılı', 'Anı başarıyla silindi.')
       await fetchMemories(false)
       setDeleteConfirmId(null)
     } catch (err) {
       console.error('Anı silinirken hata oluştu:', err)
-      alert('Anı silinirken bir hata oluştu.')
+      showCustomToast.error('Hata', 'Anı silinirken bir hata oluştu.')
     } finally {
       setIsDeleting(false)
     }

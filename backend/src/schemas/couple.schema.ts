@@ -62,6 +62,9 @@ export class Couple {
   @Prop({ default: 0 })
   storageUsed: number;
 
+  @Prop({ default: 52428800 }) // 50MB in bytes
+  storageLimit: number;
+
   @Prop({
     required: true,
     enum: ['pending_payment', 'active', 'suspended', 'deleted'],

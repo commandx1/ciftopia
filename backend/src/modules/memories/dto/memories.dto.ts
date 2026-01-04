@@ -7,6 +7,20 @@ import {
   IsArray,
 } from 'class-validator';
 
+export class PhotoMetadata {
+  @IsString()
+  url: string;
+
+  @IsOptional()
+  width?: number;
+
+  @IsOptional()
+  height?: number;
+
+  @IsOptional()
+  size?: number;
+}
+
 export class CreateMemoryDto {
   @IsString()
   @IsNotEmpty()
@@ -26,12 +40,7 @@ export class CreateMemoryDto {
 
   @IsOptional()
   @IsArray()
-  photos?: {
-    url: string;
-    width?: number;
-    height?: number;
-    size?: number;
-  }[];
+  photos?: PhotoMetadata[];
 
   @IsOptional()
   @IsEnum(['romantic', 'fun', 'emotional', 'adventure'])

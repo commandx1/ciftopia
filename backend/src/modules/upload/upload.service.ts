@@ -22,6 +22,7 @@ export interface FileMetadata {
 export class UploadService {
   private s3Client: S3Client;
   private bucketName: string;
+  private urlCache: Map<string, { url: string; expiresAt: number }> = new Map();
 
   constructor(private configService: ConfigService) {
     this.s3Client = new S3Client({
@@ -76,13 +77,30 @@ export class UploadService {
       // If it's already a full URL (legacy or external), return as is
       if (key.startsWith('http')) return key;
 
+      // Check cache first
+      const cached = this.urlCache.get(key);
+      const now = Date.now();
+      if (cached && cached.expiresAt > now) {
+        return cached.url;
+      }
+
       const command = new GetObjectCommand({
         Bucket: this.bucketName,
         Key: key,
       });
 
       // Link expires in 1 hour (3600 seconds)
-      return await getSignedUrl(this.s3Client, command, { expiresIn: 3600 });
+      const url = await getSignedUrl(this.s3Client, command, {
+        expiresIn: 3600,
+      });
+
+      // Cache for 55 minutes (55 * 60 * 1000 ms)
+      this.urlCache.set(key, {
+        url,
+        expiresAt: now + 55 * 60 * 1000,
+      });
+
+      return url;
     } catch (err) {
       console.error('Presigned URL oluşturulurken hata:', err);
       return key; // Hata durumunda orijinal key'i dön (fallback)
@@ -92,6 +110,9 @@ export class UploadService {
   async deleteFile(key: string): Promise<void> {
     try {
       if (key.startsWith('http')) return; // Don't try to delete external URLs
+
+      // Remove from cache if exists
+      this.urlCache.delete(key);
 
       await this.s3Client.send(
         new DeleteObjectCommand({

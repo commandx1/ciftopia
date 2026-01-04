@@ -6,7 +6,7 @@ import axios from 'axios';
 import * as path from 'path';
 import { Memory, MemoryDocument } from '../../schemas/memory.schema';
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
-import { CreateMemoryDto } from './dto/memories.dto';
+import { PhotoMetadata, CreateMemoryDto } from './dto/memories.dto';
 import { UploadService } from '../upload/upload.service';
 import { User } from '../../schemas/user.schema';
 
@@ -172,7 +172,14 @@ export class MemoriesService {
     });
 
     const savedMemory = await memory.save();
-    return this.transformPhotos(savedMemory);
+
+    // Fetch updated storage for the couple
+    const updatedCouple = await this.coupleModel.findById(couple._id);
+
+    return {
+      ...((await this.transformPhotos(savedMemory)) as any),
+      storageUsed: updatedCouple?.storageUsed,
+    };
   }
 
   async update(
@@ -221,25 +228,50 @@ export class MemoriesService {
         const newUrls = updateMemoryDto.photos.map((p: any) => p.url);
 
         const removedPhotos = memory.photos.filter(
-          (p: any) => !newUrls.includes(p.url),
+          (p) => !newUrls.includes(p.url),
         );
 
         if (removedPhotos.length > 0) {
-          await Promise.all(
-            removedPhotos.map((p: any) => this.uploadService.deleteFile(p.url)),
+          const removedSize = removedPhotos.reduce(
+            (acc: number, p) => acc + (p.size || 0),
+            0,
           );
+          await Promise.all(
+            removedPhotos.map((p) => this.uploadService.deleteFile(p.url)),
+          );
+
+          // Decrease storage used
+          await this.coupleModel.findByIdAndUpdate(memory.coupleId, {
+            $inc: { storageUsed: -removedSize },
+          });
         }
         memory.photos = updateMemoryDto.photos;
       } else {
-        await Promise.all(
-          memory.photos.map((p: any) => this.uploadService.deleteFile(p.url)),
+        const removedSize = memory.photos.reduce(
+          (acc: number, p) => acc + (p.size || 0),
+          0,
         );
+        await Promise.all(
+          memory.photos.map((p) => this.uploadService.deleteFile(p.url)),
+        );
+
+        // Decrease storage used
+        await this.coupleModel.findByIdAndUpdate(memory.coupleId, {
+          $inc: { storageUsed: -removedSize },
+        });
         memory.photos = [];
       }
     }
 
     const updatedMemory = await memory.save();
-    return this.transformPhotos(updatedMemory);
+
+    // Fetch updated storage for the couple
+    const updatedCouple = await this.coupleModel.findById(memory.coupleId);
+
+    return {
+      ...((await this.transformPhotos(updatedMemory)) as any),
+      storageUsed: updatedCouple?.storageUsed,
+    };
   }
 
   async toggleFavorite(userId: string, memoryId: string) {
@@ -447,11 +479,21 @@ export class MemoriesService {
     }
 
     if (memory.photos && memory.photos.length > 0) {
+      const totalSize = memory.photos.reduce(
+        (acc: number, p) => acc + (p.size || 0),
+        0,
+      );
+
       await Promise.all(
-        memory.photos.map((p: any) =>
+        memory.photos.map((p) =>
           this.uploadService.deleteFile(typeof p === 'string' ? p : p.url),
         ),
       );
+
+      // Decrease storage used
+      await this.coupleModel.findByIdAndUpdate(memory.coupleId, {
+        $inc: { storageUsed: -totalSize },
+      });
     }
 
     await this.memoryModel.findByIdAndDelete(memoryId);

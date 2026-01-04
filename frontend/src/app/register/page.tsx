@@ -33,6 +33,7 @@ import { cn } from '@/lib/utils'
 import { authService, onboardingService, paymentService, uploadService } from '@/services/api'
 import { ApiError } from '@/lib/type'
 import { useRouter } from 'next/navigation';
+import { showCustomToast } from '@/components/ui/CustomToast'
 export default function RegisterPage() {
   const [step, setStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
@@ -206,9 +207,12 @@ export default function RegisterPage() {
         gender: formData.gender,
         avatar: avatarMetadata
       })
+      showCustomToast.success('Başarılı', 'Hesabınız oluşturuldu!')
       setStep(2)
     } catch (err) {
-      setError((err as ApiError).response?.data?.message || 'Kayıt sırasında bir hata oluştu.')
+      const msg = (err as ApiError).response?.data?.message || 'Kayıt sırasında bir hata oluştu.'
+      setError(msg)
+      showCustomToast.error('Hata', msg)
     } finally {
       setIsLoading(false)
     }
@@ -225,13 +229,18 @@ export default function RegisterPage() {
       const { data } = await onboardingService.checkSubdomain(formData.subdomain)
       if (data.data.available) {
         setIsSubdomainAvailable(true)
+        showCustomToast.success('Harika', 'Adres uygun! Devam edebilirsiniz.')
         setStep(3)
       } else {
         setIsSubdomainAvailable(false)
-        setError('Bu adres zaten alınmış, lütfen başka bir tane deneyin.')
+        const msg = 'Bu adres zaten alınmış, lütfen başka bir tane deneyin.'
+        setError(msg)
+        showCustomToast.error('Hata', msg)
       }
     } catch {
-      setError('Adres kontrolü sırasında bir hata oluştu.')
+      const msg = 'Adres kontrolü sırasında bir hata oluştu.'
+      setError(msg)
+      showCustomToast.error('Hata', msg)
     } finally {
       setIsLoading(false)
     }
@@ -311,15 +320,17 @@ export default function RegisterPage() {
         paymentTransactionId: paymentResponse.data.paymentId // Pass the transaction ID
       })
 
+      showCustomToast.success('Tebrikler 🎉', 'Siteniz başarıyla oluşturuldu.')
+
       // Redirect to dashboard (subdomain.domain/dashboard)
       const protocol = window.location.protocol
       const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN
       router.push(`${protocol}//${formData.subdomain}.${mainDomain}/dashboard`);
     } catch (err) {
-      setError(
-        (err as ApiError).response?.data?.message ||
-          'Ödeme veya kurulum sırasında bir hata oluştu. Lütfen bilgilerinizi kontrol edin.'
-      )
+      const msg = (err as ApiError).response?.data?.message ||
+        'Ödeme veya kurulum sırasında bir hata oluştu. Lütfen bilgilerinizi kontrol edin.'
+      setError(msg)
+      showCustomToast.error('Hata', msg)
     } finally {
       setIsLoading(false)
     }

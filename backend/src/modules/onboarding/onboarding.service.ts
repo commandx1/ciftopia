@@ -82,6 +82,15 @@ export class OnboardingService {
 
     const hashedPassword = await bcrypt.hash(partnerPassword, 10);
 
+    // Calculate initial storage used from avatars
+    let initialStorageUsed = 0;
+    if (user.avatar && typeof user.avatar !== 'string' && user.avatar.size) {
+      initialStorageUsed += user.avatar.size;
+    }
+    if (partnerAvatar && typeof partnerAvatar !== 'string' && partnerAvatar.size) {
+      initialStorageUsed += partnerAvatar.size;
+    }
+
     const couple = new this.coupleModel({
       subdomain: lowerSubdomain,
       partner1: new Types.ObjectId(userId),
@@ -91,6 +100,7 @@ export class OnboardingService {
         : undefined,
       relationshipStatus,
       status: paymentTransactionId ? 'active' : 'pending_payment',
+      storageUsed: initialStorageUsed,
     });
 
     await couple.save();

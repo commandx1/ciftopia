@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import {
   Heart,
   X,
@@ -14,13 +14,16 @@ import {
   Lock,
   Star,
   Sparkles,
-  Loader2
+  Loader2,
+  Database
 } from 'lucide-react'
-import { memoriesService, uploadService } from '@/services/api'
+import api, { memoriesService, uploadService } from '@/services/api'
 import Image from 'next/image'
 import { moodConfigs } from './MemoryMoodBadge'
-import { Memory, PhotoMetadata } from '@/lib/type'
+import { Memory, PhotoMetadata, ApiError } from '@/lib/type'
 import { useUserStore } from '@/store/userStore'
+import { formatBytes } from '@/lib/utils'
+import { showCustomToast } from '@/components/ui/CustomToast'
 
 interface NewMemoryModalProps {
   isOpen: boolean
@@ -40,11 +43,28 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess, editingMemo
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [previewUrls, setPreviewUrls] = useState<string[]>([])
   const [existingPhotos, setExistingPhotos] = useState<PhotoMetadata[]>([])
+  const [initialMemorySize, setInitialMemorySize] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { user } = useUserStore()
+  const { user, updateStorageUsed } = useUserStore()
+
+  // Storage Calculations
+  const currentStorageUsed = Number(user?.coupleId?.storageUsed) || 0
+  const storageLimit = Number(user?.coupleId?.storageLimit) || 0
+  
+  const currentMemorySize = [
+    ...existingPhotos.map(p => Number(p.size) || 0),
+    ...selectedFiles.map(f => Number(f.size) || 0)
+  ].reduce((acc, size) => acc + size, 0)
+
+  const projectedUsage = Math.max(0, currentStorageUsed - initialMemorySize + currentMemorySize)
+  const usagePercentage = storageLimit > 0 ? (Math.min(projectedUsage, storageLimit) / storageLimit) * 100 : 0
+  const isOverLimit = projectedUsage > storageLimit
 
   React.useEffect(() => {
     if (editingMemory && user) {
+      const initialSize = editingMemory.photos?.reduce((acc, p) => acc + (Number(p.size) || 0), 0) || 0
+      setInitialMemorySize(initialSize)
+      
       setTitle(editingMemory.title)
       setDate(new Date(editingMemory.date).toISOString().split('T')[0])
       setLocationName(editingMemory.location?.name || '')
@@ -54,6 +74,7 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess, editingMemo
       setExistingPhotos(editingMemory.rawPhotos || [])
       setPreviewUrls(editingMemory.photos?.map(p => (typeof p === 'string' ? p : p.url)) || [])
     } else {
+      setInitialMemorySize(0)
       setTitle('')
       setDate(new Date().toISOString().split('T')[0])
       setLocationName('')
@@ -144,7 +165,7 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess, editingMemo
           : otherFavorites
 
         // Update memory
-        await memoriesService.updateMemory(editingMemory._id, {
+        const res = await memoriesService.updateMemory(editingMemory._id, {
           title,
           content,
           date,
@@ -153,9 +174,14 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess, editingMemo
           photos: photoMetadatas,
           favorites: newFavorites
         })
+
+        // Update global storage state
+        if (res.data.storageUsed !== undefined) {
+          updateStorageUsed(res.data.storageUsed)
+        }
       } else {
         // Create memory
-        await memoriesService.createMemory({
+        const res = await memoriesService.createMemory({
           title,
           content,
           date,
@@ -164,10 +190,19 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess, editingMemo
           photos: photoMetadatas,
           favorites: isUserFavorite && user ? [user._id] : []
         })
+
+        // Update global storage state
+        if (res.data.storageUsed !== undefined) {
+          updateStorageUsed(res.data.storageUsed)
+        }
       }
 
       onSuccess()
       onClose()
+      showCustomToast.success(
+        editingMemory ? 'Güncellendi' : 'Kaydedildi',
+        editingMemory ? 'Anı başarıyla güncellendi!' : 'Anı başarıyla kaydedildi!'
+      )
       // Reset form
       setTitle('')
       setContent('')
@@ -176,7 +211,9 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess, editingMemo
       setExistingPhotos([])
     } catch (err) {
       console.error('Anı kaydedilirken hata oluştu:', err)
-      alert('Anı kaydedilirken bir hata oluştu. Lütfen tekrar deneyin.')
+      const apiError = err as ApiError
+      const errorMessage = apiError.response?.data?.message || 'Anı kaydedilirken bir hata oluştu. Lütfen tekrar deneyin.'
+      showCustomToast.error('Hata', errorMessage, 10000)
     } finally {
       setLoading(false)
     }
@@ -264,6 +301,56 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess, editingMemo
                     </button>
                   </div>
                 ))}
+              </div>
+
+              {/* Depolama Durumu */}
+              <div className='bg-blue-50/50 border border-blue-100 rounded-3xl p-6 mt-6'>
+                <div className='flex items-center justify-between mb-4'>
+                  <div>
+                    <p className='text-sm text-blue-600 font-semibold mb-1'>Depolama Durumu</p>
+                    <div className='flex items-baseline space-x-2'>
+                      <p className='text-2xl font-bold text-gray-900'>
+                        {formatBytes(projectedUsage)}
+                      </p>
+                      {selectedFiles.length > 0 && (
+                        <p className='text-sm text-blue-500 font-medium'>
+                          (+{formatBytes(selectedFiles.reduce((acc, f) => acc + f.size, 0))} yeni)
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className='w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center shadow-inner'>
+                    <Database className='text-blue-600' size={24} />
+                  </div>
+                </div>
+
+                <div className='space-y-2'>
+                  <div className='flex justify-between text-xs font-bold'>
+                    <span className='text-gray-600'>
+                      {formatBytes(projectedUsage)} / {formatBytes(storageLimit)}
+                    </span>
+                    <span className={isOverLimit ? 'text-red-600' : 'text-blue-600'}>
+                      %{storageLimit > 0 ? Math.max(0, (projectedUsage / storageLimit) * 100).toFixed(1) : '0.0'}
+                    </span>
+                  </div>
+                  <div className='w-full bg-gray-200 rounded-full h-3 overflow-hidden p-0.5 shadow-inner'>
+                    <div className='relative h-full w-full rounded-full overflow-hidden'>
+                      <div
+                        className={`h-full transition-all duration-500 rounded-full ${
+                          isOverLimit 
+                            ? 'bg-gradient-to-r from-red-500 to-rose-400' 
+                            : 'bg-gradient-to-r from-blue-500 to-cyan-400'
+                        }`}
+                        style={{ width: `${usagePercentage}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                  {isOverLimit && (
+                    <p className='text-xs text-red-600 font-bold animate-pulse mt-2'>
+                      ⚠️ Depolama limitini aşıyorsunuz! Lütfen bazı fotoğrafları çıkarın.
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -422,8 +509,8 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess, editingMemo
                 ) : (
                   <>
                     <Heart className='group-hover:scale-110 transition-transform' size={24} fill='currentColor' />
-                    <span>{editingMemory ? 'Anıyı Güncelle' : 'Anıyı Kaydet'}</span>
-                    <Sparkles className='text-yellow-300 animate-pulse' size={20} />
+                    <span>{isOverLimit ? 'Limit Aşıldı' : editingMemory ? 'Anıyı Güncelle' : 'Anıyı Kaydet'}</span>
+                    {!isOverLimit && <Sparkles className='text-yellow-300 animate-pulse' size={20} />}
                   </>
                 )}
               </button>
