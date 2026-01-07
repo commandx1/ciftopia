@@ -14,6 +14,8 @@ import { useRouter } from 'next/navigation'
 import CoupleNames from '@/components/couple/CoupleNames'
 import { useUserStore } from '@/store/userStore'
 import { showCustomToast } from '@/components/ui/CustomToast'
+import Logo from '@/components/ui/Logo'
+import Image from 'next/image'
 
 function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
@@ -179,10 +181,10 @@ function LoginForm() {
         <div className='text-center mb-8'>
           <div className='flex items-center justify-center mb-6'>
             <div className='relative'>
-              <div className='w-20 h-20 bg-gradient-to-br from-rose-primary to-coral-warm rounded-full flex items-center justify-center shadow-lg animate-heartbeat'>
-                <Heart className='text-white w-10 h-10 fill-current' />
+              <div className='w-24 h-24 rounded-full flex items-center justify-center shadow-lg bg-white relative overflow-hidden animate-heartbeat'>
+                <Image src='/favicon/favicon.svg' alt='Ciftopia Logo' fill className='object-contain p-4' />
               </div>
-              <div className='absolute -top-2 -right-2 w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center shadow-md'>
+              <div className='absolute -top-2 -right-2 w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center shadow-md z-10'>
                 <Lock size={14} className='text-white' />
               </div>
             </div>
@@ -333,22 +335,6 @@ function LoginForm() {
               </p>
             </div>
           </div>
-
-          <div className='mt-6 text-center'>
-            <Link
-              href={`${process.env.NEXT_PUBLIC_URL}/register`}
-              className='inline-flex items-center space-x-2 text-gray-400 hover:text-rose-primary transition-all group'
-              prefetch={false}
-            >
-              <span className='text-xs font-medium'>Powered by</span>
-              <div className='flex items-center space-x-1.5'>
-                <div className='w-5 h-5 bg-gradient-to-br from-rose-primary to-coral-warm rounded-full flex items-center justify-center group-hover:scale-110 transition-transform'>
-                  <Heart className='text-white fill-current' size={10} />
-                </div>
-                <span className=' text-sm font-bold text-gray-700'>Çiftopia</span>
-              </div>
-            </Link>
-          </div>
         </div>
       </div>
 
@@ -377,7 +363,9 @@ function LoginFormFallback() {
   return (
     <AuthLayout>
       <div className='flex items-center justify-center min-h-[400px]'>
-        <Loader2 className='w-8 h-8 animate-spin text-rose-primary' />
+        <div className='w-12 h-12 relative animate-pulse'>
+          <Image src='/favicon/favicon.svg' alt='Loading...' fill className='object-contain' />
+        </div>
       </div>
     </AuthLayout>
   )

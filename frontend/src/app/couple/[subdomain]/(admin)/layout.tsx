@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import DashboardHeaderClient from './dashboard/_components/DashboardHeaderClient'
 import { getUserAvatar } from '@/lib/utils'
+import Image from 'next/image'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await authServiceServer.me()
@@ -30,8 +31,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <nav className='max-w-7xl mx-auto px-6 py-4'>
           <div className='flex items-center justify-between'>
             <Link href='/' className='flex items-center space-x-3'>
-              <div className='w-12 h-12 bg-gradient-to-br from-rose-primary to-coral-warm rounded-full flex items-center justify-center'>
-                <Heart className='text-white w-6 h-6 fill-current' />
+              <div className='w-12 h-12 relative'>
+                <Image src='/favicon/favicon.svg' alt='Ciftopia Logo' fill className='object-contain' />
               </div>
               <span className=' text-2xl font-bold text-gray-800'>Ciftopia</span>
             </Link>
@@ -65,8 +66,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <div className='grid grid-cols-1 md:grid-cols-4 gap-8 mb-8'>
             <div>
               <div className='flex items-center space-x-3 mb-4'>
-                <div className='w-10 h-10 bg-gradient-to-br from-rose-primary to-coral-warm rounded-full flex items-center justify-center'>
-                  <Heart size={20} className='text-white fill-current' />
+                <div className='w-10 h-10 relative'>
+                  <Image src='/favicon/favicon.svg' alt='Ciftopia Logo' fill className='object-contain' />
                 </div>
                 <span className=' text-xl font-bold'>Ciftopia</span>
               </div>
@@ -138,7 +139,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </div>
 
           <div className='border-t border-gray-800 pt-6 flex flex-col md:flex-row justify-between items-center'>
-            <p className='text-gray-400 text-sm'>© 2024 Ciftopia. Tüm hakları saklıdır.</p>
+            <p className='text-gray-400 text-sm'>© 2026 Ciftopia. Tüm hakları saklıdır.</p>
             <div className='flex space-x-4 mt-4 md:mt-0'>
               <Link href='#' className='text-gray-400 hover:text-white transition-colors'>
                 Instagram

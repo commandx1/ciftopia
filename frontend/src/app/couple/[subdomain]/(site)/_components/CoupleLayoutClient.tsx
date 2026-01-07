@@ -183,10 +183,9 @@ export default function CoupleLayoutClient({ children, user, subdomain }: Couple
               href={process.env.NEXT_PUBLIC_URL || '/'}
               className='inline-flex items-center space-x-2 text-rose-400 hover:text-rose-300 transition-colors font-semibold'
             >
-              <div className='w-6 h-6 bg-gradient-to-br from-rose-primary to-coral-warm rounded-full flex items-center justify-center'>
-                <Heart size={12} fill='white' />
+              <div className='w-6 h-6 relative'>
+                <Image src='/favicon/favicon.svg' alt='Ciftopia Logo' fill className='object-contain' />
               </div>
-              <span>Ciftopia</span>
             </Link>
           </div>
         </div>

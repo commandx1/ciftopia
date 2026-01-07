@@ -1,6 +1,8 @@
 import React from 'react';
 import Link from 'next/link';
-import { Heart, Instagram, Twitter, Facebook, Youtube } from 'lucide-react';
+import { Instagram, Twitter, Facebook, Youtube, Heart } from 'lucide-react';
+import Logo from '../ui/Logo'
+import Image from 'next/image'
 
 export const Footer = () => {
   return (
@@ -8,12 +10,7 @@ export const Footer = () => {
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-20">
           <div className="space-y-8">
-            <Link href="/" className="flex items-center space-x-3 group">
-              <div className="w-12 h-12 bg-gradient-to-br from-rose-primary to-coral-warm rounded-full flex items-center justify-center group-hover:rotate-12 transition-transform">
-                <Heart className="text-white w-7 h-7 fill-current" />
-              </div>
-              <span className=" text-3xl font-bold">Çiftopia</span>
-            </Link>
+            <Logo />
             <p className="text-gray-400 leading-relaxed text-lg">
               Çiftler için özel dijital alan. Anılarınızı, fotoğraflarınızı ve sevginizi bir arada tutun.
             </p>
@@ -68,11 +65,13 @@ export const Footer = () => {
         
         <div className="pt-10 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-6">
           <p className="text-gray-500 text-lg">
-            © 2024 Çiftopia. Tüm hakları saklıdır.
+            © 2026 Çiftopia. Tüm hakları saklıdır.
           </p>
           <div className="flex items-center text-gray-400 text-lg font-medium">
             Sevgiyle yapıldı 
-            <Heart className="text-rose-500 mx-3 animate-pulse fill-current" size={20} />
+            <div className='w-6 h-6 relative mx-3 animate-pulse'>
+              <Image src='/favicon/favicon.svg' alt='Ciftopia icon' fill className='object-contain' />
+            </div>
             Türkiye&apos;de
           </div>
         </div>
