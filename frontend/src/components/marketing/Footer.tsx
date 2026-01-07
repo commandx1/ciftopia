@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { Instagram, Twitter, Facebook, Youtube, Heart } from 'lucide-react';
+import { Instagram, Twitter, Facebook, Youtube } from 'lucide-react';
 import Logo from '../ui/Logo'
 import Image from 'next/image'
 

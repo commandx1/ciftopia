@@ -1,6 +1,6 @@
 import React from 'react'
 import { authServiceServer } from '@/services/api-server'
-import { Heart, ExternalLink } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import DashboardHeaderClient from './dashboard/_components/DashboardHeaderClient'

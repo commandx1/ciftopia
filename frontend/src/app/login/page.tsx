@@ -14,7 +14,6 @@ import { useRouter } from 'next/navigation'
 import CoupleNames from '@/components/couple/CoupleNames'
 import { useUserStore } from '@/store/userStore'
 import { showCustomToast } from '@/components/ui/CustomToast'
-import Logo from '@/components/ui/Logo'
 import Image from 'next/image'
 
 function LoginForm() {

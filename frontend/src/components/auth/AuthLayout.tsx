@@ -1,6 +1,5 @@
 import React from 'react'
 import { Heart, Star } from 'lucide-react'
-import Link from 'next/link'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import Logo from '../ui/Logo'
