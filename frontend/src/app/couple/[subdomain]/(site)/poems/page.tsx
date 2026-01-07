@@ -5,13 +5,14 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Feather, Heart, Trash2, Pen, Sparkles, Loader2, Search, BookOpen, ArrowRight } from 'lucide-react'
 import { poemsService } from '@/services/poemsService'
-import { Poem } from '@/lib/type'
+import { AuthorStats, Poem } from '@/lib/type'
 import { useUserStore } from '@/store/userStore'
 import { showCustomToast } from '@/components/ui/CustomToast'
 import NewPoemModal from '@/components/couple/NewPoemModal'
 import PoemDetailModal from '@/components/couple/PoemDetailModal'
 import PoemDeleteModal from '@/components/couple/PoemDeleteModal'
 import { getUserAvatar } from '@/lib/utils'
+import Image from 'next/image'
 
 export default function PoemsPage() {
   const { subdomain } = useParams()
@@ -66,11 +67,11 @@ export default function PoemsPage() {
         // Calculate stats and update counts in authorList
         setAuthorList(prevAuthors => {
           // Create a map of current counts for quick lookup
-          const countMap = new Map(res.data.authorStats.map((s: any) => [s._id, s.count]))
+          const countMap = new Map(res.data.authorStats.map((s: AuthorStats) => [s._id, s.count]))
 
           // If we don't have any authors yet, initialize from stats
           if (prevAuthors.length === 0) {
-            return res.data.authorStats.map((stat: any) => {
+            return res.data.authorStats.map((stat: AuthorStats) => {
               const poemWithAuthor = updatedPoems.find(p => p.authorId._id === stat._id)
               return {
                 id: stat._id,
@@ -102,7 +103,7 @@ export default function PoemsPage() {
   useEffect(() => {
     setPage(1)
     fetchPoems(1, false)
-  }, [filterTag, filterAuthor, subdomain]) // fetchPoems callback already includes these dependencies
+  }, [fetchPoems])
 
   const loadMore = () => {
     const nextPage = page + 1
@@ -190,7 +191,10 @@ export default function PoemsPage() {
                 {loading ? (
                   /* Stats Skeletons */
                   [...Array(3)].map((_, i) => (
-                    <div key={i} className='bg-white/40 backdrop-blur-sm rounded-[2rem] p-6 text-center border border-white/20 shadow-sm animate-pulse'>
+                    <div
+                      key={i}
+                      className='bg-white/40 backdrop-blur-sm rounded-[2rem] p-6 text-center border border-white/20 shadow-sm animate-pulse'
+                    >
                       <div className='w-16 h-10 bg-gray-200 rounded-xl mx-auto mb-2'></div>
                       <div className='w-24 h-4 bg-gray-100 rounded-md mx-auto'></div>
                     </div>
@@ -222,9 +226,7 @@ export default function PoemsPage() {
                         <div className={`text-4xl font-bold ${index === 0 ? 'text-pink-600' : 'text-rose-600'} mb-1`}>
                           {author.count}
                         </div>
-                        <div className='text-sm font-bold text-gray-500 uppercase tracking-wider'>
-                          {author.name}
-                        </div>
+                        <div className='text-sm font-bold text-gray-500 uppercase tracking-wider'>{author.name}</div>
                       </div>
                     ))}
 
@@ -236,7 +238,9 @@ export default function PoemsPage() {
                           className='bg-white/40 backdrop-blur-sm rounded-[2rem] p-6 text-center border border-white/20 shadow-sm opacity-50 grayscale'
                         >
                           <div className='text-4xl font-bold text-gray-300 mb-1'>0</div>
-                          <div className='text-sm font-bold text-gray-400 uppercase tracking-wider'>Henüz Yazılmadı</div>
+                          <div className='text-sm font-bold text-gray-400 uppercase tracking-wider'>
+                            Henüz Yazılmadı
+                          </div>
                         </div>
                       ))}
                   </>
@@ -307,7 +311,10 @@ export default function PoemsPage() {
                 ]
                 const bgClass = bgs[i % bgs.length]
                 return (
-                  <div key={i} className={`bg-gradient-to-br ${bgClass} rounded-[2.5rem] p-8 border-2 shadow-sm h-[400px] animate-pulse flex flex-col`}>
+                  <div
+                    key={i}
+                    className={`bg-gradient-to-br ${bgClass} rounded-[2.5rem] p-8 border-2 shadow-sm h-[400px] animate-pulse flex flex-col`}
+                  >
                     <div className='flex justify-between mb-6'>
                       <div className='flex gap-2'>
                         <div className='w-16 h-6 bg-white/60 rounded-full'></div>
@@ -392,18 +399,23 @@ export default function PoemsPage() {
                                   Kime:
                                 </span>
                                 <span className='text-xs font-bold text-rose-600 flex items-center gap-1'>
-                                  {poem.dedicatedTo.firstName} <Heart size={10} fill='currentColor' />
+                                  {typeof poem.dedicatedTo === 'string'
+                                    ? poem.dedicatedTo
+                                    : poem.dedicatedTo?.firstName}{' '}
+                                  <Heart size={10} fill='currentColor' />
                                 </span>
                               </div>
                             )}
                             <div className='flex items-center space-x-3'>
                               <div className='relative'>
-                                <img
+                                <Image
                                   src={getUserAvatar({
                                     avatar: typeof poem.authorId.avatar === 'string' ? undefined : poem.authorId.avatar,
                                     gender: poem.authorId.gender
                                   })}
                                   alt={poem.authorId.firstName}
+                                  width={40}
+                                  height={40}
                                   className={`w-10 h-10 rounded-full object-cover border-2 border-${accentColor}-300 shadow-sm`}
                                 />
                                 <div className='absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm'>

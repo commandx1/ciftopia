@@ -2,11 +2,9 @@
 
 import React, { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Camera, Plus, Folder, Grip, Images, ArrowUpRight, Loader2, Search, Sparkles, Heart } from 'lucide-react'
+import { Camera, Plus, Folder, Grip, Images, ArrowUpRight, Loader2 } from 'lucide-react'
 import { galleryService } from '@/services/galleryService'
 import { Album, GalleryPhoto } from '@/lib/type'
-import { useUserStore } from '@/store/userStore'
 import { showCustomToast } from '@/components/ui/CustomToast'
 import ImageUploadModal from '@/components/couple/ImageUploadModal'
 import Image from 'next/image'
@@ -16,7 +14,6 @@ import { tr } from 'date-fns/locale'
 export default function GalleryPage() {
   const { subdomain } = useParams()
   const router = useRouter()
-  const { user } = useUserStore()
 
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewToggle] = useState<'album' | 'grid'>('album')

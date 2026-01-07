@@ -1,6 +1,5 @@
 'use client'
 
-import React, { useState } from 'react'
 import Link from 'next/link'
 import {
   Quote,
@@ -13,16 +12,12 @@ import {
   TriangleAlert,
   X,
   Clock,
-  PenTool,
   Heart,
   Pen,
-  ArrowLeft,
   Info
 } from 'lucide-react'
 
 export default function RomanticWordsPage() {
-  const [exerciseText, setExerciseText] = useState('')
-
   return (
     <div className='min-h-screen pt-24 pb-12 bg-gray-50'>
       <main className='max-w-7xl mx-auto px-6 py-8'>

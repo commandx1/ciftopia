@@ -1,9 +1,10 @@
 'use client'
 
 import React from 'react'
-import { X, Feather, Heart, Pen, Trash2 } from 'lucide-react'
+import { X, Feather, Pen, Trash2 } from 'lucide-react'
 import { Poem, User } from '@/lib/type'
 import { getUserAvatar } from '@/lib/utils'
+import Image from 'next/image'
 
 interface PoemDetailModalProps {
   poem: Poem | null
@@ -48,12 +49,14 @@ export default function PoemDetailModal({ poem, onClose, onEdit, onDelete, curre
         <div className='p-12'>
           <div className='flex flex-wrap items-center justify-between mb-10 pb-8 border-b border-gray-100 gap-6'>
             <div className='flex items-center space-x-4'>
-              <img
+              <Image
                 src={getUserAvatar({
                   avatar: typeof poem.authorId.avatar === 'string' ? undefined : poem.authorId.avatar,
                   gender: poem.authorId.gender
                 })}
-                alt=''
+                alt={poem.authorId.firstName}
+                width={64}
+                height={64}
                 className='w-16 h-16 rounded-2xl object-cover border-4 border-purple-100 shadow-md'
               />
               <div>

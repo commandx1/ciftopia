@@ -21,7 +21,6 @@ import {
   PenSquare,
   Users,
   Rocket,
-  ArrowLeft,
   Check,
   Quote as QuoteIcon
 } from 'lucide-react'

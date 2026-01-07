@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import {
   X,
   Camera,
@@ -46,26 +46,27 @@ export default function ImageUploadModal({ isOpen, onClose, onSuccess, initialAl
   // Storage Calculations
   const currentStorageUsed = Number(user?.coupleId?.storageUsed) || 0
   const storageLimit = Number(user?.coupleId?.storageLimit) || 0
-  
+
   const currentNewPhotosSize = selectedFiles.reduce((acc, f) => acc + Number(f.size), 0)
   const projectedUsage = currentStorageUsed + currentNewPhotosSize
   const usagePercentage = storageLimit > 0 ? (Math.min(projectedUsage, storageLimit) / storageLimit) * 100 : 0
   const isOverLimit = projectedUsage > storageLimit
 
-  useEffect(() => {
-    if (isOpen && user?.coupleId?.subdomain) {
-      fetchAlbums()
-    }
-  }, [isOpen, user])
-
-  const fetchAlbums = async () => {
+  const fetchAlbums = useCallback(async () => {
+    if (!user?.coupleId?.subdomain) return
     try {
-      const res = await galleryService.getAlbums(user?.coupleId?.subdomain!)
+      const res = await galleryService.getAlbums(user.coupleId.subdomain!)
       setAlbums(res.data)
     } catch (err) {
       console.error('Albümler yüklenirken hata:', err)
     }
-  }
+  }, [user?.coupleId?.subdomain])
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchAlbums()
+    }
+  }, [isOpen, fetchAlbums])
 
   if (!isOpen) return null
 
@@ -75,7 +76,7 @@ export default function ImageUploadModal({ isOpen, onClose, onSuccess, initialAl
       // Toplamda en fazla 10 fotoğraf olabilir
       const currentTotal = selectedFiles.length
       const remainingSlots = 10 - currentTotal
-      
+
       if (remainingSlots <= 0) {
         showCustomToast.error('Limit', 'Tek seferde en fazla 10 fotoğraf yükleyebilirsiniz.')
         return
@@ -93,7 +94,7 @@ export default function ImageUploadModal({ isOpen, onClose, onSuccess, initialAl
     const newFiles = [...selectedFiles]
     newFiles.splice(index, 1)
     setSelectedFiles(newFiles)
-    
+
     const newUrls = [...previewUrls]
     newUrls.splice(index, 1)
     setPreviewUrls(newUrls)
@@ -152,7 +153,7 @@ export default function ImageUploadModal({ isOpen, onClose, onSuccess, initialAl
       onSuccess()
       onClose()
       showCustomToast.success('Başarılı', 'Fotoğraflar başarıyla yüklendi! 📸')
-      
+
       // Reset form
       setSelectedFiles([])
       setPreviewUrls([])
@@ -172,7 +173,6 @@ export default function ImageUploadModal({ isOpen, onClose, onSuccess, initialAl
   return (
     <div className='fixed inset-0 z-[150] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300'>
       <div className='bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300'>
-        
         {/* Header */}
         <div className='bg-gradient-to-r from-purple-600 to-indigo-600 px-8 py-6 flex items-center justify-between shrink-0'>
           <div className='flex items-center space-x-4'>
@@ -181,7 +181,7 @@ export default function ImageUploadModal({ isOpen, onClose, onSuccess, initialAl
             </div>
             <h2 className='text-3xl font-bold text-white'>Fotoğraf Yükle 📸</h2>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className='w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition-all group'
           >
@@ -191,9 +191,7 @@ export default function ImageUploadModal({ isOpen, onClose, onSuccess, initialAl
 
         {/* Body */}
         <div className='p-8 overflow-y-auto custom-scrollbar flex-1'>
-          
-          <form id="upload-form" onSubmit={handleSubmit} className='space-y-8'>
-            
+          <form id='upload-form' onSubmit={handleSubmit} className='space-y-8'>
             {/* Albüm Seçici */}
             <section className='space-y-4'>
               <label className='block text-sm font-bold text-gray-700 ml-1'>
@@ -201,9 +199,9 @@ export default function ImageUploadModal({ isOpen, onClose, onSuccess, initialAl
                 Albüm Seçin
               </label>
               <div className='relative'>
-                <select 
+                <select
                   value={isCreatingAlbum ? 'new' : selectedAlbumId}
-                  onChange={(e) => {
+                  onChange={e => {
                     if (e.target.value === 'new') {
                       setIsCreatingAlbum(true)
                       setSelectedAlbumId('')
@@ -214,22 +212,26 @@ export default function ImageUploadModal({ isOpen, onClose, onSuccess, initialAl
                   }}
                   className='w-full px-5 py-4 bg-gray-50 border-2 border-gray-200 rounded-2xl font-medium text-gray-800 appearance-none cursor-pointer hover:border-purple-300 focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-100 transition-all'
                 >
-                  <option value="">Albüm seçin...</option>
+                  <option value=''>Albüm seçin...</option>
                   {albums.map(album => (
-                    <option key={album._id} value={album._id}>{album.title}</option>
+                    <option key={album._id} value={album._id}>
+                      {album.title}
+                    </option>
                   ))}
-                  <option value="new" className='font-bold text-purple-600'>+ Yeni Albüm Oluştur</option>
+                  <option value='new' className='font-bold text-purple-600'>
+                    + Yeni Albüm Oluştur
+                  </option>
                 </select>
                 <div className='absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none'>
                   <ChevronDown className='text-gray-500' size={20} />
                 </div>
               </div>
-              
+
               {isCreatingAlbum && (
                 <div className='animate-in slide-in-from-top-2 duration-300'>
-                  <input 
-                    type="text" 
-                    placeholder="Yeni albüm adı girin..." 
+                  <input
+                    type='text'
+                    placeholder='Yeni albüm adı girin...'
                     value={newAlbumTitle}
                     onChange={e => setNewAlbumTitle(e.target.value)}
                     required
@@ -241,19 +243,19 @@ export default function ImageUploadModal({ isOpen, onClose, onSuccess, initialAl
 
             {/* Yükleme Alanı */}
             <section>
-              <div 
+              <div
                 onClick={() => fileInputRef.current?.click()}
                 className='relative border-3 border-dashed border-purple-300 rounded-[2.5rem] bg-gradient-to-br from-purple-50 to-indigo-50 p-12 text-center hover:border-purple-500 hover:bg-purple-100/50 transition-all cursor-pointer group'
               >
-                <input 
-                  type="file" 
+                <input
+                  type='file'
                   ref={fileInputRef}
                   onChange={handleFileChange}
-                  multiple 
-                  accept="image/*" 
-                  className="hidden" 
+                  multiple
+                  accept='image/*'
+                  className='hidden'
                 />
-                
+
                 <div className='mb-6'>
                   <div className='w-24 h-24 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform shadow-xl'>
                     <CloudUpload className='text-white' size={40} />
@@ -261,14 +263,15 @@ export default function ImageUploadModal({ isOpen, onClose, onSuccess, initialAl
                   <h3 className='text-2xl font-bold text-gray-900 mb-3'>Fotoğrafları sürükleyin veya seçin</h3>
                   <p className='text-gray-600 mb-6 flex items-center justify-center'>
                     <Info className='text-purple-500 mr-2 shrink-0' size={18} />
-                    Maksimum <span className='font-bold text-purple-600 mx-1'>10 fotoğraf</span>, <span className='font-bold text-purple-600 mx-1'>5MB/adet</span>
+                    Maksimum <span className='font-bold text-purple-600 mx-1'>10 fotoğraf</span>,{' '}
+                    <span className='font-bold text-purple-600 mx-1'>5MB/adet</span>
                   </p>
                   <div className='inline-flex items-center space-x-2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-10 py-4 rounded-full font-bold hover:shadow-xl hover:scale-105 transition-all'>
                     <FolderOpen size={20} />
                     <span>Dosya Seç</span>
                   </div>
                 </div>
-                
+
                 <div className='flex items-center justify-center space-x-6 text-sm text-gray-500 font-medium'>
                   <div className='flex items-center space-x-2'>
                     <CheckCircle className='text-green-500' size={16} />
@@ -291,8 +294,8 @@ export default function ImageUploadModal({ isOpen, onClose, onSuccess, initialAl
                     Yüklenen Fotoğraflar
                     <span className='text-sm font-normal text-gray-500 ml-2'>({previewUrls.length}/10)</span>
                   </h3>
-                  <button 
-                    type="button"
+                  <button
+                    type='button'
                     onClick={() => {
                       setSelectedFiles([])
                       setPreviewUrls([])
@@ -303,14 +306,17 @@ export default function ImageUploadModal({ isOpen, onClose, onSuccess, initialAl
                     <span>Tümünü Temizle</span>
                   </button>
                 </div>
-                
+
                 <div className='grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4'>
                   {previewUrls.map((url, index) => (
-                    <div key={index} className='relative group aspect-square rounded-2xl overflow-hidden bg-gray-100 border-2 border-gray-100'>
-                      <Image src={url} alt="Preview" fill className='object-cover' />
+                    <div
+                      key={index}
+                      className='relative group aspect-square rounded-2xl overflow-hidden bg-gray-100 border-2 border-gray-100'
+                    >
+                      <Image src={url} alt='Preview' fill className='object-cover' />
                       <div className='absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center'>
-                        <button 
-                          type="button"
+                        <button
+                          type='button'
                           onClick={() => removeFile(index)}
                           className='w-10 h-10 bg-red-500 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors shadow-lg'
                         >
@@ -323,10 +329,10 @@ export default function ImageUploadModal({ isOpen, onClose, onSuccess, initialAl
                       </div>
                     </div>
                   ))}
-                  
+
                   {previewUrls.length < 10 && (
-                    <button 
-                      type="button"
+                    <button
+                      type='button'
                       onClick={() => fileInputRef.current?.click()}
                       className='aspect-square rounded-2xl border-2 border-dashed border-purple-300 bg-purple-50 hover:bg-purple-100 hover:border-purple-500 transition-all flex flex-col items-center justify-center group'
                     >
@@ -346,14 +352,14 @@ export default function ImageUploadModal({ isOpen, onClose, onSuccess, initialAl
                 <MessageSquare className='inline-block text-purple-500 mr-2 shrink-0' size={18} />
                 Açıklama (Opsiyonel)
               </label>
-              <textarea 
+              <textarea
                 value={caption}
                 onChange={e => setCaption(e.target.value)}
-                rows={3} 
-                placeholder="Fotoğraflarınız için ortak bir açıklama yazın..." 
+                rows={3}
+                placeholder='Fotoğraflarınız için ortak bir açıklama yazın...'
                 className='w-full px-5 py-4 bg-gray-50 border-2 border-gray-200 rounded-2xl font-medium text-gray-800 placeholder-gray-400 resize-none hover:border-purple-300 focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-100 transition-all'
               ></textarea>
-              
+
               <div className='flex items-center space-x-3 bg-purple-50 border-2 border-purple-100 rounded-2xl px-5 py-4'>
                 <Layers className='text-purple-500 shrink-0' size={20} />
                 <p className='text-sm font-medium text-gray-700'>
@@ -376,14 +382,15 @@ export default function ImageUploadModal({ isOpen, onClose, onSuccess, initialAl
                     </span>
                   </div>
                   <div className='w-full bg-blue-200 rounded-full h-3 overflow-hidden p-0.5 shadow-inner'>
-                    <div 
-                      className={`h-full rounded-full transition-all duration-500 ${isOverLimit ? 'bg-gradient-to-r from-red-500 to-rose-400' : 'bg-gradient-to-r from-blue-500 to-cyan-500'}`} 
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${isOverLimit ? 'bg-gradient-to-r from-red-500 to-rose-400' : 'bg-gradient-to-r from-blue-500 to-cyan-500'}`}
                       style={{ width: `${usagePercentage}%` }}
                     ></div>
                   </div>
                   <p className='text-xs text-gray-600 mt-3 flex items-center'>
                     <Info className='text-blue-500 mr-1 shrink-0' size={14} />
-                    Seçilen fotoğraflar: <span className='font-bold text-blue-600 mx-1'>~{formatBytes(currentNewPhotosSize)}</span>
+                    Seçilen fotoğraflar:{' '}
+                    <span className='font-bold text-blue-600 mx-1'>~{formatBytes(currentNewPhotosSize)}</span>
                   </p>
                   {isOverLimit && (
                     <p className='text-xs text-red-600 font-black animate-pulse mt-2'>
@@ -393,22 +400,21 @@ export default function ImageUploadModal({ isOpen, onClose, onSuccess, initialAl
                 </div>
               </div>
             </section>
-
           </form>
         </div>
 
         {/* Footer */}
         <div className='bg-gray-50 px-8 py-6 border-t-2 border-gray-100 flex items-center justify-between shrink-0'>
-          <button 
+          <button
             onClick={onClose}
             className='text-gray-600 hover:text-gray-800 font-bold px-8 py-3 rounded-2xl hover:bg-gray-200 transition-all'
           >
             İptal
           </button>
-          
-          <button 
-            form="upload-form"
-            type="submit"
+
+          <button
+            form='upload-form'
+            type='submit'
             disabled={loading || isOverLimit || selectedFiles.length === 0 || (!selectedAlbumId && !isCreatingAlbum)}
             className='bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-12 py-4 rounded-2xl font-bold hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-3'
           >
@@ -422,9 +428,8 @@ export default function ImageUploadModal({ isOpen, onClose, onSuccess, initialAl
             )}
           </button>
         </div>
-
       </div>
-      
+
       <style jsx>{`
         .border-3 {
           border-width: 3px;
@@ -436,14 +441,13 @@ export default function ImageUploadModal({ isOpen, onClose, onSuccess, initialAl
           background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(0,0,0,0.1);
+          background: rgba(0, 0, 0, 0.1);
           border-radius: 10px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(0,0,0,0.2);
+          background: rgba(0, 0, 0, 0.2);
         }
       `}</style>
     </div>
   )
 }
-

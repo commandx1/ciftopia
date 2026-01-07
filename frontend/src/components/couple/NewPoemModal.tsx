@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { X, Feather, Send, Sparkles, Loader2, Heart } from 'lucide-react'
 import { poemsService } from '@/services/poemsService'
-import { Poem } from '@/lib/type'
+import { Poem, User } from '@/lib/type'
 import { showCustomToast } from '../ui/CustomToast'
 import { useUserStore } from '@/store/userStore'
 
@@ -21,7 +21,7 @@ export default function NewPoemModal({ isOpen, onClose, onSuccess, editingPoem }
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [dedicatedTo, setDedicatedTo] = useState<string>('')
+  const [dedicatedTo, setDedicatedTo] = useState<User | string | null>(null)
   const [isPublic, setIsPublic] = useState(false)
 
   const { user } = useUserStore()
@@ -31,7 +31,9 @@ export default function NewPoemModal({ isOpen, onClose, onSuccess, editingPoem }
       setTitle(editingPoem.title)
       setContent(editingPoem.content)
       setSelectedTags(editingPoem.tags || [])
-      setDedicatedTo(editingPoem.dedicatedTo?._id || '')
+      setDedicatedTo(
+        typeof editingPoem.dedicatedTo === 'string' ? editingPoem.dedicatedTo : editingPoem.dedicatedTo?._id || ''
+      )
       setIsPublic(editingPoem.isPublic || false)
     } else {
       setTitle('')
@@ -61,11 +63,11 @@ export default function NewPoemModal({ isOpen, onClose, onSuccess, editingPoem }
 
     setLoading(true)
     try {
-      const data: any = {
+      const data: Partial<Poem> = {
         title,
         content,
         tags: selectedTags,
-        dedicatedTo: dedicatedTo || undefined,
+        dedicatedTo: dedicatedTo as User || null,
         isPublic
       }
 

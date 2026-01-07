@@ -2,22 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import {
-  ArrowLeft,
-  Calendar,
-  Clock,
-  Images,
-  MapPin,
-  Share2,
-  Pen,
-  Plus,
-  Filter,
-  Heart,
-  Loader2,
-  Trash2,
-  Download,
-  X
-} from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, Images, Share2, Pen, Plus, Heart, Loader2, Trash2, X } from 'lucide-react'
 import { galleryService } from '@/services/galleryService'
 import { Album, GalleryPhoto } from '@/lib/type'
 import { useUserStore } from '@/store/userStore'
@@ -36,7 +21,7 @@ import 'swiper/css/pagination'
 import CustomModal from '@/components/ui/CustomModal'
 
 export default function AlbumDetailPage() {
-  const { subdomain, id } = useParams()
+  const { id } = useParams()
   const router = useRouter()
   const { user } = useUserStore()
 
@@ -334,7 +319,7 @@ export default function AlbumDetailPage() {
                     </div>
                     {activePhoto.authorId._id === user?._id && (
                       <button
-                        onClick={e => handleDeletePhoto(activePhoto._id, e as any)}
+                        onClick={e => handleDeletePhoto(activePhoto._id, e)}
                         className='flex-1 md:flex-none bg-red-500/20 hover:bg-red-500 text-white px-6 md:px-8 py-3 md:py-4 rounded-2xl font-bold transition-all flex items-center justify-center space-x-3 border border-white/10'
                       >
                         <Trash2 size={20} className='md:w-6 md:h-6' />

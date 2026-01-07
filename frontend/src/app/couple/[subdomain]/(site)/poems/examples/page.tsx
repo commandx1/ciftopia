@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useEffect, useState, useCallback } from 'react'
-import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   ArrowLeft,
@@ -10,8 +9,6 @@ import {
   Loader2,
   ArrowRight,
   Sparkles,
-  Quote,
-  X,
   ChevronRight,
   BookOpen
 } from 'lucide-react'
@@ -19,9 +16,9 @@ import { poemsService } from '@/services/poemsService'
 import { Poem } from '@/lib/type'
 import { getUserAvatar } from '@/lib/utils'
 import PoemDetailModal from '@/components/couple/PoemDetailModal'
+import Image from 'next/image'
 
 export default function PoemExamplesPage() {
-  const { subdomain } = useParams()
   const [poems, setPoems] = useState<Poem[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -219,12 +216,14 @@ export default function PoemExamplesPage() {
                         <div className={`flex items-center justify-between pt-6 border-t border-${accentColor}-200`}>
                           <div className='flex items-center space-x-3'>
                             <div className='relative'>
-                              <img
+                              <Image
                                 src={getUserAvatar({
                                   avatar: typeof poem.authorId.avatar === 'string' ? undefined : poem.authorId.avatar,
                                   gender: poem.authorId.gender
                                 })}
-                                alt=''
+                                alt={poem.authorId.firstName}
+                                width={40}
+                                height={40}
                                 className={`w-10 h-10 rounded-full object-cover border-2 border-${accentColor}-300 shadow-sm`}
                               />
                               <div className='absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm'>
