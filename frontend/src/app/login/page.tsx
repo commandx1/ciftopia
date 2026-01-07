@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation'
 import CoupleNames from '@/components/couple/CoupleNames'
 import { useUserStore } from '@/store/userStore'
 import { showCustomToast } from '@/components/ui/CustomToast'
+import Logo from '@/components/ui/Logo'
 import Image from 'next/image'
 
 function LoginForm() {
@@ -180,8 +181,8 @@ function LoginForm() {
         <div className='text-center mb-8'>
           <div className='flex items-center justify-center mb-6'>
             <div className='relative'>
-              <div className='w-24 h-24 rounded-full flex items-center justify-center shadow-lg bg-white relative overflow-hidden animate-heartbeat'>
-                <Image src='/favicon/favicon.svg' alt='Ciftopia Logo' fill className='object-contain p-4' />
+              <div className='w-24 h-24 rounded-full flex items-center justify-center shadow-lg animate-heartbeat'>
+                <Logo />
               </div>
               <div className='absolute -top-2 -right-2 w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center shadow-md z-10'>
                 <Lock size={14} className='text-white' />
