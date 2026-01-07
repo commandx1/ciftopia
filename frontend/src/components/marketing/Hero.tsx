@@ -55,7 +55,7 @@ export const Hero = () => {
             <div className="relative w-full h-[550px] rounded-[3rem] overflow-hidden shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-700">
               <Image 
                 className="object-cover" 
-                src="https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=2070&auto=format&fit=crop" 
+                src="/banner_image.png" 
                 alt="Romantic couple" 
                 fill
                 priority
