@@ -8,6 +8,9 @@ import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { MemoriesModule } from './modules/memories/memories.module';
 import { UploadModule } from './modules/upload/upload.module';
+import { PoemsModule } from './modules/poems/poems.module';
+import { NotesModule } from './modules/notes/notes.module';
+import { GalleryModule } from './modules/gallery/gallery.module';
 
 @Module({
   imports: [
@@ -26,6 +29,9 @@ import { UploadModule } from './modules/upload/upload.module';
     PaymentModule,
     MemoriesModule,
     UploadModule,
+    PoemsModule,
+    NotesModule,
+    GalleryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -81,13 +81,13 @@ export default function CoupleLayoutClient({ children, user, subdomain }: Couple
               <Link href='/memories' className={`${navLinkClass} transition-colors font-medium`}>
                 Anılar
               </Link>
-              <Link href='/#gallery-section' className={`${navLinkClass} transition-colors font-medium`}>
+              <Link href='/gallery' className={`${navLinkClass} transition-colors font-medium`}>
                 Galeri
               </Link>
-              <Link href='/#poems-section' className={`${navLinkClass} transition-colors font-medium`}>
+              <Link href='/poems' className={`${navLinkClass} transition-colors font-medium`}>
                 Şiirler
               </Link>
-              <Link href='/#notes-section' className={`${navLinkClass} transition-colors font-medium`}>
+              <Link href='/notes' className={`${navLinkClass} transition-colors font-medium`}>
                 Notlar
               </Link>
             </div>
@@ -166,13 +166,13 @@ export default function CoupleLayoutClient({ children, user, subdomain }: Couple
             <Link href='/memories' className='text-gray-400 hover:text-white transition-colors'>
               Anılar
             </Link>
-            <Link href='/#gallery-section' className='text-gray-400 hover:text-white transition-colors'>
+            <Link href='/gallery' className='text-gray-400 hover:text-white transition-colors'>
               Galeri
             </Link>
-            <Link href='/#poems-section' className='text-gray-400 hover:text-white transition-colors'>
+            <Link href='/poems' className='text-gray-400 hover:text-white transition-colors'>
               Şiirler
             </Link>
-            <Link href='/#notes-section' className='text-gray-400 hover:text-white transition-colors'>
+            <Link href='/notes' className='text-gray-400 hover:text-white transition-colors'>
               Notlar
             </Link>
           </div>

@@ -33,7 +33,7 @@ export class MemoriesService {
 
     const transformed = await Promise.all(
       memoryList.map(async (memory) => {
-        const memoryObj = memory.toObject();
+        const memoryObj = memory.toObject ? memory.toObject() : memory;
 
         // Keep raw photo keys/objects for editing
         (memoryObj as any).rawPhotos = memoryObj.photos || [];
@@ -42,9 +42,17 @@ export class MemoriesService {
         if (memoryObj.photos && memoryObj.photos.length > 0) {
           memoryObj.photos = await Promise.all(
             memoryObj.photos.map(async (photo: any) => {
+              // Handle both object and legacy string format
+              const key = typeof photo === 'string' ? photo : photo.url;
+              const presignedUrl = await this.uploadService.getPresignedUrl(key);
+              
+              if (typeof photo === 'string') {
+                return presignedUrl;
+              }
+              
               return {
                 ...photo,
-                url: await this.uploadService.getPresignedUrl(photo.url),
+                url: presignedUrl,
               };
             }),
           );
@@ -53,10 +61,17 @@ export class MemoriesService {
         // Transform author avatar if populated
         if (memoryObj.authorId && (memoryObj.authorId as any).avatar) {
           const authorAvatar = (memoryObj.authorId as any).avatar;
-          (memoryObj.authorId as any).avatar = {
-            ...authorAvatar,
-            url: await this.uploadService.getPresignedUrl(authorAvatar.url),
-          };
+          const avatarKey = typeof authorAvatar === 'string' ? authorAvatar : authorAvatar.url;
+          const presignedAvatarUrl = await this.uploadService.getPresignedUrl(avatarKey);
+          
+          if (typeof authorAvatar === 'string') {
+            (memoryObj.authorId as any).avatar = presignedAvatarUrl;
+          } else {
+            (memoryObj.authorId as any).avatar = {
+              ...authorAvatar,
+              url: presignedAvatarUrl,
+            };
+          }
         }
 
         return memoryObj;
