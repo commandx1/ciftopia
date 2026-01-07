@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Camera, Plus, Folder, Grip, Images, ArrowUpRight, Loader2 } from 'lucide-react'
+import { Plus, Folder, Grip, Images, ArrowUpRight, Loader2 } from 'lucide-react'
 import { galleryService } from '@/services/galleryService'
 import { Album, GalleryPhoto } from '@/lib/type'
 import { showCustomToast } from '@/components/ui/CustomToast'
@@ -10,6 +10,7 @@ import ImageUploadModal from '@/components/couple/ImageUploadModal'
 import Image from 'next/image'
 import { formatDistanceToNow } from 'date-fns'
 import { tr } from 'date-fns/locale'
+import CameraIcon from '@/components/ui/CameraIcon'
 
 export default function GalleryPage() {
   const { subdomain } = useParams()
@@ -53,8 +54,8 @@ export default function GalleryPage() {
         <section className='mb-12'>
           <div className='flex flex-col md:flex-row items-center justify-between gap-6'>
             <div className='flex items-center space-x-6'>
-              <div className='w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-[1.5rem] flex items-center justify-center shadow-lg transform rotate-3'>
-                <Camera size={32} className='text-white' />
+              <div className='w-16 h-16 bg-gradient-to-br from-purple-500 to-rose-600 rounded-[1.5rem] flex items-center justify-center shadow-lg transform rotate-3'>
+                <CameraIcon width={48} height={48} />
               </div>
               <div>
                 <h1 className='text-5xl font-bold text-gray-900 mb-2'>Galerimiz</h1>
@@ -227,7 +228,7 @@ export default function GalleryPage() {
             ) : (
               <div className='bg-white rounded-[3rem] shadow-xl p-24 text-center border-2 border-dashed border-gray-200'>
                 <div className='w-32 h-32 bg-indigo-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 transform rotate-6'>
-                  <Camera size={64} className='text-indigo-500' />
+                  <CameraIcon width={64} height={64} />
                 </div>
                 <h3 className='text-4xl font-bold text-gray-900 mb-4'>Fotoğraf Bulunamadı</h3>
                 <p className='text-gray-500 text-xl mb-10 max-w-md mx-auto'>Henüz hiçbir fotoğraf yüklememişsiniz.</p>

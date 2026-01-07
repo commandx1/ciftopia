@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import {
   X,
-  Camera,
   CloudUpload,
   FolderOpen,
   CheckCircle,
@@ -23,6 +22,7 @@ import { Album, PhotoMetadata, ApiError } from '@/lib/type'
 import { useUserStore } from '@/store/userStore'
 import { formatBytes } from '@/lib/utils'
 import { showCustomToast } from '@/components/ui/CustomToast'
+import CameraIcon from '../ui/CameraIcon'
 
 interface ImageUploadModalProps {
   isOpen: boolean
@@ -175,11 +175,9 @@ export default function ImageUploadModal({ isOpen, onClose, onSuccess, initialAl
       <div className='bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300'>
         {/* Header */}
         <div className='bg-gradient-to-r from-purple-600 to-indigo-600 px-8 py-6 flex items-center justify-between shrink-0'>
-          <div className='flex items-center space-x-4'>
-            <div className='w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30'>
-              <Camera className='text-white' size={24} />
-            </div>
-            <h2 className='text-3xl font-bold text-white'>Fotoğraf Yükle 📸</h2>
+          <div className='flex items-center gap-4'>
+            <CameraIcon width={48} height={48} />
+            <h2 className='text-3xl font-bold text-white'>Fotoğraf Yükle</h2>
           </div>
           <button
             onClick={onClose}
@@ -290,7 +288,7 @@ export default function ImageUploadModal({ isOpen, onClose, onSuccess, initialAl
               <section className='space-y-4 animate-in fade-in duration-500'>
                 <div className='flex items-center justify-between'>
                   <h3 className='font-bold text-lg text-gray-900'>
-                    <Camera className='inline-block text-purple-500 mr-2 shrink-0' size={20} />
+                    <CameraIcon width={28} height={28} />
                     Yüklenen Fotoğraflar
                     <span className='text-sm font-normal text-gray-500 ml-2'>({previewUrls.length}/10)</span>
                   </h3>

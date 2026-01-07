@@ -1,18 +1,30 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Album, AlbumDocument } from '../../schemas/album.schema';
-import { GalleryPhoto, GalleryPhotoDocument } from '../../schemas/gallery-photo.schema';
+import {
+  GalleryPhoto,
+  GalleryPhotoDocument,
+} from '../../schemas/gallery-photo.schema';
 import { User, UserDocument } from '../../schemas/user.schema';
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
-import { CreateAlbumDto, UploadPhotosDto, UpdateAlbumDto } from './dto/gallery.dto';
+import {
+  CreateAlbumDto,
+  UploadPhotosDto,
+  UpdateAlbumDto,
+} from './dto/gallery.dto';
 import { UploadService } from '../upload/upload.service';
 
 @Injectable()
 export class GalleryService {
   constructor(
     @InjectModel(Album.name) private albumModel: Model<AlbumDocument>,
-    @InjectModel(GalleryPhoto.name) private photoModel: Model<GalleryPhotoDocument>,
+    @InjectModel(GalleryPhoto.name)
+    private photoModel: Model<GalleryPhotoDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
     private uploadService: UploadService,
@@ -22,7 +34,9 @@ export class GalleryService {
     albums: AlbumDocument | AlbumDocument[],
   ): Promise<any> {
     const isArray = Array.isArray(albums);
-    const albumList = isArray ? (albums as AlbumDocument[]) : [albums as AlbumDocument];
+    const albumList = isArray
+      ? (albums as AlbumDocument[])
+      : [albums as AlbumDocument];
 
     const transformed = await Promise.all(
       albumList.map(async (album) => {
@@ -43,7 +57,9 @@ export class GalleryService {
     photos: GalleryPhotoDocument | GalleryPhotoDocument[],
   ): Promise<any> {
     const isArray = Array.isArray(photos);
-    const photoList = isArray ? (photos as GalleryPhotoDocument[]) : [photos as GalleryPhotoDocument];
+    const photoList = isArray
+      ? (photos as GalleryPhotoDocument[])
+      : [photos as GalleryPhotoDocument];
 
     const transformed = await Promise.all(
       photoList.map(async (photo) => {
@@ -188,19 +204,6 @@ export class GalleryService {
     const couple = await this.coupleModel.findById(user.coupleId);
     if (!couple) throw new NotFoundException('Çift bulunamadı');
 
-    // Calculate total size of new photos
-    const totalNewSize = uploadDto.photos.reduce(
-      (sum, photo) => sum + (photo.size || 0),
-      0,
-    );
-
-    // Check storage limit
-    if (couple.storageUsed + totalNewSize > couple.storageLimit) {
-      throw new BadRequestException(
-        'Yetersiz depolama alanı. Lütfen bazı dosyaları silin veya planınızı yükseltin.',
-      );
-    }
-
     const photoData = uploadDto.photos.map((p) => ({
       photo: p,
       caption: uploadDto.caption,
@@ -212,10 +215,6 @@ export class GalleryService {
     }));
 
     const savedPhotos = await this.photoModel.insertMany(photoData);
-
-    // Update couple storage
-    couple.storageUsed += totalNewSize;
-    await couple.save();
 
     // Update album photo count and cover photo if it's the first photo
     if (uploadDto.albumId) {
@@ -262,13 +261,20 @@ export class GalleryService {
     if (!album) throw new NotFoundException('Albüm bulunamadı');
 
     const user = await this.userModel.findById(userId);
-    if (!user || album.authorId.toString() !== userId) {
+    if (!user || album.authorId.toString() !== userId.toString()) {
       throw new ForbiddenException('Bu albümü silme yetkiniz yok');
     }
 
-    // Delete all photos in the album and update storage
+    // Delete all photos in the album from S3 and update storage
     const photos = await this.photoModel.find({ albumId: album._id });
     const totalSize = photos.reduce((sum, p) => sum + (p.photo.size || 0), 0);
+
+    // Delete files from S3
+    for (const photo of photos) {
+      if (photo.photo && photo.photo.url) {
+        await this.uploadService.deleteFile(photo.photo.url);
+      }
+    }
 
     await this.photoModel.deleteMany({ albumId: album._id });
     await this.albumModel.findByIdAndDelete(albumId);
@@ -295,6 +301,11 @@ export class GalleryService {
     const photoSize = photo.photo.size || 0;
     const albumId = photo.albumId;
 
+    // Delete file from S3
+    if (photo.photo && photo.photo.url) {
+      await this.uploadService.deleteFile(photo.photo.url);
+    }
+
     await this.photoModel.findByIdAndDelete(photoId);
 
     // Update couple storage
@@ -311,7 +322,9 @@ export class GalleryService {
         album.photoCount = Math.max(0, album.photoCount - 1);
         // If the deleted photo was the cover photo, pick a new one
         if (album.coverPhoto?.url === photo.photo.url) {
-          const nextPhoto = await this.photoModel.findOne({ albumId: album._id });
+          const nextPhoto = await this.photoModel.findOne({
+            albumId: album._id,
+          });
           album.coverPhoto = nextPhoto ? nextPhoto.photo : undefined;
         }
         await album.save();
@@ -321,4 +334,3 @@ export class GalleryService {
     return { success: true, storageUsed: couple?.storageUsed };
   }
 }
-

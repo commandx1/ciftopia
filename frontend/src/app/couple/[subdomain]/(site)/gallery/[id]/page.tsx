@@ -32,7 +32,11 @@ export default function AlbumDetailPage() {
   const [selectedPhoto, setSelectedPhoto] = useState<GalleryPhoto | null>(null)
   const [activePhoto, setActivePhoto] = useState<GalleryPhoto | null>(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const [isDeleteAlbumModalOpen, setIsDeleteAlbumModalOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isAlbumDeleting, setIsAlbumDeleting] = useState(false)
+
+  const { updateStorageUsed } = useUserStore()
 
   // Sync activePhoto with selectedPhoto when opening
   useEffect(() => {
@@ -73,8 +77,9 @@ export default function AlbumDetailPage() {
 
     setIsDeleting(true)
     try {
-      await galleryService.deletePhoto(deleteConfirmId)
+      const res = await galleryService.deletePhoto(deleteConfirmId)
       showCustomToast.success('Başarılı', 'Fotoğraf silindi.')
+      updateStorageUsed(res.data.storageUsed)
       setPhotos(prev => prev.filter(p => p._id !== deleteConfirmId))
       if (selectedPhoto?._id === deleteConfirmId) setSelectedPhoto(null)
       setDeleteConfirmId(null)
@@ -83,6 +88,25 @@ export default function AlbumDetailPage() {
       showCustomToast.error('Hata', 'Fotoğraf silinirken bir hata oluştu.')
     } finally {
       setIsDeleting(false)
+    }
+  }
+
+  const handleDeleteAlbum = async () => {
+    if (!album) return
+    setIsAlbumDeleting(true)
+    try {
+      const res = await galleryService.deleteAlbum(album._id)
+      if (res.data.success) {
+        showCustomToast.success('Başarılı', 'Albüm ve içindeki tüm fotoğraflar silindi.')
+        updateStorageUsed(res.data.storageUsed)
+        router.push('/gallery')
+      }
+    } catch (err) {
+      console.error('Albüm silinirken hata:', err)
+      showCustomToast.error('Hata', 'Albüm silinirken bir hata oluştu.')
+    } finally {
+      setIsAlbumDeleting(false)
+      setIsDeleteAlbumModalOpen(false)
     }
   }
 
@@ -183,9 +207,12 @@ export default function AlbumDetailPage() {
                     <span>Paylaş</span>
                   </button>
                   {album.authorId._id === user?._id && (
-                    <button className='bg-[#E91E63] hover:bg-[#D81B60] text-white px-8 py-4 rounded-2xl font-bold transition-all flex items-center space-x-2 shadow-lg hover:shadow-rose-200'>
-                      <Pen size={20} />
-                      <span>Düzenle</span>
+                    <button
+                      onClick={() => setIsDeleteAlbumModalOpen(true)}
+                      className='bg-[#E91E63] hover:bg-[#D81B60] text-white px-8 py-4 rounded-2xl font-bold transition-all flex items-center space-x-2 shadow-lg hover:shadow-rose-200'
+                    >
+                      <Trash2 size={20} />
+                      <span>Albümü Sil</span>
                     </button>
                   )}
                 </div>
@@ -383,6 +410,16 @@ export default function AlbumDetailPage() {
         description='Bu fotoğrafı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.'
         onConfirm={confirmDelete}
         loading={isDeleting}
+      />
+
+      <CustomModal
+        isOpen={isDeleteAlbumModalOpen}
+        onClose={() => setIsDeleteAlbumModalOpen(false)}
+        type='danger'
+        title='Albümü Sil?'
+        description={`"${album.title}" albümünü ve içindeki tüm (${photos.length}) fotoğrafı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`}
+        onConfirm={handleDeleteAlbum}
+        loading={isAlbumDeleting}
       />
     </div>
   )

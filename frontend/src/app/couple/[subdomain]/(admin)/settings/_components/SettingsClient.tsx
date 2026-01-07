@@ -8,7 +8,6 @@ import {
   Bell,
   Crown,
   LogOut,
-  Camera,
   Upload,
   Check,
   CircleCheck,
@@ -25,6 +24,7 @@ import DeleteSiteModal from './DeleteSiteModal'
 import { PhotoMetadata, User as UserType } from '@/lib/type'
 import { getUserAvatar } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
+import CameraIcon from '@/components/ui/CameraIcon'
 
 interface SettingsClientProps {
   user: UserType
@@ -135,7 +135,7 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                       <Image src={userAvatar} alt='Profile' fill className='object-cover' />
                     </div>
                     <div className='absolute -bottom-2 -right-2 w-10 h-10 bg-gradient-to-br from-rose-primary to-coral-warm rounded-full flex items-center justify-center shadow-lg cursor-pointer hover:scale-110 transition-transform'>
-                      <Camera size={16} className='text-white' />
+                      <CameraIcon width={24} height={24} />
                     </div>
                   </div>
                   <div className='flex-1'>

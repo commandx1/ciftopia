@@ -8,9 +8,9 @@ import {
   ArrowRight,
   Headset,
   Images,
-  Camera,
   History,
 } from 'lucide-react'
+import CameraIcon from '@/components/ui/CameraIcon'
 
 export default async function NotFound() {
   const headersList = await headers()
@@ -125,7 +125,7 @@ export default async function NotFound() {
                 className='group bg-white rounded-3xl p-8 shadow-lg hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300 border-2 border-transparent hover:border-rose-100 text-center'
               >
                 <div className='w-16 h-16 bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform'>
-                  <Camera className='text-purple-600 w-8 h-8' />
+                  <CameraIcon width={24} height={24} />
                 </div>
                 <h3 className=' text-xl font-bold text-gray-800 mb-2'>Galeri</h3>
                 <p className='text-gray-600 text-sm'>Fotoğraf albümlerinize göz atın</p>
