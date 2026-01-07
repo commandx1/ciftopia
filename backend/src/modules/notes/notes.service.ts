@@ -51,7 +51,7 @@ export class NotesService {
       throw new NotFoundException('Not bulunamadı');
     }
 
-    if (note.authorId.toString() !== userId) {
+    if (note.authorId.toString() !== userId.toString()) {
       throw new ForbiddenException('Bu notu düzenleme yetkiniz yok');
     }
 
