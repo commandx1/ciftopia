@@ -10,6 +10,7 @@ import {
 import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto } from './dto/auth.dto';
+import { UpdateRelationshipProfileDto } from './dto/profile.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { UserDocument } from 'src/schemas/user.schema';
 
@@ -50,6 +51,19 @@ export class AuthController {
   @Get('me')
   getMe(@Req() req: { user: UserDocument }) {
     return { success: true, data: { user: req.user } };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('relationship-profile')
+  async updateRelationshipProfile(
+    @Req() req: { user: UserDocument },
+    @Body() profileDto: UpdateRelationshipProfileDto,
+  ) {
+    const result = await this.authService.updateRelationshipProfile(
+      req.user._id.toString(),
+      profileDto,
+    );
+    return result;
   }
 
   private setCookie(res: Response, token: string) {

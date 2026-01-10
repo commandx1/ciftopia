@@ -56,6 +56,28 @@ export class User {
 
   @Prop()
   lastLoginAt?: Date;
+
+  @Prop({
+    type: {
+      conflictStyle: String,
+      conflictResponse: String,
+      emotionalTrigger: String,
+      decisionStyle: String,
+      loveLanguage: String,
+      coreNeed: [String],
+      sensitivityArea: [String],
+    },
+    required: false,
+  })
+  relationshipProfile?: {
+    conflictStyle: string;
+    conflictResponse: string;
+    emotionalTrigger: string;
+    decisionStyle: string;
+    loveLanguage: string;
+    coreNeed: string[];
+    sensitivityArea: string[];
+  };
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

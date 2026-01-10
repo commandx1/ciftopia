@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import DashboardHeaderClient from './dashboard/_components/DashboardHeaderClient'
 import { getUserAvatar } from '@/lib/utils'
 import Image from 'next/image'
+import ProfileGate from '@/components/auth/ProfileGate'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await authServiceServer.me()
@@ -27,6 +28,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className='min-h-screen bg-soft-gray'>
+      <ProfileGate initialUser={user} />
       <header id='header' className='bg-white shadow-sm sticky top-0 z-50'>
         <nav className='max-w-7xl mx-auto px-6 py-4'>
           <div className='flex items-center justify-between'>

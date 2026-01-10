@@ -11,6 +11,7 @@ import * as bcrypt from 'bcrypt';
 import { User, UserDocument } from '../../schemas/user.schema';
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
 import { RegisterDto, LoginDto } from './dto/auth.dto';
+import { UpdateRelationshipProfileDto } from './dto/profile.dto';
 import { UploadService } from '../upload/upload.service';
 import capitalizeFirstLetter from '../../utils/capitalizeFirstLetter';
 
@@ -109,6 +110,21 @@ export class AuthService {
       user: result,
       accessToken: token,
     };
+  }
+
+  async updateRelationshipProfile(
+    userId: string,
+    profileDto: UpdateRelationshipProfileDto,
+  ) {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException('Kullanıcı bulunamadı.');
+    }
+
+    user.relationshipProfile = profileDto;
+    await user.save();
+
+    return { success: true, relationshipProfile: user.relationshipProfile };
   }
 
   private async generateToken(user: UserDocument) {

@@ -58,7 +58,8 @@ export const authService = {
   register: (data: RegisterData) => api.post('/auth/register', data),
   login: (data: LoginData) => api.post('/auth/login', data),
   logout: () => api.post('/auth/logout'),
-  me: () => api.get('/auth/me')
+  me: () => api.get('/auth/me'),
+  saveRelationshipProfile: (data: any) => api.post('/auth/relationship-profile', data)
 }
 
 export const onboardingService = {

@@ -9,6 +9,7 @@ import { authService, onboardingService } from '@/services/api'
 import { PhotoMetadata, User } from '@/lib/type'
 import { getUserAvatar } from '@/lib/utils'
 import { useUserStore } from '@/store/userStore'
+import ProfileGate from '@/components/auth/ProfileGate'
 
 interface CoupleLayoutClientProps {
   children: React.ReactNode
@@ -19,8 +20,10 @@ interface CoupleLayoutClientProps {
 export default function CoupleLayoutClient({ children, user, subdomain }: CoupleLayoutClientProps) {
   const pathname = usePathname()
   const [scrolled, setScrolled] = useState(false)
-  const { coupleNames, setCoupleNames, setUser } = useUserStore()
+  const { user: storeUser, coupleNames, setCoupleNames, setUser } = useUserStore()
   const router = useRouter()
+
+  const currentUser = storeUser || user
 
   useEffect(() => {
     setUser(user)
@@ -66,6 +69,7 @@ export default function CoupleLayoutClient({ children, user, subdomain }: Couple
 
   return (
     <div className='min-h-screen flex flex-col'>
+      <ProfileGate initialUser={user} />
       {/* Header */}
       <header className={`fixed top-0 w-full z-50 transition-all duration-300 ${navBgClass}`}>
         <nav className='max-w-7xl mx-auto px-6'>

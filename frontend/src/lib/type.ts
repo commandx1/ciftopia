@@ -23,10 +23,25 @@ interface User {
   gender: string
   coupleNames?: string // Token veya /auth/me üzerinden gelen çift isimleri
   coupleId?: {
+    _id?: string
     subdomain?: string
     storageUsed?: number
     storageLimit?: number
   }
+  relationshipProfile?: RelationshipProfile
+}
+
+type CoreNeed = 'communication' | 'trust' | 'attention' | 'goals'
+type SensitivityArea = 'uncertainty' | 'neglect' | 'jealousy' | 'finances'
+
+interface RelationshipProfile {
+  conflictStyle: 'avoidant' | 'balanced' | 'direct'
+  conflictResponse: 'withdraw' | 'talk' | 'deflect'
+  emotionalTrigger: 'disappointment' | 'anger' | 'sadness' | 'low_sensitivity'
+  decisionStyle: 'collaborative' | 'fast' | 'passive'
+  loveLanguage: 'words' | 'time' | 'actions'
+  coreNeed: CoreNeed[]
+  sensitivityArea: SensitivityArea[]
 }
 
 interface Memory {
@@ -103,4 +118,4 @@ interface AuthorStats {
   count: number
 }
 
-export type { ApiError, User, Memory, PhotoMetadata, Poem, Note, Album, GalleryPhoto, AuthorStats }
+export type { ApiError, User, Memory, PhotoMetadata, Poem, Note, Album, GalleryPhoto, AuthorStats, RelationshipProfile }
