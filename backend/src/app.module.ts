@@ -11,6 +11,7 @@ import { UploadModule } from './modules/upload/upload.module';
 import { PoemsModule } from './modules/poems/poems.module';
 import { NotesModule } from './modules/notes/notes.module';
 import { GalleryModule } from './modules/gallery/gallery.module';
+import { DailyQuestionModule } from './modules/daily-question/daily-question.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { GalleryModule } from './modules/gallery/gallery.module';
     PoemsModule,
     NotesModule,
     GalleryModule,
+    DailyQuestionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -82,6 +82,9 @@ export default function CoupleLayoutClient({ children, user, subdomain }: Couple
               <Link href='/' className={`${navLinkClass} transition-colors font-medium`}>
                 Anasayfa
               </Link>
+              <Link href='/daily-question' className={`${navLinkClass} transition-colors font-medium`}>
+                Günün Sorusu
+              </Link>
               <Link href='/memories' className={`${navLinkClass} transition-colors font-medium`}>
                 Anılar
               </Link>

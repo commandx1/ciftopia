@@ -192,10 +192,12 @@ function LoginForm() {
 
           {!isRootDomain && isChecking ? (
             <p className='text-gray-600 font-medium mb-3'>Çiftinizin isimleri yükleniyor...</p>
-          ) : (
+          ) : isRootDomain ? (
             <h1 className='text-4xl font-bold text-gray-900 mb-3 capitalize font-playfair-display'>
-              {isRootDomain ? 'Çiftopia' : <CoupleNames coupleNames={coupleNames} />}
+              Çiftopia
             </h1>
+          ) : (
+            <CoupleNames coupleNames={coupleNames} />
           )}
 
           {!isRootDomain && !isChecking && (

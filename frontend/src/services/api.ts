@@ -68,6 +68,13 @@ export const onboardingService = {
   deleteSite: () => api.delete('/onboarding/site')
 }
 
+export const dailyQuestionService = {
+  getTodaysQuestion: () => api.get<{ question: any; userAnswer: any; partnerAnswered: boolean; partnerAnswer: string | null }>('/daily-question'),
+  answerQuestion: (data: { questionId: string; answer: string }) => api.post('/daily-question/answer', data),
+  getStats: () => api.get('/daily-question/stats'),
+  downloadPdf: () => api.get('/daily-question/download-pdf', { responseType: 'blob' })
+}
+
 export const paymentService = {
   processPayment: (data: PaymentData) => api.post('/payment/process', data)
 }

@@ -113,9 +113,41 @@ interface GalleryPhoto {
   createdAt: string
 }
 
+interface DailyQuestion {
+  _id: string
+  question: string
+  category: 'deep' | 'fun' | 'memory' | 'future' | 'challenge'
+  emoji: string
+  date: string
+  aiAnalysis?: string
+}
+
+interface QuestionAnswer {
+  _id: string
+  userId: string
+  coupleId: string
+  questionId: string
+  answer: string
+  answeredAt: string
+  isFavorite: boolean
+}
+
+interface CoupleQuestionStats {
+  currentStreak: number
+  longestStreak: number
+  totalAnswered: number
+  categoryBreakdown: {
+    deep: number
+    fun: number
+    memory: number
+    future: number
+    challenge: number
+  }
+}
+
 interface AuthorStats {
   _id: string
   count: number
 }
 
-export type { ApiError, User, Memory, PhotoMetadata, Poem, Note, Album, GalleryPhoto, AuthorStats, RelationshipProfile }
+export type { ApiError, User, Memory, PhotoMetadata, Poem, Note, Album, GalleryPhoto, AuthorStats, RelationshipProfile, DailyQuestion, QuestionAnswer, CoupleQuestionStats }
