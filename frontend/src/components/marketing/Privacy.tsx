@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import {
   ShieldCheck,
   Lock,
@@ -190,11 +191,11 @@ export default function Privacy() {
                 <div className='relative'>
                   <div className='absolute -inset-2 bg-gradient-to-r from-rose-400 to-pink-400 rounded-full opacity-20 blur-xl'></div>
                   <div className='relative flex -space-x-4'>
-                    <div className='w-20 h-20 rounded-full border-4 border-white overflow-hidden shadow-lg bg-gray-100'>
-                      <img src='/man-pp.png' alt='Partner 1' className='w-full h-full object-cover' />
+                    <div className='w-20 h-20 rounded-full border-4 border-white overflow-hidden shadow-lg bg-gray-100 relative'>
+                      <Image src='/man-pp.png' alt='Partner 1' fill className='object-cover' />
                     </div>
-                    <div className='w-20 h-20 rounded-full border-4 border-white overflow-hidden shadow-lg bg-gray-100'>
-                      <img src='/woman-pp.png' alt='Partner 2' className='w-full h-full object-cover' />
+                    <div className='w-20 h-20 rounded-full border-4 border-white overflow-hidden shadow-lg bg-gray-100 relative'>
+                      <Image src='/woman-pp.png' alt='Partner 2' fill className='object-cover' />
                     </div>
                   </div>
                 </div>

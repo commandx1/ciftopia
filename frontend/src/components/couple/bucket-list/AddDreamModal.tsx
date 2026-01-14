@@ -2,13 +2,14 @@
 
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Map, Utensils, Film, Home, Heart, Plus } from 'lucide-react'
+import { Map, Utensils, Film, Home, Heart, Plus } from 'lucide-react'
 import XIcon from '@/components/ui/icons/XIcon'
+import { BucketListItem } from '@/lib/type'
 
 interface AddDreamModalProps {
   isOpen: boolean
   onClose: () => void
-  onAdd: (data: any) => Promise<void>
+  onAdd: (data: Partial<BucketListItem>) => Promise<void>
 }
 
 const categories = [
@@ -20,7 +21,12 @@ const categories = [
 ]
 
 export const AddDreamModal = ({ isOpen, onClose, onAdd }: AddDreamModalProps) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    title: string
+    category: BucketListItem['category']
+    targetDate: string
+    description: string
+  }>({
     title: '',
     category: 'experience',
     targetDate: '',
@@ -98,7 +104,7 @@ export const AddDreamModal = ({ isOpen, onClose, onAdd }: AddDreamModalProps) =>
                     <button
                       key={cat.id}
                       type="button"
-                      onClick={() => setFormData({ ...formData, category: cat.id })}
+                      onClick={() => setFormData({ ...formData, category: cat.id as BucketListItem['category'] })}
                       className={`p-4 border-2 rounded-2xl transition-all text-center flex flex-col items-center gap-2 group ${
                         formData.category === cat.id
                           ? 'border-rose-500 bg-rose-50 shadow-md'

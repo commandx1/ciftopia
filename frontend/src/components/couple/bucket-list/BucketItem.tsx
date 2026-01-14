@@ -2,12 +2,12 @@
 
 import React from 'react'
 import { motion } from 'framer-motion'
-import { Check, Calendar, Map, Utensils, Film, Home, Heart, MoreVertical, Trash2 } from 'lucide-react'
+import { Check, Calendar, Map, Utensils, Film, Home, Heart, Trash2 } from 'lucide-react'
 import { BucketListItem } from '@/lib/type'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import Image from 'next/image'
-import { cn, getUserAvatar } from '@/lib/utils'
+import { getUserAvatar } from '@/lib/utils'
 
 interface BucketItemProps {
   item: BucketListItem
@@ -73,7 +73,7 @@ export const BucketItem = ({ item, onToggleComplete, onDelete }: BucketItemProps
                 {item.isCompleted && item.completedAt && (
                   <span className="text-sm text-green-600 font-black flex items-center gap-1.5 italic">
                     <Check size={14} />
-                    {format(new Date(item.completedAt), 'd MMMM yyyy', { locale: tr })}'de tamamlandı
+                    {format(new Date(item.completedAt), 'd MMMM yyyy', { locale: tr })}&apos;de tamamlandı
                   </span>
                 )}
               </div>
@@ -89,7 +89,7 @@ export const BucketItem = ({ item, onToggleComplete, onDelete }: BucketItemProps
 
           {item.description && (
             <p className={`mb-6 text-lg leading-relaxed italic ${item.isCompleted ? 'text-gray-400' : 'text-gray-600'}`}>
-              "{item.description}"
+              &quot;{item.description}&quot;
             </p>
           )}
 

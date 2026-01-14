@@ -43,7 +43,7 @@ export default function AddImportantDateModal({ isOpen, onClose, onAdd, editData
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   
-  const { user, updateStorageUsed } = useUserStore()
+  const { user } = useUserStore()
   
   // Storage Calculations
   const currentStorageUsed = Number(user?.coupleId?.storageUsed) || 0
@@ -137,14 +137,8 @@ export default function AddImportantDateModal({ isOpen, onClose, onAdd, editData
         photo: photoData
       })
       
-      // We don't have the updated storageUsed from the onAdd response here easily 
-      // but importantDatesPage handles the state update for dates.
-      // However, we should refresh user store if we want the progress bar to be accurate next time.
-      // For now, let's assume onAdd might trigger a refresh or we can manually update if needed.
-      // In Gallery, the response returns the new storageUsed.
-      
       onClose()
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(error)
       showCustomToast.error('Hata', 'İşlem başarısız oldu.')
     } finally {
@@ -188,7 +182,7 @@ export default function AddImportantDateModal({ isOpen, onClose, onAdd, editData
                       <button
                         key={type.id}
                         type='button'
-                        onClick={() => setFormData({ ...formData, type: type.id as any })}
+                        onClick={() => setFormData({ ...formData, type: type.id as ImportantDate['type'] })}
                         className={`aspect-square rounded-2xl border-2 flex flex-col items-center justify-center transition-all ${
                           formData.type === type.id 
                             ? 'border-rose-500 bg-rose-50 shadow-md' 

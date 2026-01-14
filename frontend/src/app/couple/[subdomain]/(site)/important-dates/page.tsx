@@ -28,11 +28,7 @@ export default function ImportantDatesPage() {
     loading: false
   })
 
-  useEffect(() => {
-    fetchDates()
-  }, [subdomain])
-
-  const fetchDates = async () => {
+  const fetchDates = React.useCallback(async () => {
     try {
       setIsLoading(true)
       const response = await importantDatesService.getImportantDates(subdomain as string)
@@ -43,19 +39,23 @@ export default function ImportantDatesPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [subdomain])
+
+  useEffect(() => {
+    fetchDates()
+  }, [fetchDates])
 
   const handleAddOrUpdate = async (data: Partial<ImportantDate>) => {
     try {
       if (editData) {
         const response = await importantDatesService.updateImportantDate(editData._id, data)
-        const { date, storageUsed } = response.data as any
+        const { date, storageUsed } = response.data
         setDates(dates.map(d => (d._id === editData._id ? date : d)))
         if (storageUsed !== undefined) updateStorageUsed(storageUsed)
         showCustomToast.success('Başarılı', 'Tarih güncellendi.')
       } else {
         const response = await importantDatesService.createImportantDate(subdomain as string, data)
-        const { date, storageUsed } = response.data as any
+        const { date, storageUsed } = response.data
         setDates([...dates, date])
         if (storageUsed !== undefined) updateStorageUsed(storageUsed)
         showCustomToast.success('Başarılı', 'Yeni tarih eklendi.')
@@ -75,7 +75,7 @@ export default function ImportantDatesPage() {
     try {
       setDeleteModal(prev => ({ ...prev, loading: true }))
       const response = await importantDatesService.deleteImportantDate(deleteModal.id)
-      const { storageUsed } = response.data as any
+      const { storageUsed } = response.data
       setDates(dates.filter(d => d._id !== deleteModal.id))
       if (storageUsed !== undefined) updateStorageUsed(storageUsed)
       showCustomToast.success('Başarılı', 'Tarih silindi.')

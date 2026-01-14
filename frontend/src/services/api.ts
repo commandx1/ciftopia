@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { PhotoMetadata, BucketListItem, ImportantDate } from '@/lib/type'
+import { PhotoMetadata, BucketListItem, ImportantDate, User, DailyQuestion, QuestionAnswer, RelationshipProfile } from '@/lib/type'
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -58,21 +58,21 @@ export const authService = {
   register: (data: RegisterData) => api.post('/auth/register', data),
   login: (data: LoginData) => api.post('/auth/login', data),
   logout: () => api.post('/auth/logout'),
-  me: () => api.get('/auth/me'),
-  saveRelationshipProfile: (data: any) => api.post('/auth/relationship-profile', data)
+  me: () => api.get<User>('/auth/me'),
+  saveRelationshipProfile: (data: Partial<RelationshipProfile>) => api.post<{ success: boolean; relationshipProfile: RelationshipProfile }>('/auth/relationship-profile', data)
 }
 
 export const onboardingService = {
-  checkSubdomain: (subdomain: string) => api.get(`/onboarding/check-subdomain?subdomain=${subdomain}`),
+  checkSubdomain: (subdomain: string) => api.get<{ data: { couple: string; available: boolean } }>(`/onboarding/check-subdomain?subdomain=${subdomain}`),
   createCouple: (data: CreateCoupleData) => api.post('/onboarding/create-couple', data),
   deleteSite: () => api.delete('/onboarding/site')
 }
 
 export const dailyQuestionService = {
-  getTodaysQuestion: () => api.get<{ question: any; userAnswer: any; partnerAnswered: boolean; partnerAnswer: string | null }>('/daily-question'),
-  answerQuestion: (data: { questionId: string; answer: string }) => api.post('/daily-question/answer', data),
+  getTodaysQuestion: () => api.get<{ question: DailyQuestion & { coupleId: { partner1: User; partner2: User } }; userAnswer: QuestionAnswer | null; partnerAnswered: boolean; partnerAnswer: string | null }>('/daily-question'),
+  answerQuestion: (data: { questionId: string; answer: string }) => api.post<{ question: DailyQuestion & { coupleId: { partner1: User; partner2: User } }; userAnswer: QuestionAnswer | null; partnerAnswered: boolean; partnerAnswer: string | null }>('/daily-question/answer', data),
   getStats: () => api.get('/daily-question/stats'),
-  downloadPdf: () => api.get('/daily-question/download-pdf', { responseType: 'blob' })
+  downloadPdf: () => api.get<Blob>('/daily-question/download-pdf', { responseType: 'blob' })
 }
 
 export const paymentService = {
@@ -116,10 +116,10 @@ export const bucketListService = {
 export const importantDatesService = {
   getImportantDates: (subdomain: string) => api.get<ImportantDate[]>(`/important-dates/${subdomain}`),
   createImportantDate: (subdomain: string, data: Partial<ImportantDate>) =>
-    api.post<ImportantDate>(`/important-dates/${subdomain}`, data),
+    api.post<{ date: ImportantDate; storageUsed: number }>(`/important-dates/${subdomain}`, data),
   updateImportantDate: (id: string, data: Partial<ImportantDate>) =>
-    api.put<ImportantDate>(`/important-dates/${id}`, data),
-  deleteImportantDate: (id: string) => api.delete(`/important-dates/${id}`)
+    api.put<{ date: ImportantDate; storageUsed: number }>(`/important-dates/${id}`, data),
+  deleteImportantDate: (id: string) => api.delete<{ storageUsed: number }>(`/important-dates/${id}`)
 }
 
 export default api

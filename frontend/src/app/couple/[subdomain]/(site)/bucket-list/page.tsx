@@ -29,21 +29,21 @@ export default function BucketListPage() {
     loading: false
   })
 
-  const fetchData = async () => {
+  const fetchData = React.useCallback(async () => {
     try {
       setIsLoading(true)
       const res = await bucketListService.getBucketList(subdomain as string)
       setItems(res.data)
-    } catch (error) {
+    } catch {
       showCustomToast.error('Hata', 'Hayaller yüklenirken bir hata oluştu.')
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [subdomain])
 
   useEffect(() => {
     fetchData()
-  }, [subdomain])
+  }, [fetchData])
 
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = { all: items.length }
@@ -92,7 +92,7 @@ export default function BucketListPage() {
         })
         showCustomToast.success('Tebrikler!', 'Bir hayalinizi daha gerçekleştirdiniz! 🎉')
       }
-    } catch (error) {
+    } catch {
       showCustomToast.error('Hata', 'İşlem sırasında bir hata oluştu.')
     }
   }
@@ -109,13 +109,13 @@ export default function BucketListPage() {
       setItems(items.filter(item => item._id !== deleteModal.id))
       showCustomToast.success('Başarılı', 'Hayal listesinden kaldırıldı.')
       setDeleteModal({ isOpen: false, id: null, loading: false })
-    } catch (error) {
+    } catch {
       showCustomToast.error('Hata', 'Silme işlemi başarısız oldu.')
       setDeleteModal(prev => ({ ...prev, loading: false }))
     }
   }
 
-  const handleAddItem = async (data: any) => {
+  const handleAddItem = async (data: Partial<BucketListItem>) => {
     try {
       const res = await bucketListService.createItem(data)
       setItems([res.data, ...items])

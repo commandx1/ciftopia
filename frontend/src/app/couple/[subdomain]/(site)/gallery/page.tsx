@@ -227,7 +227,7 @@ export default function GalleryPage() {
             ) : (
               <div className='bg-white rounded-[3rem] shadow-xl p-24 text-center border-2 border-dashed border-gray-200'>
                 <div className='w-32 h-32 bg-indigo-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 transform rotate-6'>
-                  <CameraIcon width={64} height={64} />
+                  <Camera width={64} height={64} />
                 </div>
                 <h3 className='text-4xl font-bold text-gray-900 mb-4'>Fotoğraf Bulunamadı</h3>
                 <p className='text-gray-500 text-xl mb-10 max-w-md mx-auto'>Henüz hiçbir fotoğraf yüklememişsiniz.</p>

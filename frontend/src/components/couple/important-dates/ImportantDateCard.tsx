@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react'
 import Image from 'next/image'
-import { Calendar, Clock, Edit2, Trash2, RefreshCw, Star } from 'lucide-react'
+import { Clock, Edit2, Trash2, RefreshCw, Star } from 'lucide-react'
 import { ImportantDate, User, PhotoMetadata } from '@/lib/type'
 import { format, isToday } from 'date-fns'
 import { tr } from 'date-fns/locale'
@@ -31,7 +31,7 @@ export default function ImportantDateCard({ date, currentUser, onEdit, onDelete 
   const config = typeConfigs[date.type] || typeConfigs.special
   const isAuthor = date.authorId?._id === currentUser?._id
   
-  const dateObj = new Date(date.date)
+  const dateObj = useMemo(() => new Date(date.date), [date.date])
   
   // Check if it's today (handling recurring dates)
   const isTodayDate = useMemo(() => {

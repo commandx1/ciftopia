@@ -4,13 +4,14 @@ import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Lock, Clock, Send, Sparkles, CheckCircle2, Share2, Download } from 'lucide-react'
 import { dailyQuestionService } from '@/services/api'
-import { DailyQuestion, QuestionAnswer, CoupleQuestionStats, User } from '@/lib/type'
+import { DailyQuestion, QuestionAnswer, User } from '@/lib/type'
 import { showCustomToast } from '@/components/ui/CustomToast'
 import Image from 'next/image'
 import { getUserAvatar } from '@/lib/utils'
 import { formatDistanceToNow } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import { useUserStore } from '@/store/userStore'
+import { AxiosError } from 'axios'
 
 export default function DailyQuestionPage() {
   const { user } = useUserStore()
@@ -25,7 +26,6 @@ export default function DailyQuestionPage() {
     partnerAnswered: false,
     partnerAnswer: null
   })
-  const [stats, setStats] = useState<CoupleQuestionStats | null>(null)
   const [answer, setAnswer] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -35,18 +35,18 @@ export default function DailyQuestionPage() {
     try {
       setIsLoading(true)
       setError(null)
-      const [questionRes, statsRes] = await Promise.all([
+      const [questionRes] = await Promise.all([
         dailyQuestionService.getTodaysQuestion(),
         dailyQuestionService.getStats()
       ])
       setData(questionRes.data)
-      setStats(statsRes.data)
       if (questionRes.data.userAnswer) {
         setAnswer(questionRes.data.userAnswer.answer)
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
-      const errorMessage = err.response?.data?.message || 'Veriler yüklenirken bir hata oluştu.'
+      const errorTyped = err as AxiosError<{ message: string }>
+      const errorMessage = errorTyped.response?.data?.message || 'Veriler yüklenirken bir hata oluştu.'
       setError(errorMessage)
       showCustomToast.error('Hata', errorMessage)
     } finally {
@@ -69,8 +69,9 @@ export default function DailyQuestionPage() {
       })
       setData(res.data)
       showCustomToast.success('Başarılı', 'Cevabın kaydedildi! 💕')
-    } catch (error: any) {
-      showCustomToast.error('Hata', error.response?.data?.message || 'Cevap gönderilirken bir hata oluştu.')
+    } catch (error: unknown) {
+      const err = error as AxiosError<{ message: string }>
+      showCustomToast.error('Hata', err.response?.data?.message || 'Cevap gönderilirken bir hata oluştu.')
     } finally {
       setIsSubmitting(false)
     }
@@ -101,21 +102,22 @@ export default function DailyQuestionPage() {
       window.URL.revokeObjectURL(url)
 
       showCustomToast.success('Başarılı', 'PDF indirildi! 📄')
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('PDF Error:', error)
       let message = 'PDF indirilirken bir hata oluştu.'
 
+      const err = error as AxiosError<{ message: string }>
       // Eğer response bir Blob ise (hata mesajı JSON olarak blob içinde gelir)
-      if (error.response?.data instanceof Blob) {
+      if (err.response?.data instanceof Blob) {
         try {
-          const text = await error.response.data.text()
+          const text = await (err.response.data as Blob).text()
           const errorData = JSON.parse(text)
           message = errorData.message || message
-        } catch (e) {
+        } catch {
           // JSON parse edilemezse varsayılan mesaj kalır
         }
-      } else if (error.response?.data?.message) {
-        message = error.response.data.message
+      } else if (err.response?.data?.message) {
+        message = err.response.data.message
       }
 
       showCustomToast.error('Hata', message)
@@ -210,7 +212,7 @@ export default function DailyQuestionPage() {
                       : 'from-rose-50 to-pink-50'
                 }`}
               >
-                <p className='text-3xl md:text-4xl text-gray-800 leading-tight italic'>"{data.question.question}"</p>
+                <p className='text-3xl md:text-4xl text-gray-800 leading-tight italic'>&quot;{data.question.question}&quot;</p>
               </div>
 
               {/* Status Message for Partner Answered */}
@@ -256,7 +258,7 @@ export default function DailyQuestionPage() {
 
                   {data.userAnswer ? (
                     <div className='bg-gray-50 rounded-3xl p-6 border-2 border-gray-100 min-h-[150px] shadow-inner'>
-                      <p className='text-gray-800 text-lg leading-relaxed italic'>"{data.userAnswer.answer}"</p>
+                      <p className='text-gray-800 text-lg leading-relaxed italic'>&quot;{data.userAnswer.answer}&quot;</p>
                       <p className='text-xs text-gray-400 mt-4 text-right'>
                         {formatDistanceToNow(new Date(data.userAnswer.answeredAt), { addSuffix: true, locale: tr })}
                       </p>
@@ -296,7 +298,7 @@ export default function DailyQuestionPage() {
 
                     {bothAnswered ? (
                       <div className='bg-rose-50/50 rounded-3xl p-6 border-2 border-rose-100 min-h-[150px] shadow-inner'>
-                        <p className='text-gray-800 text-lg leading-relaxed italic'>"{data.partnerAnswer}"</p>
+                        <p className='text-gray-800 text-lg leading-relaxed italic'>&quot;{data.partnerAnswer}&quot;</p>
                         <p className='text-xs text-gray-400 mt-4 text-right'>Az önce</p>
                       </div>
                     ) : (
@@ -344,7 +346,7 @@ export default function DailyQuestionPage() {
                       </span>
                     </div>
                     <p className='text-gray-800 text-lg leading-relaxed font-medium italic'>
-                      "{data.question.aiAnalysis}"
+                      &quot;{data.question.aiAnalysis}&quot;
                     </p>
                   </div>
                 </motion.div>
@@ -373,7 +375,7 @@ export default function DailyQuestionPage() {
               {/* Footer text */}
               <div className='flex items-center justify-center gap-2 text-gray-400 font-medium'>
                 <Clock size={16} />
-                <span className='text-sm'>Yarın 00:00'da yeni bir soru sizi bekliyor olacak</span>
+                <span className='text-sm'>Yarın 00:00&apos;da yeni bir soru sizi bekliyor olacak</span>
               </div>
             </div>
           </motion.div>
