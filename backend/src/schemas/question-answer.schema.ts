@@ -11,7 +11,12 @@ export class QuestionAnswer {
   @Prop({ type: Types.ObjectId, ref: 'Couple', required: true, index: true })
   coupleId: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'DailyQuestion', required: true, index: true })
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'DailyQuestion',
+    required: true,
+    index: true,
+  })
   questionId: Types.ObjectId;
 
   @Prop({ required: true })
@@ -27,6 +32,7 @@ export class QuestionAnswer {
   viewedPartnerAnswer: boolean;
 }
 
-export const QuestionAnswerSchema = SchemaFactory.createForClass(QuestionAnswer);
+export const QuestionAnswerSchema =
+  SchemaFactory.createForClass(QuestionAnswer);
 QuestionAnswerSchema.index({ questionId: 1, userId: 1 }, { unique: true });
 QuestionAnswerSchema.index({ coupleId: 1, questionId: 1 });

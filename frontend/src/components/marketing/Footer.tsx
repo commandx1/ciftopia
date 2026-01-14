@@ -26,13 +26,26 @@ export const Footer = () => {
           <div>
             <h4 className="font-bold text-xl mb-8">Ürün</h4>
             <ul className="space-y-4">
-              {['Özellikler', 'Fiyatlandırma', 'Demo', 'Yol Haritası', 'Güncellemeler'].map((item) => (
-                <li key={item}>
-                  <Link href="#" className="text-gray-400 hover:text-rose-400 transition-colors text-lg inline-block">
-                    {item}
-                  </Link>
-                </li>
-              ))}
+              <li>
+                <Link href="/#features" className="text-gray-400 hover:text-rose-400 transition-colors text-lg inline-block">
+                  Özellikler
+                </Link>
+              </li>
+              <li>
+                <Link href="/how-it-works" className="text-gray-400 hover:text-rose-400 transition-colors text-lg inline-block">
+                  Nasıl Çalışır?
+                </Link>
+              </li>
+              <li>
+                <Link href="/pricing" className="text-gray-400 hover:text-rose-400 transition-colors text-lg inline-block">
+                  Fiyatlandırma
+                </Link>
+              </li>
+              <li>
+                <Link href="#" className="text-gray-400 hover:text-rose-400 transition-colors text-lg inline-block">
+                  Demo
+                </Link>
+              </li>
             </ul>
           </div>
           
@@ -52,13 +65,31 @@ export const Footer = () => {
           <div>
             <h4 className="font-bold text-xl mb-8">Destek</h4>
             <ul className="space-y-4">
-              {['Yardım Merkezi', 'SSS', 'Gizlilik Politikası', 'Kullanım Şartları', 'KVKK'].map((item) => (
-                <li key={item}>
-                  <Link href="#" className="text-gray-400 hover:text-rose-400 transition-colors text-lg inline-block">
-                    {item}
-                  </Link>
-                </li>
-              ))}
+              <li>
+                <Link href="#" className="text-gray-400 hover:text-rose-400 transition-colors text-lg inline-block">
+                  Yardım Merkezi
+                </Link>
+              </li>
+              <li>
+                <Link href="#" className="text-gray-400 hover:text-rose-400 transition-colors text-lg inline-block">
+                  SSS
+                </Link>
+              </li>
+              <li>
+                <Link href="/privacy" className="text-gray-400 hover:text-rose-400 transition-colors text-lg inline-block">
+                  Gizlilik Politikası
+                </Link>
+              </li>
+              <li>
+                <Link href="#" className="text-gray-400 hover:text-rose-400 transition-colors text-lg inline-block">
+                  Kullanım Şartları
+                </Link>
+              </li>
+              <li>
+                <Link href="/privacy" className="text-gray-400 hover:text-rose-400 transition-colors text-lg inline-block">
+                  KVKK
+                </Link>
+              </li>
             </ul>
           </div>
         </div>

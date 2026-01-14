@@ -5,7 +5,13 @@ export type CoupleQuestionStatsDocument = CoupleQuestionStats & Document;
 
 @Schema({ timestamps: true })
 export class CoupleQuestionStats {
-  @Prop({ type: Types.ObjectId, ref: 'Couple', required: true, unique: true, index: true })
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'Couple',
+    required: true,
+    unique: true,
+    index: true,
+  })
   coupleId: Types.ObjectId;
 
   @Prop({ default: 0 })
@@ -39,4 +45,5 @@ export class CoupleQuestionStats {
   };
 }
 
-export const CoupleQuestionStatsSchema = SchemaFactory.createForClass(CoupleQuestionStats);
+export const CoupleQuestionStatsSchema =
+  SchemaFactory.createForClass(CoupleQuestionStats);

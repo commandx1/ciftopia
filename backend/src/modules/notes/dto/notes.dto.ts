@@ -1,4 +1,11 @@
-import { IsString, IsNotEmpty, IsEnum, IsOptional, IsObject, IsNumber } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsEnum,
+  IsOptional,
+  IsObject,
+  IsNumber,
+} from 'class-validator';
 
 export class CreateNoteDto {
   @IsString()
@@ -23,4 +30,3 @@ export class UpdateNotePositionDto {
   @IsNumber()
   y: number;
 }
-

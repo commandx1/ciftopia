@@ -1,9 +1,8 @@
 import React from 'react'
-import { ArrowRight, Play, Star, Heart } from 'lucide-react'
+import { ArrowRight, Play, Star, Heart, Camera } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import Image from 'next/image'
-import CameraIcon from '../ui/CameraIcon'
 
 export const Hero = () => {
   return (
@@ -86,7 +85,9 @@ export const Hero = () => {
               className='absolute -top-10 -right-10 bg-white dark:bg-slate-900 rounded-3xl shadow-2xl p-6 flex items-center space-x-4 border border-purple-100 dark:border-purple-900/30 animate-bounce-slow'
               style={{ animationDelay: '1s' }}
             >
-              <CameraIcon width={56} height={56} />
+              <div className='w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center'>
+                <Camera className='text-white' />
+              </div>
               <div>
                 <p className='font-bold text-2xl text-gray-800 dark:text-white'>8,432</p>
                 <p className='text-sm text-gray-500 dark:text-gray-400 font-medium'>Fotoğraf</p>

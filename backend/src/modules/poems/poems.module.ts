@@ -19,4 +19,3 @@ import { Couple, CoupleSchema } from '../../schemas/couple.schema';
   exports: [PoemsService],
 })
 export class PoemsModule {}
-

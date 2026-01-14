@@ -81,12 +81,9 @@ export class MemoriesController {
 
   @UseGuards(JwtAuthGuard, CoupleOwnerGuard)
   @Get(':subdomain/export-pdf')
-  async exportPdf(
-    @Param('subdomain') subdomain: string,
-    @Res() res: Response,
-  ) {
+  async exportPdf(@Param('subdomain') subdomain: string, @Res() res: Response) {
     const pdfBuffer = await this.memoriesService.exportAsPdf(subdomain);
-    
+
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename=Anilarimiz-${subdomain}.pdf`,

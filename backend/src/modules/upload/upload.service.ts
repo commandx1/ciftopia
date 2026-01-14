@@ -105,7 +105,7 @@ export class UploadService {
       return url;
     } catch (err) {
       console.error(`Presigned URL error for key "${key}":`, err);
-      // If it's a relative path and we failed to get a signed URL, 
+      // If it's a relative path and we failed to get a signed URL,
       // return it with a leading slash so next/image doesn't throw "failed to parse"
       // although it will still be a broken image, at least it won't crash the page
       return key.startsWith('/') ? key : `/${key}`;

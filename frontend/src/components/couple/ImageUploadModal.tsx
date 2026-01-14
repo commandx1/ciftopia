@@ -13,7 +13,8 @@ import {
   Folder,
   MessageSquare,
   Layers,
-  ChevronDown
+  ChevronDown,
+  Camera
 } from 'lucide-react'
 import { uploadService } from '@/services/api'
 import { galleryService } from '@/services/galleryService'
@@ -22,7 +23,6 @@ import { Album, PhotoMetadata, ApiError } from '@/lib/type'
 import { useUserStore } from '@/store/userStore'
 import { formatBytes } from '@/lib/utils'
 import { showCustomToast } from '@/components/ui/CustomToast'
-import CameraIcon from '../ui/CameraIcon'
 
 interface ImageUploadModalProps {
   isOpen: boolean
@@ -176,7 +176,7 @@ export default function ImageUploadModal({ isOpen, onClose, onSuccess, initialAl
         {/* Header */}
         <div className='bg-gradient-to-r from-purple-600 to-indigo-600 px-8 py-6 flex items-center justify-between shrink-0'>
           <div className='flex items-center gap-4'>
-            <CameraIcon width={48} height={48} />
+            <Camera className='text-white w-8 h-8' />
             <h2 className='text-3xl font-bold text-white'>Fotoğraf Yükle</h2>
           </div>
           <button
@@ -288,7 +288,7 @@ export default function ImageUploadModal({ isOpen, onClose, onSuccess, initialAl
               <section className='space-y-4 animate-in fade-in duration-500'>
                 <div className='flex items-center justify-between'>
                   <h3 className='font-bold text-lg text-gray-900'>
-                    <CameraIcon width={28} height={28} />
+                    <Camera className='text-gray-500 w-6 h-6 mr-2' />
                     Yüklenen Fotoğraflar
                     <span className='text-sm font-normal text-gray-500 ml-2'>({previewUrls.length}/10)</span>
                   </h3>

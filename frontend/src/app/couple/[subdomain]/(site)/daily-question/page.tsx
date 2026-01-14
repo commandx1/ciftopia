@@ -2,23 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import {
-  Flame,
-  Lock,
-  Clock,
-  Send,
-  Sparkles,
-  CheckCircle2,
-  Heart,
-  Share2,
-  MessageCircle,
-  Lightbulb,
-  ArrowRight,
-  ClipboardCheck,
-  CalendarDays,
-  Smile,
-  Download
-} from 'lucide-react'
+import { Lock, Clock, Send, Sparkles, CheckCircle2, Share2, Download } from 'lucide-react'
 import { dailyQuestionService } from '@/services/api'
 import { DailyQuestion, QuestionAnswer, CoupleQuestionStats, User } from '@/lib/type'
 import { showCustomToast } from '@/components/ui/CustomToast'
@@ -102,20 +86,20 @@ export default function DailyQuestionPage() {
     try {
       showCustomToast.info('PDF', 'PDF hazırlanıyor...')
       const response = await dailyQuestionService.downloadPdf()
-      
+
       const blob = new Blob([response.data], { type: 'application/pdf' })
       const url = window.URL.createObjectURL(blob)
-      
+
       const link = document.createElement('a')
       link.href = url
       link.setAttribute('download', `Gunun-Sorusu-${new Date().toISOString().split('T')[0]}.pdf`)
       document.body.appendChild(link)
       link.click()
-      
+
       // Cleanup
       link.remove()
       window.URL.revokeObjectURL(url)
-      
+
       showCustomToast.success('Başarılı', 'PDF indirildi! 📄')
     } catch (error: any) {
       console.error('PDF Error:', error)
@@ -265,12 +249,7 @@ export default function DailyQuestionPage() {
                 <div className='space-y-4'>
                   <div className='flex items-center gap-3'>
                     <div className='relative w-10 h-10 rounded-full overflow-hidden border-2 border-rose-200'>
-                      <Image
-                        src={getUserAvatar(user || undefined)}
-                        alt='Ben'
-                        fill
-                        className='object-cover'
-                      />
+                      <Image src={getUserAvatar(user || undefined)} alt='Ben' fill className='object-cover' />
                     </div>
                     <span className='font-bold text-gray-900'>Senin Cevabın</span>
                   </div>
@@ -310,12 +289,7 @@ export default function DailyQuestionPage() {
                   <div className='space-y-4'>
                     <div className='flex items-center gap-3'>
                       <div className='relative w-10 h-10 rounded-full overflow-hidden border-2 border-pink-200'>
-                        <Image
-                          src={getUserAvatar(partnerUser)}
-                          alt='Partner'
-                          fill
-                          className='object-cover'
-                        />
+                        <Image src={getUserAvatar(partnerUser)} alt='Partner' fill className='object-cover' />
                       </div>
                       <span className='font-bold text-gray-900'>Partnerinin Cevabı</span>
                     </div>

@@ -15,7 +15,8 @@ import {
   Download,
   ArrowDown,
   Sparkles,
-  HeartOff,  Loader2,
+  HeartOff,
+  Loader2,
   Star
 } from 'lucide-react'
 import { memoriesService } from '@/services/api'
@@ -93,12 +94,7 @@ const ImageGallery = ({ photos, title }: { photos: PhotoMetadata[]; title: strin
           return (
             <SwiperSlide key={index}>
               <div className='relative w-full h-full'>
-                <Image
-                  src={src}
-                  alt={`${title} - ${index + 1}`}
-                  fill
-                  className='object-cover select-none'
-                />
+                <Image src={src} alt={`${title} - ${index + 1}`} fill className='object-cover select-none' />
               </div>
             </SwiperSlide>
           )
@@ -187,7 +183,7 @@ export default function MemoriesPage() {
     try {
       setIsDownloading(true)
       const response = await memoriesService.exportPdf(subdomain as string)
-      
+
       const url = window.URL.createObjectURL(new Blob([response.data]))
       const link = document.createElement('a')
       link.href = url
@@ -326,11 +322,7 @@ export default function MemoriesPage() {
                   disabled={isDownloading}
                   className='bg-white border-2 border-gray-200 hover:border-rose-300 text-gray-700 hover:text-rose-600 px-8 py-3 rounded-2xl font-semibold transition-all flex items-center justify-center space-x-2 disabled:opacity-50'
                 >
-                  {isDownloading ? (
-                    <Loader2 className='animate-spin' size={18} />
-                  ) : (
-                    <Download size={18} />
-                  )}
+                  {isDownloading ? <Loader2 className='animate-spin' size={18} /> : <Download size={18} />}
                   <span>{isDownloading ? 'Hazırlanıyor...' : 'Anıları İndir'}</span>
                 </button>
               </div>

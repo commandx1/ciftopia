@@ -87,7 +87,11 @@ export class OnboardingService {
     if (user.avatar && typeof user.avatar !== 'string' && user.avatar.size) {
       initialStorageUsed += user.avatar.size;
     }
-    if (partnerAvatar && typeof partnerAvatar !== 'string' && partnerAvatar.size) {
+    if (
+      partnerAvatar &&
+      typeof partnerAvatar !== 'string' &&
+      partnerAvatar.size
+    ) {
       initialStorageUsed += partnerAvatar.size;
     }
 

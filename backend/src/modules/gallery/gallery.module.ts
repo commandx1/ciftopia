@@ -3,7 +3,10 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { GalleryService } from './gallery.service';
 import { GalleryController } from './gallery.controller';
 import { Album, AlbumSchema } from '../../schemas/album.schema';
-import { GalleryPhoto, GalleryPhotoSchema } from '../../schemas/gallery-photo.schema';
+import {
+  GalleryPhoto,
+  GalleryPhotoSchema,
+} from '../../schemas/gallery-photo.schema';
 import { User, UserSchema } from '../../schemas/user.schema';
 import { Couple, CoupleSchema } from '../../schemas/couple.schema';
 import { UploadModule } from '../upload/upload.module';
@@ -23,4 +26,3 @@ import { UploadModule } from '../upload/upload.module';
   exports: [GalleryService],
 })
 export class GalleryModule {}
-

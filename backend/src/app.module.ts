@@ -12,6 +12,8 @@ import { PoemsModule } from './modules/poems/poems.module';
 import { NotesModule } from './modules/notes/notes.module';
 import { GalleryModule } from './modules/gallery/gallery.module';
 import { DailyQuestionModule } from './modules/daily-question/daily-question.module';
+import { BucketListModule } from './modules/bucket-list/bucket-list.module';
+import { ImportantDatesModule } from './modules/important-dates/important-dates.module';
 
 @Module({
   imports: [
@@ -34,6 +36,8 @@ import { DailyQuestionModule } from './modules/daily-question/daily-question.mod
     NotesModule,
     GalleryModule,
     DailyQuestionModule,
+    BucketListModule,
+    ImportantDatesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

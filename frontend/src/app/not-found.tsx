@@ -1,16 +1,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { headers } from 'next/headers'
-import {
-  Heart,
-  HeartCrack,
-  Home,
-  ArrowRight,
-  Headset,
-  Images,
-  History,
-} from 'lucide-react'
-import CameraIcon from '@/components/ui/CameraIcon'
+import { Heart, HeartCrack, Home, ArrowRight, Headset, Images, Camera, History } from 'lucide-react'
 
 export default async function NotFound() {
   const headersList = await headers()
@@ -18,7 +9,8 @@ export default async function NotFound() {
   const mainDomain = (process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'ciftopia.local:3000').split(':')[0]
   const hostname = host.split(':')[0]
 
-  const isCoupleSite = hostname.endsWith(`.${mainDomain}`) && hostname !== `www.${mainDomain}` && hostname !== `app.${mainDomain}`
+  const isCoupleSite =
+    hostname.endsWith(`.${mainDomain}`) && hostname !== `www.${mainDomain}` && hostname !== `app.${mainDomain}`
 
   return (
     <div className='min-h-screen bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 overflow-x-hidden flex items-center justify-center relative'>
@@ -125,7 +117,7 @@ export default async function NotFound() {
                 className='group bg-white rounded-3xl p-8 shadow-lg hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300 border-2 border-transparent hover:border-rose-100 text-center'
               >
                 <div className='w-16 h-16 bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform'>
-                  <CameraIcon width={24} height={24} />
+                  <Camera className='text-purple-600 w-8 h-8' />
                 </div>
                 <h3 className=' text-xl font-bold text-gray-800 mb-2'>Galeri</h3>
                 <p className='text-gray-600 text-sm'>Fotoğraf albümlerinize göz atın</p>

@@ -72,7 +72,10 @@ export class DailyQuestionService {
       .limit(30)
       .select('question');
 
-    const prompt = `Sen çiftler için günlük sorular üreten bir uzmansın.
+    const prompt = `Sen çiftler için Onedio tarzında, aşırı yaratıcı, eğlenceli ve merak uyandırıcı günlük sorular üreten bir asistansın.
+
+# Görevin:
+Çiftlerin birbirini daha iyi tanımasını sağlarken aynı zamanda eğlendiren, klişelerden uzak, sosyal medyada viral olabilecek kalitede sorular yazmak.
 
 # Çift Profilleri:
 Partner 1 (${partner1.firstName}):
@@ -92,17 +95,21 @@ Partner 2 (${partner2.firstName}):
 - Hassas Alanları: ${partner2.relationshipProfile.sensitivityArea.join(', ')}
 
 # Kurallar:
-1. Soru bu çiftin profiline uygun olmalı (özellikle çatışma tarzları ve hassas alanları dikkate al)
-2. Son sorulan sorulara benzememeli: ${recentQuestions.map((q) => q.question).join(', ')}
-3. Kategoriler dengeli olmalı (deep, fun, memory, future, challenge)
-4. Türkçe, samimi ve nazik bir dil kullan.
-5. Düşündürücü ama çifti yoracak kadar ağır olmasın.
-6. Partner'ların farklı çatışma tarzları (conflictStyle) varsa bunu bir farkındalık fırsatı olarak kullan.
-7. Hassas alanlardan kaçınma, aksine nazikçe keşfetmeye ve paylaşmaya teşvik et.
+1. ASLA resmi olma. "Neden özel?", "Hayatımızdaki yeri nedir?" gibi sıkıcı ve ödev gibi hissettiren kalıplar kullanma.
+2. ONEDIO TARZI: "Farz et ki...", "Eğer ... olsaydı hangimiz ... yapardı?", "İtiraf et: ...", "Senin hakkında kimsenin bilmediği ama benim bildiğim o şey ne?" gibi sürükleyici girişler yap.
+3. KATEGORİLER:
+   - Deep: Ruhun derinliklerine iner ama bunu "Seninle en büyük korkum..." gibi çarpıcı sorar.
+   - Fun: "Zombi istilası çıksa beni kime yem edersin?" gibi aşırı saçma ve eğlenceli.
+   - Memory: "İlk buluşmamızda giydiğim o korkunç şeyi hatırlıyor musun?" gibi spesifik ve nostaljik.
+   - Future: "Piyangodan 100 milyon çıksa ilk hangi şehre kaçarız?" gibi hayal kurdurucu.
+   - Challenge: Birbirini tatlı tatlı zorlayan sorular.
+4. Çiftin profiline (çatışma tarzı, hassas alanlar) dikkat et ama bunu profesyonel bir terapist gibi değil, en yakın arkadaşlarıymışsın gibi yansıt.
+5. Son sorulanlara benzememeli: ${recentQuestions.map((q) => q.question).join(', ')}
+6. Türkçe diline, esprilere ve samimiyete önem ver.
 
 JSON formatında döndür:
 {
-  "question": "Soru metni buraya",
+  "question": "Soru metni buraya (Onedio başlığı gibi çarpıcı olsun)",
   "category": "deep|fun|memory|future|challenge",
   "emoji": "emoji buraya"
 }`;

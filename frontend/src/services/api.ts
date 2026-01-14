@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { PhotoMetadata } from '@/lib/type'
+import { PhotoMetadata, BucketListItem, ImportantDate } from '@/lib/type'
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -104,6 +104,22 @@ export const uploadService = {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
   }
+}
+
+export const bucketListService = {
+  getBucketList: (subdomain: string) => api.get<BucketListItem[]>(`/bucket-list/${subdomain}`),
+  createItem: (data: Partial<BucketListItem>) => api.post<BucketListItem>('/bucket-list', data),
+  updateItem: (id: string, data: Partial<BucketListItem>) => api.patch<BucketListItem>(`/bucket-list/${id}`, data),
+  deleteItem: (id: string) => api.delete(`/bucket-list/${id}`)
+}
+
+export const importantDatesService = {
+  getImportantDates: (subdomain: string) => api.get<ImportantDate[]>(`/important-dates/${subdomain}`),
+  createImportantDate: (subdomain: string, data: Partial<ImportantDate>) =>
+    api.post<ImportantDate>(`/important-dates/${subdomain}`, data),
+  updateImportantDate: (id: string, data: Partial<ImportantDate>) =>
+    api.put<ImportantDate>(`/important-dates/${id}`, data),
+  deleteImportantDate: (id: string) => api.delete(`/important-dates/${id}`)
 }
 
 export default api

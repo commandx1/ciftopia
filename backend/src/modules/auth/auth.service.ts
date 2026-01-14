@@ -56,7 +56,9 @@ export class AuthService {
     if (result.avatar && (result.avatar as any).url) {
       result.avatar = {
         ...(result.avatar as any),
-        url: await this.uploadService.getPresignedUrl((result.avatar as any).url),
+        url: await this.uploadService.getPresignedUrl(
+          (result.avatar as any).url,
+        ),
       };
     }
 
@@ -102,7 +104,9 @@ export class AuthService {
     if (result.avatar && (result.avatar as any).url) {
       result.avatar = {
         ...(result.avatar as any),
-        url: await this.uploadService.getPresignedUrl((result.avatar as any).url),
+        url: await this.uploadService.getPresignedUrl(
+          (result.avatar as any).url,
+        ),
       };
     }
 

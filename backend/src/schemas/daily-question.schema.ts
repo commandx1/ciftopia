@@ -11,7 +11,10 @@ export class DailyQuestion {
   @Prop({ required: true })
   question: string;
 
-  @Prop({ required: true, enum: ['deep', 'fun', 'memory', 'future', 'challenge'] })
+  @Prop({
+    required: true,
+    enum: ['deep', 'fun', 'memory', 'future', 'challenge'],
+  })
   category: string;
 
   @Prop({ required: true })

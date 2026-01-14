@@ -73,4 +73,3 @@ export class NotesController {
     return this.notesService.delete(req.user._id, id);
   }
 }
-

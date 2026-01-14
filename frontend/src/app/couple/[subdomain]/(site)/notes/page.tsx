@@ -286,26 +286,6 @@ export default function NotesPage() {
                       {formatDistanceToNow(new Date(note.createdAt), { addSuffix: true, locale: tr })}
                     </span>
                   </div>
-
-                  {/* Actions (visible on hover) */}
-                  <div className='absolute bottom-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity'>
-                    {note.authorId._id === user?._id && (
-                      <>
-                        <button 
-                          onClick={(e) => handleEdit(note, e)}
-                          className='p-1.5 bg-white/50 hover:bg-blue-500 hover:text-white rounded-md transition-colors'
-                        >
-                          <Pen size={12} />
-                        </button>
-                        <button 
-                          onClick={(e) => handleDelete(note._id, e)}
-                          className='p-1.5 bg-white/50 hover:bg-red-500 hover:text-white rounded-md transition-colors'
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </>
-                    )}
-                  </div>
                 </div>
               )
             })

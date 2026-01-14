@@ -41,7 +41,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (userObj.avatar && (userObj.avatar as any).url) {
       userObj.avatar = {
         ...(userObj.avatar as any),
-        url: await this.uploadService.getPresignedUrl((userObj.avatar as any).url),
+        url: await this.uploadService.getPresignedUrl(
+          (userObj.avatar as any).url,
+        ),
       };
     }
 

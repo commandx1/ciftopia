@@ -37,4 +37,3 @@ export class GalleryPhoto {
 export const GalleryPhotoSchema = SchemaFactory.createForClass(GalleryPhoto);
 GalleryPhotoSchema.index({ coupleId: 1, createdAt: -1 });
 GalleryPhotoSchema.index({ albumId: 1, createdAt: -1 });
-

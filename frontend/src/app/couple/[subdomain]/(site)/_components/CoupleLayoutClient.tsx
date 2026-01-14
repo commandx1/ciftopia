@@ -85,6 +85,12 @@ export default function CoupleLayoutClient({ children, user, subdomain }: Couple
               <Link href='/daily-question' className={`${navLinkClass} transition-colors font-medium`}>
                 Günün Sorusu
               </Link>
+              <Link href='/bucket-list' className={`${navLinkClass} transition-colors font-medium`}>
+                Hayaller
+              </Link>
+              <Link href='/important-dates' className={`${navLinkClass} transition-colors font-medium`}>
+                Tarihler
+              </Link>
               <Link href='/memories' className={`${navLinkClass} transition-colors font-medium`}>
                 Anılar
               </Link>
@@ -169,6 +175,15 @@ export default function CoupleLayoutClient({ children, user, subdomain }: Couple
           <div className='flex flex-wrap items-center justify-center gap-6 md:gap-8 mb-8'>
             <Link href='/' className='text-gray-400 hover:text-white transition-colors'>
               Anasayfa
+            </Link>
+            <Link href='/daily-question' className='text-gray-400 hover:text-white transition-colors'>
+              Günün Sorusu
+            </Link>
+            <Link href='/bucket-list' className='text-gray-400 hover:text-white transition-colors'>
+              Hayaller
+            </Link>
+            <Link href='/important-dates' className='text-gray-400 hover:text-white transition-colors'>
+              Tarihler
             </Link>
             <Link href='/memories' className='text-gray-400 hover:text-white transition-colors'>
               Anılar

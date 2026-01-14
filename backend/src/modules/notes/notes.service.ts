@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Note, NoteDocument } from '../../schemas/note.schema';
@@ -45,7 +49,11 @@ export class NotesService {
     return savedNote.populate('authorId', 'firstName lastName avatar gender');
   }
 
-  async update(userId: string, noteId: string, updateNoteDto: Partial<CreateNoteDto>) {
+  async update(
+    userId: string,
+    noteId: string,
+    updateNoteDto: Partial<CreateNoteDto>,
+  ) {
     const note = await this.noteModel.findById(noteId);
     if (!note) {
       throw new NotFoundException('Not bulunamadı');
@@ -60,13 +68,21 @@ export class NotesService {
     return updatedNote.populate('authorId', 'firstName lastName avatar gender');
   }
 
-  async updatePosition(userId: string, noteId: string, position: UpdateNotePositionDto) {
+  async updatePosition(
+    userId: string,
+    noteId: string,
+    position: UpdateNotePositionDto,
+  ) {
     const note = await this.noteModel.findById(noteId);
     if (!note) throw new NotFoundException('Not bulunamadı');
 
     const user = await this.userModel.findById(userId);
-    if (!user || !user.coupleId || note.coupleId.toString() !== user.coupleId.toString()) {
-        throw new ForbiddenException('Bu notun konumunu değiştirme yetkiniz yok');
+    if (
+      !user ||
+      !user.coupleId ||
+      note.coupleId.toString() !== user.coupleId.toString()
+    ) {
+      throw new ForbiddenException('Bu notun konumunu değiştirme yetkiniz yok');
     }
 
     note.position = position;
@@ -78,15 +94,19 @@ export class NotesService {
     if (!note) throw new NotFoundException('Not bulunamadı');
 
     const user = await this.userModel.findById(userId);
-    if (!user || !user.coupleId || note.coupleId.toString() !== user.coupleId.toString()) {
-        throw new ForbiddenException('Bu notu okundu işaretleme yetkiniz yok');
+    if (
+      !user ||
+      !user.coupleId ||
+      note.coupleId.toString() !== user.coupleId.toString()
+    ) {
+      throw new ForbiddenException('Bu notu okundu işaretleme yetkiniz yok');
     }
 
     // Only mark as read if the current user is NOT the author
     if (note.authorId.toString() !== userId) {
-        note.isRead = true;
-        note.readAt = new Date();
-        await note.save();
+      note.isRead = true;
+      note.readAt = new Date();
+      await note.save();
     }
     return note;
   }
@@ -99,11 +119,10 @@ export class NotesService {
 
     const user = await this.userModel.findById(userId);
     if (!user || note.authorId.toString() !== userId) {
-       throw new ForbiddenException('Bu notu silme yetkiniz yok');
+      throw new ForbiddenException('Bu notu silme yetkiniz yok');
     }
 
     await this.noteModel.findByIdAndDelete(noteId);
     return { success: true };
   }
 }
-

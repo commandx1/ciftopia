@@ -44,4 +44,3 @@ export const NoteSchema = SchemaFactory.createForClass(Note);
 
 NoteSchema.index({ coupleId: 1, createdAt: -1 });
 NoteSchema.index({ coupleId: 1, isRead: 1 });
-

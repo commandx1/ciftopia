@@ -1,6 +1,21 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { GalleryService } from './gallery.service';
-import { CreateAlbumDto, UploadPhotosDto, UpdateAlbumDto } from './dto/gallery.dto';
+import {
+  CreateAlbumDto,
+  UploadPhotosDto,
+  UpdateAlbumDto,
+} from './dto/gallery.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CoupleOwnerGuard } from '../auth/guards/couple-owner.guard';
 import { Request } from 'express';
@@ -42,13 +57,19 @@ export class GalleryController {
 
   @Post('albums')
   @UseGuards(JwtAuthGuard)
-  async createAlbum(@Req() req: AuthRequest, @Body() createAlbumDto: CreateAlbumDto) {
+  async createAlbum(
+    @Req() req: AuthRequest,
+    @Body() createAlbumDto: CreateAlbumDto,
+  ) {
     return this.galleryService.createAlbum(req.user._id, createAlbumDto);
   }
 
   @Post('photos')
   @UseGuards(JwtAuthGuard)
-  async uploadPhotos(@Req() req: AuthRequest, @Body() uploadDto: UploadPhotosDto) {
+  async uploadPhotos(
+    @Req() req: AuthRequest,
+    @Body() uploadDto: UploadPhotosDto,
+  ) {
     return this.galleryService.uploadPhotos(req.user._id, uploadDto);
   }
 
@@ -74,4 +95,3 @@ export class GalleryController {
     return this.galleryService.deletePhoto(req.user._id, id);
   }
 }
-

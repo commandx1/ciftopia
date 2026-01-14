@@ -180,22 +180,15 @@ function LoginForm() {
       <div className='relative bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl w-full max-w-md p-10 border border-white/50 z-10'>
         <div className='text-center mb-8'>
           <div className='flex items-center justify-center mb-6'>
-            <div className='relative'>
-              <div className='w-24 h-24 rounded-full flex items-center justify-center shadow-lg animate-heartbeat'>
-                <Logo />
-              </div>
-              <div className='absolute -top-2 -right-2 w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center shadow-md z-10'>
-                <Lock size={14} className='text-white' />
-              </div>
+            <div className='w-24 h-24 rounded-full flex items-center justify-center shadow-lg animate-heartbeat'>
+              <Logo />
             </div>
           </div>
 
           {!isRootDomain && isChecking ? (
             <p className='text-gray-600 font-medium mb-3'>Çiftinizin isimleri yükleniyor...</p>
           ) : isRootDomain ? (
-            <h1 className='text-4xl font-bold text-gray-900 mb-3 capitalize font-playfair-display'>
-              Çiftopia
-            </h1>
+            <h1 className='text-4xl font-bold text-gray-900 mb-3 capitalize font-playfair-display'>Çiftopia</h1>
           ) : (
             <CoupleNames coupleNames={coupleNames} />
           )}

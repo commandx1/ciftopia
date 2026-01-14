@@ -41,4 +41,3 @@ export class Album {
 
 export const AlbumSchema = SchemaFactory.createForClass(Album);
 AlbumSchema.index({ coupleId: 1, date: -1 });
-

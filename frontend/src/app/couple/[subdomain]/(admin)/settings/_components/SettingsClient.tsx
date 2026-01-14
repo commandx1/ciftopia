@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import {
   User,
   Globe,
-  ShieldCheck,
+  Camera,
   Bell,
   Crown,
   LogOut,
@@ -24,7 +24,6 @@ import DeleteSiteModal from './DeleteSiteModal'
 import { PhotoMetadata, User as UserType } from '@/lib/type'
 import { getUserAvatar } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
-import CameraIcon from '@/components/ui/CameraIcon'
 
 interface SettingsClientProps {
   user: UserType
@@ -51,7 +50,6 @@ export default function SettingsClient({ user }: SettingsClientProps) {
   const tabs = [
     { id: 'profil', label: 'Profil', icon: User },
     { id: 'site-ayarlari', label: 'Site Ayarları', icon: Globe },
-    { id: 'gizlilik', label: 'Gizlilik', icon: ShieldCheck },
     { id: 'bildirimler', label: 'Bildirimler', icon: Bell },
     { id: 'abonelik', label: 'Abonelik', icon: Crown }
   ]
@@ -135,7 +133,7 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                       <Image src={userAvatar} alt='Profile' fill className='object-cover' />
                     </div>
                     <div className='absolute -bottom-2 -right-2 w-10 h-10 bg-gradient-to-br from-rose-primary to-coral-warm rounded-full flex items-center justify-center shadow-lg cursor-pointer hover:scale-110 transition-transform'>
-                      <CameraIcon width={24} height={24} />
+                      <Camera className='text-white w-8 h-8' />
                     </div>
                   </div>
                   <div className='flex-1'>
@@ -340,56 +338,6 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                 <button className='bg-gradient-to-r from-rose-primary to-coral-warm text-white px-8 py-3 rounded-xl font-bold hover:shadow-xl transition-all flex items-center space-x-2'>
                   <Save size={18} />
                   <span>Kaydet</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Gizlilik Section */}
-          {activeTab === 'gizlilik' && (
-            <div
-              id='gizlilik-section'
-              className='bg-white rounded-2xl shadow-sm p-8 mb-6 border border-gray-50 animate-in fade-in duration-500'
-            >
-              <div className='mb-8'>
-                <h1 className=' text-3xl font-bold text-gray-900'>Gizlilik Ayarları</h1>
-                <p className='text-gray-500 mt-1'>Sitenizin görünürlüğünü kontrol edin</p>
-              </div>
-
-              <div id='visibility-section' className='mb-10'>
-                <h3 className='font-bold text-lg text-gray-900 mb-4'>Site Görünürlüğü</h3>
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-                  <div className='relative border-2 border-green-400 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 cursor-pointer hover:shadow-lg transition-all'>
-                    <div className='absolute top-4 right-4 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center'>
-                      <Check size={12} className='text-white' />
-                    </div>
-                    <div className='w-16 h-16 bg-green-500 rounded-2xl flex items-center justify-center mb-4 text-white'>
-                      <Globe size={32} />
-                    </div>
-                    <h4 className='font-bold text-xl text-gray-900 mb-2'>Public</h4>
-                    <p className='text-gray-600 text-sm'>
-                      Herkes sitenizi görebilir ve ziyaret edebilir. Arama motorlarında görünür.
-                    </p>
-                  </div>
-                  <div className='relative border-2 border-gray-100 bg-white rounded-2xl p-6 cursor-pointer hover:border-rose-300 hover:shadow-lg transition-all'>
-                    <div className='w-16 h-16 bg-rose-100 rounded-2xl flex items-center justify-center mb-4 text-rose-500'>
-                      <Lock size={32} />
-                    </div>
-                    <h4 className='font-bold text-xl text-gray-900 mb-2'>Private</h4>
-                    <p className='text-gray-600 text-sm'>
-                      Sadece siz ve partneriniz görebilir. Giriş yapmak gereklidir.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className='flex items-center justify-between pt-6 border-t border-gray-100'>
-                <button className='text-gray-500 hover:text-gray-700 font-semibold transition-colors'>
-                  Varsayılana Dön
-                </button>
-                <button className='bg-gradient-to-r from-rose-primary to-coral-warm text-white px-8 py-3 rounded-xl font-bold hover:shadow-xl transition-all flex items-center space-x-2'>
-                  <ShieldCheck size={18} />
-                  <span>Gizlilik Ayarlarını Kaydet</span>
                 </button>
               </div>
             </div>

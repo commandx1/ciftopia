@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Plus, Folder, Grip, Images, ArrowUpRight, Loader2 } from 'lucide-react'
+import { Plus, Folder, Grip, Images, ArrowUpRight, Loader2, Camera } from 'lucide-react'
 import { galleryService } from '@/services/galleryService'
 import { Album, GalleryPhoto } from '@/lib/type'
 import { showCustomToast } from '@/components/ui/CustomToast'
@@ -10,7 +10,6 @@ import ImageUploadModal from '@/components/couple/ImageUploadModal'
 import Image from 'next/image'
 import { formatDistanceToNow } from 'date-fns'
 import { tr } from 'date-fns/locale'
-import CameraIcon from '@/components/ui/CameraIcon'
 
 export default function GalleryPage() {
   const { subdomain } = useParams()
@@ -55,7 +54,7 @@ export default function GalleryPage() {
           <div className='flex flex-col md:flex-row items-center justify-between gap-6'>
             <div className='flex items-center space-x-6'>
               <div className='w-16 h-16 bg-gradient-to-br from-purple-500 to-rose-600 rounded-[1.5rem] flex items-center justify-center shadow-lg transform rotate-3'>
-                <CameraIcon width={48} height={48} />
+                <Camera className='text-white w-8 h-8' />
               </div>
               <div>
                 <h1 className='text-5xl font-bold text-gray-900 mb-2'>Galerimiz</h1>

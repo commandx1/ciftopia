@@ -44,12 +44,13 @@ export class MemoriesService {
             memoryObj.photos.map(async (photo: any) => {
               // Handle both object and legacy string format
               const key = typeof photo === 'string' ? photo : photo.url;
-              const presignedUrl = await this.uploadService.getPresignedUrl(key);
-              
+              const presignedUrl =
+                await this.uploadService.getPresignedUrl(key);
+
               if (typeof photo === 'string') {
                 return presignedUrl;
               }
-              
+
               return {
                 ...photo,
                 url: presignedUrl,
@@ -61,9 +62,11 @@ export class MemoriesService {
         // Transform author avatar if populated
         if (memoryObj.authorId && (memoryObj.authorId as any).avatar) {
           const authorAvatar = (memoryObj.authorId as any).avatar;
-          const avatarKey = typeof authorAvatar === 'string' ? authorAvatar : authorAvatar.url;
-          const presignedAvatarUrl = await this.uploadService.getPresignedUrl(avatarKey);
-          
+          const avatarKey =
+            typeof authorAvatar === 'string' ? authorAvatar : authorAvatar.url;
+          const presignedAvatarUrl =
+            await this.uploadService.getPresignedUrl(avatarKey);
+
           if (typeof authorAvatar === 'string') {
             (memoryObj.authorId as any).avatar = presignedAvatarUrl;
           } else {
@@ -326,7 +329,10 @@ export class MemoriesService {
 
         // ⭐ Türkçe destekli font ekle
         const fontPath = path.join(__dirname, '../../../src/assets/fonts');
-        doc.registerFont('IndieFlower', path.join(fontPath, 'IndieFlower-Regular.ttf'));
+        doc.registerFont(
+          'IndieFlower',
+          path.join(fontPath, 'IndieFlower-Regular.ttf'),
+        );
 
         // Varsayılan font olarak ayarla
         doc.font('IndieFlower');

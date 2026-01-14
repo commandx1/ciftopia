@@ -122,6 +122,36 @@ interface DailyQuestion {
   aiAnalysis?: string
 }
 
+interface BucketListItem {
+  _id: string
+  coupleId: string
+  authorId: User
+  title: string
+  description?: string
+  category: 'travel' | 'food' | 'experience' | 'home' | 'relationship'
+  targetDate?: string
+  isCompleted: boolean
+  completedAt?: string
+  completedBy: User[]
+  photos?: PhotoMetadata[]
+  createdAt: string
+  updatedAt: string
+}
+
+interface ImportantDate {
+  _id: string
+  coupleId: string
+  authorId: User
+  title: string
+  date: string
+  type: 'dating' | 'first_kiss' | 'relationship' | 'engagement' | 'marriage' | 'birthday' | 'travel' | 'moving' | 'special'
+  description?: string
+  photo?: PhotoMetadata
+  isRecurring: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 interface QuestionAnswer {
   _id: string
   userId: string
@@ -150,4 +180,4 @@ interface AuthorStats {
   count: number
 }
 
-export type { ApiError, User, Memory, PhotoMetadata, Poem, Note, Album, GalleryPhoto, AuthorStats, RelationshipProfile, DailyQuestion, QuestionAnswer, CoupleQuestionStats }
+export type { ApiError, User, Memory, PhotoMetadata, Poem, Note, Album, GalleryPhoto, AuthorStats, RelationshipProfile, DailyQuestion, QuestionAnswer, CoupleQuestionStats, BucketListItem, ImportantDate }
