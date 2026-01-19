@@ -28,7 +28,7 @@ export function LiveProgress({ initialStatus }: { initialStatus: { count: number
       try {
         const res = await onboardingService.getEarlyBirdStatus()
         setStatus(res.data.data)
-      } catch (e) {
+      } catch {
         console.error('Kontenjan güncellenemedi')
       }
     }, 30000)
