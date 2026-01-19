@@ -16,6 +16,7 @@ import {
 } from '../../schemas/couple-question-stats.schema';
 import { Couple, CoupleSchema } from '../../schemas/couple.schema';
 import { User, UserSchema } from '../../schemas/user.schema';
+import { ActivityModule } from '../activity/activity.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { User, UserSchema } from '../../schemas/user.schema';
       { name: Couple.name, schema: CoupleSchema },
       { name: User.name, schema: UserSchema },
     ]),
+    ActivityModule,
   ],
   controllers: [DailyQuestionController],
   providers: [DailyQuestionService],

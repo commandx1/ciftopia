@@ -11,7 +11,7 @@ import { showCustomToast } from '@/components/ui/CustomToast'
 import CustomModal from '@/components/ui/CustomModal'
 import ImportantDateCard from '@/components/couple/important-dates/ImportantDateCard'
 import AddImportantDateModal from '@/components/couple/important-dates/AddImportantDateModal'
-import { differenceInDays } from 'date-fns'
+import { differenceInCalendarDays } from 'date-fns'
 
 export default function ImportantDatesPage() {
   const { subdomain } = useParams()
@@ -88,11 +88,49 @@ export default function ImportantDatesPage() {
   }
 
   const filteredDates = useMemo(() => {
-    let result = dates
+    const now = new Date()
+    now.setHours(0, 0, 0, 0)
+
+    const processed = dates.map(d => {
+      const nextOccur = new Date(d.date)
+      nextOccur.setHours(0, 0, 0, 0)
+
+      if (d.isRecurring) {
+        nextOccur.setFullYear(now.getFullYear())
+        if (nextOccur < now) {
+          nextOccur.setFullYear(now.getFullYear() + 1)
+        }
+      }
+
+      const isToday = nextOccur.getTime() === now.getTime()
+      
+      // daysDiff: Bugün 0, yarın 1, dün -1 vb.
+      const daysDiff = Math.round((nextOccur.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+
+      return { ...d, nextOccur, isToday, daysDiff }
+    })
+
+    let result = processed
     if (activeType !== 'all') {
-      result = dates.filter(d => d.type === activeType)
+      result = processed.filter(d => d.type === activeType)
     }
-    return result.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+
+    return result.sort((a, b) => {
+      // 1. Bugün olanlar daima en üstte
+      if (a.isToday && !b.isToday) return -1
+      if (!a.isToday && b.isToday) return 1
+      
+      // 2. Gelecek tarihler ve geçmiş tarihleri ayır
+      // (Gelecek tarihler daysDiff >= 0, geçmiş tarihler daysDiff < 0)
+      if (a.daysDiff >= 0 && b.daysDiff < 0) return -1
+      if (a.daysDiff < 0 && b.daysDiff >= 0) return 1
+      
+      // 3. Her iki tarih de gelecekse: Yakın olan önce
+      if (a.daysDiff >= 0 && b.daysDiff >= 0) return a.daysDiff - b.daysDiff
+      
+      // 4. Her iki tarih de geçmişse: En yakın geçmiş (en büyük rakam, örn -1 > -5) önce
+      return b.daysDiff - a.daysDiff
+    })
   }, [dates, activeType])
 
   const upcomingDates = useMemo(() => {
@@ -160,7 +198,7 @@ export default function ImportantDatesPage() {
               <div className='space-y-6'>
                 {upcomingDates.length > 0 ? (
                   upcomingDates.map((date, index) => {
-                    const daysLeft = differenceInDays(date.nextOccurrence, new Date())
+                    const daysLeft = differenceInCalendarDays(date.nextOccurrence, new Date())
                     return (
                       <div
                         key={date._id}

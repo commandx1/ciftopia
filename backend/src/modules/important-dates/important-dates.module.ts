@@ -8,6 +8,7 @@ import {
 } from '../../schemas/important-date.schema';
 import { Couple, CoupleSchema } from '../../schemas/couple.schema';
 import { UploadModule } from '../upload/upload.module';
+import { ActivityModule } from '../activity/activity.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { UploadModule } from '../upload/upload.module';
       { name: Couple.name, schema: CoupleSchema },
     ]),
     UploadModule,
+    ActivityModule,
   ],
   controllers: [ImportantDatesController],
   providers: [ImportantDatesService],

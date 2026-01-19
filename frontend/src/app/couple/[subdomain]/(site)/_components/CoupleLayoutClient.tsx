@@ -95,12 +95,27 @@ export default function CoupleLayoutClient({ children, user, subdomain }: Couple
               <Link href='/gallery' className={`${navLinkClass} transition-colors font-medium`}>
                 Galeri
               </Link>
-              <Link href='/poems' className={`${navLinkClass} transition-colors font-medium`}>
-                Şiirler
-              </Link>
-              <Link href='/notes' className={`${navLinkClass} transition-colors font-medium`}>
-                Notlar
-              </Link>
+              
+              <div className='relative group'>
+                <button className={`${navLinkClass} flex items-center space-x-1 font-medium transition-colors`}>
+                  <span>Daha Fazla</span>
+                  <ChevronDown size={14} />
+                </button>
+                <div className='absolute left-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all py-2 z-50'>
+                  <Link href='/poems' className='block px-4 py-2 text-sm text-gray-700 hover:bg-rose-50 hover:text-rose-600 transition-colors'>
+                    Şiirler
+                  </Link>
+                  <Link href='/notes' className='block px-4 py-2 text-sm text-gray-700 hover:bg-rose-50 hover:text-rose-600 transition-colors'>
+                    Notlar
+                  </Link>
+                  <Link href='/time-capsule' className='block px-4 py-2 text-sm text-gray-700 hover:bg-rose-50 hover:text-rose-600 transition-colors'>
+                    Zaman Kapsülü
+                  </Link>
+                  <Link href='/activities' className='block px-4 py-2 text-sm text-gray-700 hover:bg-rose-50 hover:text-rose-600 transition-colors'>
+                    Aktiviteler
+                  </Link>
+                </div>
+              </div>
             </div>
 
             <div className='flex items-center space-x-3'>
@@ -194,6 +209,12 @@ export default function CoupleLayoutClient({ children, user, subdomain }: Couple
             </Link>
             <Link href='/notes' className='text-gray-400 hover:text-white transition-colors'>
               Notlar
+            </Link>
+            <Link href='/time-capsule' className='text-gray-400 hover:text-white transition-colors'>
+              Zaman Kapsülü
+            </Link>
+            <Link href='/activities' className='text-gray-400 hover:text-white transition-colors'>
+              Aktiviteler
             </Link>
           </div>
 

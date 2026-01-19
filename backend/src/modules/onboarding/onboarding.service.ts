@@ -9,8 +9,41 @@ import * as bcrypt from 'bcrypt';
 import { User, UserDocument } from '../../schemas/user.schema';
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
 import { Memory, MemoryDocument } from '../../schemas/memory.schema';
+import { Album, AlbumDocument } from '../../schemas/album.schema';
+import {
+  GalleryPhoto,
+  GalleryPhotoDocument,
+} from '../../schemas/gallery-photo.schema';
+import {
+  BucketListItem,
+  BucketListItemDocument,
+} from '../../schemas/bucket-list.schema';
+import {
+  ImportantDate,
+  ImportantDateDocument,
+} from '../../schemas/important-date.schema';
+import {
+  TimeCapsule,
+  TimeCapsuleDocument,
+} from '../../schemas/time-capsule.schema';
+import { Poem, PoemDocument } from '../../schemas/poem.schema';
+import { Note, NoteDocument } from '../../schemas/note.schema';
+import { Activity, ActivityDocument } from '../../schemas/activity.schema';
+import {
+  QuestionAnswer,
+  QuestionAnswerDocument,
+} from '../../schemas/question-answer.schema';
+import {
+  CoupleQuestionStats,
+  CoupleQuestionStatsDocument,
+} from '../../schemas/couple-question-stats.schema';
+import {
+  DailyQuestion,
+  DailyQuestionDocument,
+} from '../../schemas/daily-question.schema';
 import { CreateCoupleDto } from './dto/onboarding.dto';
 import { UploadService } from '../upload/upload.service';
+import { ActivityService } from '../activity/activity.service';
 import capitalizeFirstLetter from '../../utils/capitalizeFirstLetter';
 
 @Injectable()
@@ -19,7 +52,26 @@ export class OnboardingService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
     @InjectModel(Memory.name) private memoryModel: Model<MemoryDocument>,
+    @InjectModel(Album.name) private albumModel: Model<AlbumDocument>,
+    @InjectModel(GalleryPhoto.name)
+    private galleryPhotoModel: Model<GalleryPhotoDocument>,
+    @InjectModel(BucketListItem.name)
+    private bucketListModel: Model<BucketListItemDocument>,
+    @InjectModel(ImportantDate.name)
+    private importantDateModel: Model<ImportantDateDocument>,
+    @InjectModel(TimeCapsule.name)
+    private timeCapsuleModel: Model<TimeCapsuleDocument>,
+    @InjectModel(Poem.name) private poemModel: Model<PoemDocument>,
+    @InjectModel(Note.name) private noteModel: Model<NoteDocument>,
+    @InjectModel(Activity.name) private activityModel: Model<ActivityDocument>,
+    @InjectModel(QuestionAnswer.name)
+    private questionAnswerModel: Model<QuestionAnswerDocument>,
+    @InjectModel(CoupleQuestionStats.name)
+    private coupleQuestionStatsModel: Model<CoupleQuestionStatsDocument>,
+    @InjectModel(DailyQuestion.name)
+    private dailyQuestionModel: Model<DailyQuestionDocument>,
     private uploadService: UploadService,
+    private activityService: ActivityService,
   ) {}
 
   async checkSubdomain(subdomain: string) {
@@ -38,6 +90,16 @@ export class OnboardingService {
       couple: existingCouple
         ? `${capitalizeFirstLetter((existingCouple.partner1 as unknown as User).firstName)} & ${capitalizeFirstLetter((existingCouple.partner2 as unknown as User).firstName)}`
         : null,
+    };
+  }
+
+  async getEarlyBirdStatus() {
+    const count = await this.coupleModel.countDocuments({ isEarlyBird: true });
+    const limit = 50;
+    return {
+      count,
+      limit,
+      available: count < limit,
     };
   }
 
@@ -95,6 +157,10 @@ export class OnboardingService {
       initialStorageUsed += partnerAvatar.size;
     }
 
+    // Early Bird Check
+    const earlyBirdStatus = await this.getEarlyBirdStatus();
+    const isEarlyBird = earlyBirdStatus.available && !paymentTransactionId;
+
     const couple = new this.coupleModel({
       subdomain: lowerSubdomain,
       partner1: new Types.ObjectId(userId),
@@ -103,8 +169,11 @@ export class OnboardingService {
         ? new Date(relationshipStartDate)
         : undefined,
       relationshipStatus,
-      status: paymentTransactionId ? 'active' : 'pending_payment',
+      status:
+        paymentTransactionId || isEarlyBird ? 'active' : 'pending_payment',
       storageUsed: initialStorageUsed,
+      isEarlyBird: isEarlyBird,
+      storageLimit: isEarlyBird ? 1073741824 : 52428800, // 1GB for early bird, 50MB default
     });
 
     await couple.save();
@@ -131,6 +200,16 @@ export class OnboardingService {
     user.coupleId = couple._id;
     await user.save();
 
+    await this.activityService.logActivity({
+      userId,
+      coupleId: couple._id.toString(),
+      module: 'onboarding',
+      actionType: 'create',
+      resourceId: couple._id.toString(),
+      description: `${user.firstName} ve ${partnerFirstName} için yeni bir dünya oluşturuldu! ❤️`,
+      metadata: { subdomain: lowerSubdomain },
+    });
+
     return couple;
   }
 
@@ -146,44 +225,93 @@ export class OnboardingService {
       throw new NotFoundException('Çift hesabı bulunamadı.');
     }
 
-    // 1. Get all memories to delete their photos from S3
-    const memories = await this.memoryModel.find({ coupleId });
     const photoKeys: string[] = [];
-    memories.forEach((memory) => {
-      if (memory.photos && memory.photos.length > 0) {
-        memory.photos.forEach((photo: any) => {
-          const key = typeof photo === 'string' ? photo : photo.url;
-          if (key) photoKeys.push(key);
+
+    // 1. Memories
+    const memories = await this.memoryModel.find({ coupleId });
+    memories.forEach((m) => {
+      if (m.photos) {
+        m.photos.forEach((p) => {
+          if (p.url && !p.url.startsWith('http')) photoKeys.push(p.url);
         });
       }
     });
 
-    // 2. Add user avatars to delete list if they exist
-    const partners = await this.userModel.find({ coupleId });
-    partners.forEach((p) => {
-      if (p.avatar) {
-        const key = typeof p.avatar === 'string' ? p.avatar : p.avatar.url;
-        if (key && !key.startsWith('http')) {
-          photoKeys.push(key);
-        }
+    // 2. Gallery Photos
+    const galleryPhotos = await this.galleryPhotoModel.find({ coupleId });
+    galleryPhotos.forEach((gp) => {
+      if (gp.photo?.url && !gp.photo.url.startsWith('http'))
+        photoKeys.push(gp.photo.url);
+    });
+
+    // 3. Albums (Cover photos)
+    const albums = await this.albumModel.find({ coupleId });
+    albums.forEach((a) => {
+      if (a.coverPhoto?.url && !a.coverPhoto.url.startsWith('http'))
+        photoKeys.push(a.coverPhoto.url);
+    });
+
+    // 4. Time Capsules
+    const capsules = await this.timeCapsuleModel.find({ coupleId });
+    capsules.forEach((c) => {
+      if (c.photos) {
+        c.photos.forEach((p) => {
+          if (p.url && !p.url.startsWith('http')) photoKeys.push(p.url);
+        });
+      }
+      if (c.video?.url && !c.video.url.startsWith('http'))
+        photoKeys.push(c.video.url);
+    });
+
+    // 5. Bucket List
+    const bucketList = await this.bucketListModel.find({ coupleId });
+    bucketList.forEach((bl) => {
+      if (bl.photos) {
+        bl.photos.forEach((p) => {
+          if (p.url && !p.url.startsWith('http')) photoKeys.push(p.url);
+        });
       }
     });
 
-    // 3. Delete all files from S3
-    if (photoKeys.length > 0) {
+    // 6. User Avatars
+    const partners = await this.userModel.find({ coupleId });
+    partners.forEach((p) => {
+      if (p.avatar?.url && !p.avatar.url.startsWith('http'))
+        photoKeys.push(p.avatar.url);
+    });
+
+    // 7. Important Dates
+    const importantDates = await this.importantDateModel.find({ coupleId });
+    importantDates.forEach((id) => {
+      if (id.photo?.url && !id.photo.url.startsWith('http'))
+        photoKeys.push(id.photo.url);
+    });
+
+    // 8. Delete all files from S3
+    const uniqueKeys = [...new Set(photoKeys)];
+    if (uniqueKeys.length > 0) {
       await Promise.all(
-        photoKeys.map((key) => this.uploadService.deleteFile(key)),
+        uniqueKeys.map((key) => this.uploadService.deleteFile(key)),
       );
     }
 
-    // 4. Delete all memories from DB
-    await this.memoryModel.deleteMany({ coupleId });
-
-    // 5. Delete all users associated with this couple
-    await this.userModel.deleteMany({ coupleId });
-
-    // 6. Delete the couple record itself
-    await this.coupleModel.findByIdAndDelete(coupleId);
+    // 9. Delete all records from all collections
+    await Promise.all([
+      this.memoryModel.deleteMany({ coupleId }),
+      this.galleryPhotoModel.deleteMany({ coupleId }),
+      this.albumModel.deleteMany({ coupleId }),
+      this.timeCapsuleModel.deleteMany({ coupleId }),
+      this.bucketListModel.deleteMany({ coupleId }),
+      this.importantDateModel.deleteMany({ coupleId }),
+      this.poemModel.deleteMany({ coupleId }),
+      this.noteModel.deleteMany({ coupleId }),
+      this.activityModel.deleteMany({ coupleId }),
+      this.questionAnswerModel.deleteMany({ coupleId }),
+      this.coupleQuestionStatsModel.deleteMany({ coupleId }),
+      this.dailyQuestionModel.deleteMany({ coupleId }),
+      this.userModel.deleteMany({ coupleId }),
+      this.coupleModel.findByIdAndDelete(coupleId),
+    ]);
 
     return { success: true };
   }

@@ -2,8 +2,7 @@
 
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Map, Utensils, Film, Home, Heart, Plus } from 'lucide-react'
-import XIcon from '@/components/ui/icons/XIcon'
+import { Map, Utensils, Film, Home, Heart, Plus, X } from 'lucide-react'
 import { BucketListItem } from '@/lib/type'
 
 interface AddDreamModalProps {
@@ -80,7 +79,7 @@ export const AddDreamModal = ({ isOpen, onClose, onAdd }: AddDreamModalProps) =>
                 onClick={onClose}
                 className="w-12 h-12 rounded-2xl hover:bg-gray-100 flex items-center justify-center transition-all group"
               >
-                <XIcon width={24} height={24} />
+                <X className='text-gray-400 group-hover:text-gray-600 transition-all' size={24} />
               </button>
             </div>
             

@@ -152,6 +152,26 @@ interface ImportantDate {
   updatedAt: string
 }
 
+interface TimeCapsule {
+  _id: string
+  coupleId: string
+  authorId: User
+  title: string
+  content: string
+  unlockDate: string
+  photos: PhotoMetadata[]
+  video?: PhotoMetadata
+  receiver: 'me' | 'partner' | 'both'
+  isOpened: boolean
+  reflections: {
+    authorId: User
+    content: string
+    createdAt: string
+  }[]
+  createdAt: string
+  updatedAt: string
+}
+
 interface QuestionAnswer {
   _id: string
   userId: string
@@ -180,4 +200,17 @@ interface AuthorStats {
   count: number
 }
 
-export type { ApiError, User, Memory, PhotoMetadata, Poem, Note, Album, GalleryPhoto, AuthorStats, RelationshipProfile, DailyQuestion, QuestionAnswer, CoupleQuestionStats, BucketListItem, ImportantDate }
+interface Activity {
+  _id: string
+  userId: User
+  coupleId: string
+  module: 'memories' | 'gallery' | 'bucket-list' | 'important-dates' | 'poems' | 'notes' | 'time-capsule' | 'daily-question' | 'onboarding' | 'payment'
+  actionType: 'create' | 'update' | 'delete' | 'answer' | 'favorite'
+  resourceId?: string
+  description: string
+  metadata?: Record<string, unknown>
+  createdAt: string
+  updatedAt: string
+}
+
+export type { ApiError, User, Memory, PhotoMetadata, Poem, Note, Album, GalleryPhoto, AuthorStats, RelationshipProfile, DailyQuestion, QuestionAnswer, CoupleQuestionStats, BucketListItem, ImportantDate, TimeCapsule, Activity }

@@ -25,6 +25,7 @@ import {
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
 import { User, UserDocument } from '../../schemas/user.schema';
 import { AnswerQuestionDto } from './dto/daily-question.dto';
+import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
 export class DailyQuestionService {
@@ -41,6 +42,7 @@ export class DailyQuestionService {
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private configService: ConfigService,
+    private activityService: ActivityService,
   ) {
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
     if (!apiKey) {
@@ -225,6 +227,18 @@ JSON formatında döndür:
     });
 
     await this.updateStreak(coupleId);
+
+    const user = await this.userModel.findById(userId);
+    const question = await this.dailyQuestionModel.findById(questionId);
+    await this.activityService.logActivity({
+      userId,
+      coupleId,
+      module: 'daily-question',
+      actionType: 'answer',
+      resourceId: questionId,
+      description: `${user?.firstName || 'Biri'} günün sorusunu cevapladı: "${question?.question}"`,
+      metadata: { question: question?.question },
+    });
 
     // AI Analysis check - her iki taraf da cevap verdiyse analizi üret ve bekle
     const allAnswers = await this.answerModel.find({

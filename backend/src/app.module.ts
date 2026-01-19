@@ -14,6 +14,8 @@ import { GalleryModule } from './modules/gallery/gallery.module';
 import { DailyQuestionModule } from './modules/daily-question/daily-question.module';
 import { BucketListModule } from './modules/bucket-list/bucket-list.module';
 import { ImportantDatesModule } from './modules/important-dates/important-dates.module';
+import { TimeCapsuleModule } from './modules/time-capsule/time-capsule.module';
+import { ActivityModule } from './modules/activity/activity.module';
 
 @Module({
   imports: [
@@ -38,6 +40,8 @@ import { ImportantDatesModule } from './modules/important-dates/important-dates.
     DailyQuestionModule,
     BucketListModule,
     ImportantDatesModule,
+    TimeCapsuleModule,
+    ActivityModule,
   ],
   controllers: [AppController],
   providers: [AppService],

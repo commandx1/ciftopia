@@ -72,6 +72,9 @@ export class Couple {
     index: true,
   })
   status: string;
+
+  @Prop({ default: false })
+  isEarlyBird: boolean;
 }
 
 export const CoupleSchema = SchemaFactory.createForClass(Couple);

@@ -4,7 +4,7 @@ import React, { useMemo } from 'react'
 import Image from 'next/image'
 import { Clock, Edit2, Trash2, RefreshCw, Star } from 'lucide-react'
 import { ImportantDate, User, PhotoMetadata } from '@/lib/type'
-import { format, isToday } from 'date-fns'
+import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import { getUserAvatar } from '@/lib/utils'
 
@@ -31,19 +31,44 @@ export default function ImportantDateCard({ date, currentUser, onEdit, onDelete 
   const config = typeConfigs[date.type] || typeConfigs.special
   const isAuthor = date.authorId?._id === currentUser?._id
   
-  const dateObj = useMemo(() => new Date(date.date), [date.date])
-  
-  // Check if it's today (handling recurring dates)
-  const isTodayDate = useMemo(() => {
-    if (isToday(dateObj)) return true
-    if (date.isRecurring) {
+  const { isTodayDate, displayDate, isPast } = useMemo(() => {
+    // Eğer page.tsx tarafından hesaplanmış değerler varsa onları kullan
+    const processedDate = date as ImportantDate & { nextOccur?: Date; isToday?: boolean }
+    
+    if (processedDate.nextOccur) {
+      const nextOccur = new Date(processedDate.nextOccur)
       const now = new Date()
-      return dateObj.getDate() === now.getDate() && dateObj.getMonth() === now.getMonth()
+      now.setHours(0, 0, 0, 0)
+      const isTodayDate = !!processedDate.isToday
+      return {
+        isTodayDate,
+        displayDate: nextOccur,
+        isPast: !isTodayDate && nextOccur < now
+      }
     }
-    return false
-  }, [dateObj, date.isRecurring])
 
-  const isPast = !isTodayDate && dateObj < new Date()
+    const now = new Date()
+    now.setHours(0, 0, 0, 0)
+    
+    const nextOccur = new Date(date.date)
+    nextOccur.setHours(0, 0, 0, 0)
+
+    if (date.isRecurring) {
+      nextOccur.setFullYear(now.getFullYear())
+      if (nextOccur < now) {
+        nextOccur.setFullYear(now.getFullYear() + 1)
+      }
+    }
+
+    const isTodayDate = nextOccur.getTime() === now.getTime()
+    const isPast = !isTodayDate && nextOccur < now
+
+    return { 
+      isTodayDate, 
+      displayDate: nextOccur,
+      isPast 
+    }
+  }, [date])
   
   return (
     <div className={`relative pl-20 pb-8 group ${isPast ? 'opacity-85' : ''}`}>
@@ -70,7 +95,7 @@ export default function ImportantDateCard({ date, currentUser, onEdit, onDelete 
             <div>
               <h3 className={`font-bold text-xl leading-tight ${isTodayDate ? 'text-rose-600' : 'text-gray-900'}`}>{date.title}</h3>
               <p className='text-gray-500 font-medium'>
-                {format(dateObj, 'd MMMM yyyy', { locale: tr })}
+                {format(displayDate, 'd MMMM yyyy', { locale: tr })}
               </p>
             </div>
           </div>

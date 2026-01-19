@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -25,7 +25,9 @@ import {
   ShieldCheck,
   CheckCircle,
   Rocket,
-  RotateCcw
+  RotateCcw,
+  Sparkles,
+  Infinity
 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -34,6 +36,7 @@ import { authService, onboardingService, paymentService, uploadService } from '@
 import { ApiError } from '@/lib/type'
 import { useRouter } from 'next/navigation';
 import { showCustomToast } from '@/components/ui/CustomToast'
+
 export default function RegisterPage() {
   const [step, setStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
@@ -44,16 +47,30 @@ export default function RegisterPage() {
   const [partnerAvatarFile, setPartnerAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string>('')
   const [partnerAvatarPreview, setPartnerAvatarPreview] = useState<string>('')
+  const [isEarlyBird, setIsEarlyBird] = useState(false)
   const router = useRouter();
+
+  useEffect(() => {
+    const checkEarlyBird = async () => {
+      try {
+        const res = await onboardingService.getEarlyBirdStatus()
+        setIsEarlyBird(res.data.data.available)
+      } catch (error) {
+        console.error('Beta durumu kontrol edilirken hata:', error)
+      }
+    }
+    checkEarlyBird()
+  }, [])
+
   const plans = [
     {
       id: 'monthly',
-      name: 'Aylık Plan',
-      setupFee: 249,
-      subscriptionFee: 49,
-      total: 298,
-      period: 'Aylık',
-      description: 'Tüm premium özellikler dahil',
+      name: 'Kurucu Plan',
+      setupFee: isEarlyBird ? 0 : 249,
+      subscriptionFee: isEarlyBird ? 0 : 49,
+      total: isEarlyBird ? 0 : 298,
+      period: 'Ömür Boyu',
+      description: isEarlyBird ? 'Beta Özel: Ömür Boyu Ücretsiz' : 'Tüm premium özellikler dahil',
       color: 'rose'
     },
     {
@@ -115,7 +132,7 @@ export default function RegisterPage() {
     billingZip: ''
   })
 
-  const totalSteps = 4
+  const totalSteps = isEarlyBird ? 3 : 4
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -246,7 +263,7 @@ export default function RegisterPage() {
     }
   }
 
-  const handleStep3 = () => {
+  const handleStep3 = async () => {
     if (
       !formData.partnerFirstName ||
       !formData.partnerLastName ||
@@ -264,20 +281,28 @@ export default function RegisterPage() {
       setError('Lütfen ilişki bilgilerinizi doldurun.')
       return
     }
-    setStep(4)
+
+    if (isEarlyBird) {
+      await handleFinalStep()
+    } else {
+      setStep(4)
+    }
   }
 
-  const handleFinalStep = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (
-      !paymentData.cardHolderName ||
-      paymentData.cardNumber.length < 15 ||
-      !paymentData.expireMonth ||
-      !paymentData.expireYear ||
-      paymentData.cvc.length < 3
-    ) {
-      setError('Lütfen geçerli ödeme bilgilerini girin.')
-      return
+  const handleFinalStep = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+
+    if (!isEarlyBird) {
+      if (
+        !paymentData.cardHolderName ||
+        paymentData.cardNumber.length < 15 ||
+        !paymentData.expireMonth ||
+        !paymentData.expireYear ||
+        paymentData.cvc.length < 3
+      ) {
+        setError('Lütfen geçerli ödeme bilgilerini girin.')
+        return
+      }
     }
 
     setIsLoading(true)
@@ -295,18 +320,22 @@ export default function RegisterPage() {
         }
       }
 
-      // 2. Process Payment
-      const paymentResponse = await paymentService.processPayment({
-        cardHolderName: paymentData.cardHolderName,
-        cardNumber: paymentData.cardNumber,
-        expireMonth: paymentData.expireMonth,
-        expireYear: paymentData.expireYear,
-        cvc: paymentData.cvc,
-        amount: selectedPlan.total,
-        subdomain: formData.subdomain
-      })
+      let paymentTransactionId = undefined
+      if (!isEarlyBird) {
+        // 2. Process Payment
+        const paymentResponse = await paymentService.processPayment({
+          cardHolderName: paymentData.cardHolderName,
+          cardNumber: paymentData.cardNumber,
+          expireMonth: paymentData.expireMonth,
+          expireYear: paymentData.expireYear,
+          cvc: paymentData.cvc,
+          amount: selectedPlan.total,
+          subdomain: formData.subdomain
+        })
+        paymentTransactionId = paymentResponse.data.paymentId
+      }
 
-      // 3. If Payment Successful, Create Couple Site
+      // 3. Create Couple Site
       await onboardingService.createCouple({
         subdomain: formData.subdomain,
         partnerFirstName: formData.partnerFirstName,
@@ -317,10 +346,10 @@ export default function RegisterPage() {
         partnerAvatar: partnerAvatarMetadata,
         relationshipStartDate: formData.relationshipStartDate || undefined,
         relationshipStatus: formData.relationshipStatus,
-        paymentTransactionId: paymentResponse.data.paymentId // Pass the transaction ID
+        paymentTransactionId: paymentTransactionId
       })
 
-      showCustomToast.success('Tebrikler 🎉', 'Siteniz başarıyla oluşturuldu.')
+      showCustomToast.success('Tebrikler 🎉', isEarlyBird ? 'Kurucu üye olarak siteniz oluşturuldu!' : 'Siteniz başarıyla oluşturuldu.')
 
       // Redirect to dashboard (subdomain.domain/dashboard)
       const protocol = window.location.protocol
@@ -328,7 +357,7 @@ export default function RegisterPage() {
       router.push(`${protocol}//${formData.subdomain}.${mainDomain}/dashboard`);
     } catch (err) {
       const msg = (err as ApiError).response?.data?.message ||
-        'Ödeme veya kurulum sırasında bir hata oluştu. Lütfen bilgilerinizi kontrol edin.'
+        'Kurulum sırasında bir hata oluştu. Lütfen bilgilerinizi kontrol edin.'
       setError(msg)
       showCustomToast.error('Hata', msg)
     } finally {
@@ -340,19 +369,25 @@ export default function RegisterPage() {
     'Hesabınızı Oluşturun',
     'Sitenizin Adresini Seçin 🌐',
     'Partnerinizi Ekleyin 💑',
-    'Ödemeyi Tamamlayın 💳'
+    isEarlyBird ? 'Tamamlanıyor...' : 'Ödemeyi Tamamlayın 💳'
   ]
 
   const mainDomain =
     typeof window !== 'undefined' ? window.location.hostname.replace('app.', '') || 'ciftopia.com' : 'ciftopia.com'
 
   const renderProgressIndicator = () => {
-    const steps = [
-      { id: 1, label: 'Hesap' },
-      { id: 2, label: 'Subdomain' },
-      { id: 3, label: 'Partner' },
-      { id: 4, label: 'Ödeme' }
-    ]
+    const steps = isEarlyBird 
+      ? [
+          { id: 1, label: 'Hesap' },
+          { id: 2, label: 'Adres' },
+          { id: 3, label: 'Partner' }
+        ]
+      : [
+          { id: 1, label: 'Hesap' },
+          { id: 2, label: 'Adres' },
+          { id: 3, label: 'Partner' },
+          { id: 4, label: 'Ödeme' }
+        ]
 
     return (
       <div id='progress-indicator' className='mb-10'>
@@ -919,26 +954,48 @@ export default function RegisterPage() {
 
               <Button
                 onClick={handleStep3}
+                disabled={isLoading}
                 className='flex-1 bg-gradient-to-r from-rose-primary to-coral-warm text-white py-8 rounded-2xl font-bold text-xl hover:shadow-2xl transition-all border-none group'
               >
-                Devam Et <ArrowRight className='ml-3 group-hover:translate-x-1 transition-transform' />
+                {isLoading ? (
+                  <Loader2 className='animate-spin' />
+                ) : (
+                  <>
+                    {isEarlyBird ? 'Sitemi Oluştur' : 'Devam Et'} <ArrowRight className='ml-3 group-hover:translate-x-1 transition-transform' />
+                  </>
+                )}
               </Button>
             </div>
 
-            <div className='pt-8 border-t border-gray-100 dark:border-slate-800 flex justify-center items-center space-x-8 opacity-50 grayscale hover:grayscale-0 transition-all'>
-              <div className='flex items-center space-x-2'>
-                <ShieldCheck size={18} />
-                <span className='text-xs font-bold'>SSL GÜVENLİ</span>
+            {isEarlyBird && (
+              <div className='pt-8 border-t border-gray-100 dark:border-slate-800 flex justify-center items-center space-x-8 opacity-50 grayscale hover:grayscale-0 transition-all'>
+                <div className='flex items-center space-x-2 text-rose-500'>
+                  <Sparkles size={18} fill='currentColor' />
+                  <span className='text-xs font-bold uppercase tracking-widest'>Beta Kurucu Üye</span>
+                </div>
+                <div className='flex items-center space-x-2 text-rose-500'>
+                  <Infinity size={18} />
+                  <span className='text-xs font-bold uppercase tracking-widest'>Ömür Boyu Ücretsiz</span>
+                </div>
               </div>
-              <div className='flex items-center space-x-2'>
-                <Lock size={18} />
-                <span className='text-xs font-bold'>256-BIT</span>
+            )}
+
+            {!isEarlyBird && (
+              <div className='pt-8 border-t border-gray-100 dark:border-slate-800 flex justify-center items-center space-x-8 opacity-50 grayscale hover:grayscale-0 transition-all'>
+                <div className='flex items-center space-x-2'>
+                  <ShieldCheck size={18} />
+                  <span className='text-xs font-bold'>SSL GÜVENLİ</span>
+                </div>
+                <div className='flex items-center space-x-2'>
+                  <Lock size={18} />
+                  <span className='text-xs font-bold'>256-BIT</span>
+                </div>
+                <div className='flex items-center space-x-2'>
+                  <CheckCircle size={18} />
+                  <span className='text-xs font-bold'>KVKK UYUMLU</span>
+                </div>
               </div>
-              <div className='flex items-center space-x-2'>
-                <CheckCircle size={18} />
-                <span className='text-xs font-bold'>KVKK UYUMLU</span>
-              </div>
-            </div>
+            )}
           </div>
         )
       case 4:

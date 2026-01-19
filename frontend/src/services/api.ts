@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { PhotoMetadata, BucketListItem, ImportantDate, User, DailyQuestion, QuestionAnswer, RelationshipProfile } from '@/lib/type'
+import { PhotoMetadata, BucketListItem, ImportantDate, User, DailyQuestion, QuestionAnswer, RelationshipProfile, TimeCapsule, Activity } from '@/lib/type'
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -64,6 +64,7 @@ export const authService = {
 
 export const onboardingService = {
   checkSubdomain: (subdomain: string) => api.get<{ data: { couple: string; available: boolean } }>(`/onboarding/check-subdomain?subdomain=${subdomain}`),
+  getEarlyBirdStatus: () => api.get<{ success: boolean; data: { count: number; limit: number; available: boolean } }>('/onboarding/early-bird-status'),
   createCouple: (data: CreateCoupleData) => api.post('/onboarding/create-couple', data),
   deleteSite: () => api.delete('/onboarding/site')
 }
@@ -97,6 +98,13 @@ export const uploadService = {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
   },
+  uploadVideo: (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post('/upload/video', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  },
   uploadAvatar: (file: File) => {
     const formData = new FormData()
     formData.append('file', file)
@@ -120,6 +128,19 @@ export const importantDatesService = {
   updateImportantDate: (id: string, data: Partial<ImportantDate>) =>
     api.put<{ date: ImportantDate; storageUsed: number }>(`/important-dates/${id}`, data),
   deleteImportantDate: (id: string) => api.delete<{ storageUsed: number }>(`/important-dates/${id}`)
+}
+
+export const timeCapsuleService = {
+  getTimeCapsules: (subdomain: string) => api.get<TimeCapsule[]>(`/time-capsule/${subdomain}`),
+  getCapsuleDetail: (id: string) => api.get<TimeCapsule>(`/time-capsule/detail/${id}`),
+  addReflection: (id: string, data: { content: string }) => api.post<TimeCapsule>(`/time-capsule/${id}/reflection`, data),
+  createCapsule: (data: Partial<TimeCapsule>) => api.post<TimeCapsule>('/time-capsule', data),
+  updateCapsule: (id: string, data: Partial<TimeCapsule>) => api.patch<TimeCapsule>(`/time-capsule/${id}`, data),
+  deleteCapsule: (id: string) => api.delete<{ success: boolean }>(`/time-capsule/${id}`)
+}
+
+export const activityService = {
+  getActivities: (params?: { page?: number; limit?: number; module?: string }) => api.get<{ activities: Activity[]; total: number; hasMore: boolean }>('/activity', { params })
 }
 
 export default api

@@ -23,6 +23,12 @@ export class OnboardingController {
     return { success: true, data: result };
   }
 
+  @Get('early-bird-status')
+  async getEarlyBirdStatus() {
+    const result = await this.onboardingService.getEarlyBirdStatus();
+    return { success: true, data: result };
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post('create-couple')
   async createCouple(

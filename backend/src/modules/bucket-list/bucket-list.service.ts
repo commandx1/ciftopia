@@ -10,6 +10,7 @@ import {
   UpdateBucketListItemDto,
 } from './dto/bucket-list.dto';
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
+import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
 export class BucketListService {
@@ -17,6 +18,7 @@ export class BucketListService {
     @InjectModel(BucketListItem.name)
     private bucketListItemModel: Model<BucketListItemDocument>,
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
+    private activityService: ActivityService,
   ) {}
 
   async findAllBySubdomain(subdomain: string) {
@@ -41,6 +43,18 @@ export class BucketListService {
       coupleId: new Types.ObjectId(coupleId),
     });
     const savedItem = await item.save();
+
+    const user = await this.coupleModel.db.model('User').findById(userId);
+    await this.activityService.logActivity({
+      userId,
+      coupleId: coupleId.toString(),
+      module: 'bucket-list',
+      actionType: 'create',
+      resourceId: savedItem._id.toString(),
+      description: `${user?.firstName || 'Biri'} hayaller listesine yeni bir madde ekledi: "${savedItem.title}"`,
+      metadata: { title: savedItem.title },
+    });
+
     return savedItem.populate('authorId', 'firstName lastName avatar gender');
   }
 
@@ -79,6 +93,30 @@ export class BucketListService {
     item.set(cleanUpdateDto);
 
     const updatedItem = await item.save();
+
+    const user = await this.coupleModel.db.model('User').findById(userId);
+    if (updateDto.isCompleted !== undefined) {
+      await this.activityService.logActivity({
+        userId,
+        coupleId: updatedItem.coupleId.toString(),
+        module: 'bucket-list',
+        actionType: 'update',
+        resourceId: itemId,
+        description: `${user?.firstName || 'Biri'} "${updatedItem.title}" hayalini ${updatedItem.isCompleted ? 'gerçekleştirdi! 🎉' : 'tamamlanmadı olarak işaretledi.'}`,
+        metadata: { title: updatedItem.title, isCompleted: updatedItem.isCompleted },
+      });
+    } else {
+      await this.activityService.logActivity({
+        userId,
+        coupleId: updatedItem.coupleId.toString(),
+        module: 'bucket-list',
+        actionType: 'update',
+        resourceId: itemId,
+        description: `${user?.firstName || 'Biri'} "${updatedItem.title}" hayalini güncelledi.`,
+        metadata: { title: updatedItem.title },
+      });
+    }
+
     return updatedItem.populate([
       { path: 'authorId', select: 'firstName lastName avatar gender' },
       { path: 'completedBy', select: 'firstName lastName avatar gender' },
@@ -92,7 +130,20 @@ export class BucketListService {
     // Sadece yazan kişi silebilir kuralı eklenebilir veya partnerlerden herhangi biri
     // Biz şimdilik partnerlerden herhangi birine izin veriyoruz (CoupleOwnerGuard kontrolünde)
 
+    const itemTitle = item.title;
+    const coupleId = item.coupleId;
     await this.bucketListItemModel.findByIdAndDelete(itemId);
+
+    const user = await this.coupleModel.db.model('User').findById(userId);
+    await this.activityService.logActivity({
+      userId,
+      coupleId: coupleId.toString(),
+      module: 'bucket-list',
+      actionType: 'delete',
+      description: `${user?.firstName || 'Biri'} "${itemTitle}" hayalini sildi.`,
+      metadata: { title: itemTitle },
+    });
+
     return { success: true };
   }
 }

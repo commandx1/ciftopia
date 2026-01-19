@@ -18,6 +18,7 @@ import {
   UpdateAlbumDto,
 } from './dto/gallery.dto';
 import { UploadService } from '../upload/upload.service';
+import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
 export class GalleryService {
@@ -28,6 +29,7 @@ export class GalleryService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
     private uploadService: UploadService,
+    private activityService: ActivityService,
   ) {}
 
   private async transformAlbum(
@@ -192,7 +194,19 @@ export class GalleryService {
     });
 
     const savedAlbum = await album.save();
-    return await this.transformAlbum(savedAlbum);
+    const populated = await savedAlbum.populate('authorId', 'firstName lastName avatar gender');
+
+    await this.activityService.logActivity({
+      userId,
+      coupleId: user.coupleId.toString(),
+      module: 'gallery',
+      actionType: 'create',
+      resourceId: populated._id.toString(),
+      description: `${user.firstName} galeriye "${populated.title}" isimli yeni bir albüm ekledi.`,
+      metadata: { albumTitle: populated.title },
+    });
+
+    return await this.transformAlbum(populated);
   }
 
   async uploadPhotos(userId: string, uploadDto: UploadPhotosDto) {
@@ -204,7 +218,7 @@ export class GalleryService {
     const couple = await this.coupleModel.findById(user.coupleId);
     if (!couple) throw new NotFoundException('Çift bulunamadı');
 
-    const photoData = uploadDto.photos.map((p) => ({
+    const photoData = uploadDto.photos.map((p: any) => ({
       photo: p,
       caption: uploadDto.caption,
       albumId: uploadDto.albumId
@@ -217,9 +231,11 @@ export class GalleryService {
     const savedPhotos = await this.photoModel.insertMany(photoData);
 
     // Update album photo count and cover photo if it's the first photo
+    let albumTitle = '';
     if (uploadDto.albumId) {
       const album = await this.albumModel.findById(uploadDto.albumId);
       if (album) {
+        albumTitle = album.title;
         album.photoCount += savedPhotos.length;
         if (!album.coverPhoto && savedPhotos.length > 0) {
           album.coverPhoto = (savedPhotos[0] as any).photo;
@@ -227,6 +243,15 @@ export class GalleryService {
         await album.save();
       }
     }
+
+    await this.activityService.logActivity({
+      userId,
+      coupleId: user.coupleId.toString(),
+      module: 'gallery',
+      actionType: 'create',
+      description: `${user.firstName} ${albumTitle ? `"${albumTitle}" albümüne ` : ''}${savedPhotos.length} yeni fotoğraf ekledi.`,
+      metadata: { photoCount: savedPhotos.length, albumId: uploadDto.albumId },
+    });
 
     const transformedPhotos = (await this.transformPhotos(
       savedPhotos as any,
@@ -247,13 +272,27 @@ export class GalleryService {
     const album = await this.albumModel.findById(albumId);
     if (!album) throw new NotFoundException('Albüm bulunamadı');
 
-    if (album.authorId.toString() !== userId) {
+    if (album.authorId.toString() !== userId.toString()) {
       throw new ForbiddenException('Bu albümü düzenleme yetkiniz yok');
     }
 
+    const oldTitle = album.title;
     Object.assign(album, updateDto);
     const updatedAlbum = await album.save();
-    return await this.transformAlbum(updatedAlbum);
+    const populated = await updatedAlbum.populate('authorId', 'firstName lastName avatar gender');
+
+    const user = await this.userModel.findById(userId);
+    await this.activityService.logActivity({
+      userId,
+      coupleId: populated.coupleId.toString(),
+      module: 'gallery',
+      actionType: 'update',
+      resourceId: albumId,
+      description: `${user?.firstName || 'Biri'} "${oldTitle}" albümünü güncelledi.`,
+      metadata: { albumId, oldTitle, newTitle: populated.title },
+    });
+
+    return await this.transformAlbum(populated);
   }
 
   async deleteAlbum(userId: string, albumId: string) {
@@ -264,6 +303,8 @@ export class GalleryService {
     if (!user || album.authorId.toString() !== userId.toString()) {
       throw new ForbiddenException('Bu albümü silme yetkiniz yok');
     }
+
+    const albumTitle = album.title;
 
     // Delete all photos in the album from S3 and update storage
     const photos = await this.photoModel.find({ albumId: album._id });
@@ -285,6 +326,15 @@ export class GalleryService {
       couple.storageUsed = Math.max(0, couple.storageUsed - totalSize);
       await couple.save();
     }
+
+    await this.activityService.logActivity({
+      userId,
+      coupleId: user.coupleId!.toString(),
+      module: 'gallery',
+      actionType: 'delete',
+      description: `${user.firstName} "${albumTitle}" albümünü ve içindeki tüm fotoğrafları sildi.`,
+      metadata: { albumTitle },
+    });
 
     return { success: true, storageUsed: couple?.storageUsed };
   }
@@ -330,6 +380,15 @@ export class GalleryService {
         await album.save();
       }
     }
+
+    await this.activityService.logActivity({
+      userId,
+      coupleId: user.coupleId!.toString(),
+      module: 'gallery',
+      actionType: 'delete',
+      description: `${user.firstName} bir fotoğraf sildi.`,
+      metadata: { photoId },
+    });
 
     return { success: true, storageUsed: couple?.storageUsed };
   }

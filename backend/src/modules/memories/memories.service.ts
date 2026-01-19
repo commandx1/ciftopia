@@ -8,6 +8,7 @@ import { Memory, MemoryDocument } from '../../schemas/memory.schema';
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
 import { CreateMemoryDto } from './dto/memories.dto';
 import { UploadService } from '../upload/upload.service';
+import { ActivityService } from '../activity/activity.service';
 import { User } from '../../schemas/user.schema';
 
 interface QueryParams {
@@ -25,6 +26,7 @@ export class MemoriesService {
     @InjectModel(Memory.name) private memoryModel: Model<MemoryDocument>,
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
     private uploadService: UploadService,
+    private activityService: ActivityService,
   ) {}
 
   private async transformPhotos(memories: MemoryDocument | MemoryDocument[]) {
@@ -179,12 +181,24 @@ export class MemoriesService {
     });
 
     const savedMemory = await memory.save();
+    const populated = await savedMemory.populate('authorId', 'firstName lastName avatar');
+
+    const user = await this.coupleModel.db.model('User').findById(userId);
+    await this.activityService.logActivity({
+      userId,
+      coupleId: couple._id.toString(),
+      module: 'memories',
+      actionType: 'create',
+      resourceId: populated._id.toString(),
+      description: `${user?.firstName || 'Biri'} "${populated.title}" isimli yeni bir anı ekledi.`,
+      metadata: { title: populated.title },
+    });
 
     // Fetch updated storage for the couple
     const updatedCouple = await this.coupleModel.findById(couple._id);
 
     return {
-      ...((await this.transformPhotos(savedMemory)) as any),
+      ...((await this.transformPhotos(populated)) as any),
       storageUsed: updatedCouple?.storageUsed,
     };
   }
@@ -271,12 +285,24 @@ export class MemoriesService {
     }
 
     const updatedMemory = await memory.save();
+    const populated = await updatedMemory.populate('authorId', 'firstName lastName avatar');
+
+    const user = await this.coupleModel.db.model('User').findById(userId);
+    await this.activityService.logActivity({
+      userId,
+      coupleId: memory.coupleId.toString(),
+      module: 'memories',
+      actionType: 'update',
+      resourceId: memoryId,
+      description: `${user?.firstName || 'Biri'} "${populated.title}" anısını güncelledi.`,
+      metadata: { title: populated.title },
+    });
 
     // Fetch updated storage for the couple
     const updatedCouple = await this.coupleModel.findById(memory.coupleId);
 
     return {
-      ...((await this.transformPhotos(updatedMemory)) as any),
+      ...((await this.transformPhotos(populated)) as any),
       storageUsed: updatedCouple?.storageUsed,
     };
   }
@@ -297,6 +323,18 @@ export class MemoriesService {
     }
 
     await memory.save();
+
+    const user = await this.coupleModel.db.model('User').findById(userId);
+    await this.activityService.logActivity({
+      userId,
+      coupleId: memory.coupleId.toString(),
+      module: 'memories',
+      actionType: 'favorite',
+      resourceId: memoryId,
+      description: `${user?.firstName || 'Biri'} "${memory.title}" anısını ${index === -1 ? 'favorilerine ekledi' : 'favorilerinden çıkardı'}.`,
+      metadata: { title: memory.title, isFavorite: index === -1 },
+    });
+
     return { isFavorite: index === -1 };
   }
 
@@ -506,7 +544,18 @@ export class MemoriesService {
       });
     }
 
+    const memoryTitle = memory.title;
     await this.memoryModel.findByIdAndDelete(memoryId);
+
+    const user = await this.coupleModel.db.model('User').findById(userId);
+    await this.activityService.logActivity({
+      userId,
+      coupleId: couple._id.toString(),
+      module: 'memories',
+      actionType: 'delete',
+      description: `${user?.firstName || 'Biri'} "${memoryTitle}" isimli anıyı sildi.`,
+      metadata: { title: memoryTitle },
+    });
 
     return { success: true };
   }

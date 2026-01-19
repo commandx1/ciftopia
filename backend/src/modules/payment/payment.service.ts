@@ -5,6 +5,7 @@ import { Model } from 'mongoose';
 import * as Iyzipay from 'iyzipay';
 import { CreatePaymentDto } from './dto/payment.dto';
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
+import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
 export class PaymentService {
@@ -13,6 +14,7 @@ export class PaymentService {
   constructor(
     private configService: ConfigService,
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
+    private activityService: ActivityService,
   ) {}
 
   private initIyzipay() {
@@ -139,6 +141,18 @@ export class PaymentService {
         }
 
         Logger.log('Iyzico Payment Success:', result.paymentId);
+
+        if (user.coupleId) {
+          await this.activityService.logActivity({
+            userId: user._id.toString(),
+            coupleId: user.coupleId.toString(),
+            module: 'payment',
+            actionType: 'create',
+            description: `${user.firstName} ödeme yaparak üyeliğini aktif etti / yükseltti! 💳`,
+            metadata: { paymentId: result.paymentId, amount },
+          });
+        }
+
         resolve(result);
       });
     });

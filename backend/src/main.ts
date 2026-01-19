@@ -22,8 +22,8 @@ async function bootstrap() {
   const allowedOrigins =
     configService.get<string>('ALLOWED_ORIGINS')?.split(',') || [];
 
-  // Wildcard pattern: *.ciftopia.com
-  const wildcardPattern = /^https:\/\/([a-z0-9-]+)\.ciftopia\.com$/;
+  const wildcardPattern =
+    /^https?:\/\/([a-z0-9-]+)\.(ciftopia\.com|ciftopia\.local)(:\d+)?$/;
 
   app.enableCors({
     origin: (
@@ -36,17 +36,19 @@ async function bootstrap() {
         return;
       }
 
-      // Check exact match from env
-      const isAllowedOrigin = allowedOrigins.some((allowed) =>
-        origin.includes(allowed.trim()),
-      );
-
       // Check wildcard subdomain pattern
       const isWildcardMatch = wildcardPattern.test(origin);
+
+      // Check exact match from env or localhost
+      const isAllowedOrigin =
+        allowedOrigins.some((allowed) => origin.includes(allowed.trim())) ||
+        origin.includes('localhost') ||
+        origin.includes('127.0.0.1');
 
       if (isAllowedOrigin || isWildcardMatch) {
         callback(null, true);
       } else {
+        console.error(`CORS blocked for origin: ${origin}`);
         callback(new Error('Not allowed by CORS'));
       }
     },

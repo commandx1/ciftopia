@@ -40,7 +40,10 @@ import {
   CloudUpload,
   MessageSquare,
   PenTool,
-  StickyNote
+  StickyNote,
+  Video,
+  Hourglass,
+  ImageIcon
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -63,7 +66,7 @@ export default function HowItWorksPage() {
             <div className='space-y-6'>
               <div className='inline-flex items-center space-x-2 bg-white/60 backdrop-blur-sm px-5 py-2.5 rounded-full border border-rose-200/50 shadow-sm'>
                 <Route className='text-rose-500 w-5 h-5' />
-                <span className='text-sm font-semibold text-gray-700'>7 Modül, Sonsuz Anı</span>
+                <span className='text-sm font-semibold text-gray-700'>8 Modül, Sonsuz Anı</span>
               </div>
 
               <h1 className='text-6xl md:text-7xl font-bold text-gray-900 leading-tight'>
@@ -75,8 +78,8 @@ export default function HowItWorksPage() {
               </h1>
 
               <p className='text-xl text-gray-600 leading-relaxed max-w-xl'>
-                Ciftopia&apos;nın 7 özel modülü, aşkınızın her detayını kaydetmenizi sağlıyor. Günlük sorulardan
-                hayallerinize, anılardan şiirlerinize kadar her şey burada.
+                Ciftopia&apos;nın 8 özel modülü, aşkınızın her detayını kaydetmenizi sağlıyor. Günlük sorulardan
+                hayallerinize, anılardan zaman kapsüllerine kadar her şey burada.
               </p>
             </div>
 
@@ -105,10 +108,13 @@ export default function HowItWorksPage() {
               </div>
               <h2 className='text-5xl md:text-6xl font-bold text-gray-900 mb-6'>
                 İlişki Komuta
-                <br />Merkezi: Dashboard
+                <br />
+                Merkezi: Dashboard
               </h2>
               <p className='text-xl text-gray-600 mb-8 leading-relaxed'>
-                Uygulamaya giriş yaptığınızda sizi karşılayan Dashboard, ilişkinizin tüm detaylarını tek bir ekranda sunar. Kaç gündür birliktesiniz, kaç anı biriktirdiniz, yaklaşan önemli tarihler ve son aktiviteler... Hepsi burada.
+                Uygulamaya giriş yaptığınızda sizi karşılayan Dashboard, ilişkinizin tüm detaylarını tek bir ekranda
+                sunar. Kaç gündür birliktesiniz, kaç anı biriktirdiniz, yaklaşan önemli tarihler ve son aktiviteler...
+                Hepsi burada.
               </p>
               <div className='space-y-6'>
                 {[
@@ -148,22 +154,26 @@ export default function HowItWorksPage() {
                   <div className='flex items-center justify-between mb-4'>
                     <div>
                       <h3 className='font-bold text-lg text-gray-900'>Merhaba Ahmet! 👋</h3>
-                      <p className='text-[10px] text-gray-500'>Siteniz <span className='font-bold text-rose-600'>23 gündür</span> aktif</p>
+                      <p className='text-[10px] text-gray-500'>
+                        Siteniz <span className='font-bold text-rose-600'>23 gündür</span> aktif
+                      </p>
                     </div>
                     <div className='w-10 h-10 bg-gradient-to-br from-rose-500 to-orange-400 rounded-full flex items-center justify-center shadow-lg'>
                       <Heart className='text-white w-5 h-5 fill-current' />
                     </div>
                   </div>
-                  
+
                   <div className='grid grid-cols-4 gap-2'>
                     {[
-                      { label: "Anı", val: "12", color: "rose", icon: Clock },
-                      { label: "Foto", val: "45", color: "purple", icon: Images },
-                      { label: "Şiir", val: "8", color: "amber", icon: Feather },
-                      { label: "Not", val: "5", color: "green", icon: StickyNote }
+                      { label: 'Anı', val: '12', color: 'rose', icon: Clock },
+                      { label: 'Foto', val: '45', color: 'purple', icon: Images },
+                      { label: 'Şiir', val: '8', color: 'amber', icon: Feather },
+                      { label: 'Not', val: '5', color: 'green', icon: StickyNote }
                     ].map((stat, i) => (
                       <div key={i} className='bg-white rounded-xl p-3 text-center shadow-sm'>
-                        <div className={`w-6 h-6 bg-${stat.color}-100 rounded-full flex items-center justify-center mx-auto mb-1`}>
+                        <div
+                          className={`w-6 h-6 bg-${stat.color}-100 rounded-full flex items-center justify-center mx-auto mb-1`}
+                        >
                           <stat.icon size={12} className={`text-${stat.color}-500`} />
                         </div>
                         <div className='text-sm font-bold text-gray-900'>{stat.val}</div>
@@ -177,64 +187,77 @@ export default function HowItWorksPage() {
                   {/* Site Preview Mockup */}
                   <div className='bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-lg'>
                     <div className='bg-gradient-to-r from-rose-500 to-pink-500 p-4 h-32 relative'>
-                       <div className='flex items-center justify-center space-x-3 mt-4'>
-                          <div className='w-10 h-10 rounded-full border-2 border-white overflow-hidden relative'><Image src='/man-pp.png' fill alt='' className='object-cover' /></div>
-                          <Heart className='text-white w-4 h-4 fill-current' />
-                          <div className='w-10 h-10 rounded-full border-2 border-white overflow-hidden relative'><Image src='/woman-pp.png' fill alt='' className='object-cover' /></div>
-                       </div>
+                      <div className='flex items-center justify-center space-x-3 mt-4'>
+                        <div className='w-10 h-10 rounded-full border-2 border-white overflow-hidden relative'>
+                          <Image src='/man-pp.png' fill alt='' className='object-cover' />
+                        </div>
+                        <Heart className='text-white w-4 h-4 fill-current' />
+                        <div className='w-10 h-10 rounded-full border-2 border-white overflow-hidden relative'>
+                          <Image src='/woman-pp.png' fill alt='' className='object-cover' />
+                        </div>
+                      </div>
                     </div>
                     <div className='p-4'>
-                       <div className='flex justify-between items-center mb-4'>
-                          <h4 className='text-[10px] font-black uppercase text-gray-400'>ahmet-ayse.ciftopia.com</h4>
-                          <ExternalLink size={10} className='text-gray-400' />
-                       </div>
-                       <button className='w-full bg-rose-500 text-white py-2 rounded-full text-[10px] font-bold'>Siteyi Görüntüle</button>
+                      <div className='flex justify-between items-center mb-4'>
+                        <h4 className='text-[10px] font-black uppercase text-gray-400'>ahmet-ayse.ciftopia.com</h4>
+                        <ExternalLink size={10} className='text-gray-400' />
+                      </div>
+                      <button className='w-full bg-rose-500 text-white py-2 rounded-full text-[10px] font-bold'>
+                        Siteyi Görüntüle
+                      </button>
                     </div>
                   </div>
 
                   {/* Storage & Upgrade Mockup */}
                   <div className='space-y-4'>
                     <div className='bg-white rounded-3xl p-5 border border-gray-100 shadow-lg'>
-                       <div className='flex items-center justify-between mb-3'>
-                          <div>
-                             <p className='text-[10px] text-gray-400 font-bold'>DEPOLAMA</p>
-                             <p className='text-sm font-black text-gray-900'>234 MB / 1 GB</p>
-                          </div>
-                          <Database className='text-blue-500 w-5 h-5' />
-                       </div>
-                       <div className='w-full bg-gray-100 rounded-full h-2 overflow-hidden mb-4'>
-                          <div className='bg-blue-500 h-full w-[23%]' />
-                       </div>
-                       <button className='w-full bg-blue-100 text-blue-600 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider'>Yükselt</button>
+                      <div className='flex items-center justify-between mb-3'>
+                        <div>
+                          <p className='text-[10px] text-gray-400 font-bold'>DEPOLAMA</p>
+                          <p className='text-sm font-black text-gray-900'>234 MB / 1 GB</p>
+                        </div>
+                        <Database className='text-blue-500 w-5 h-5' />
+                      </div>
+                      <div className='w-full bg-gray-100 rounded-full h-2 overflow-hidden mb-4'>
+                        <div className='bg-blue-500 h-full w-[23%]' />
+                      </div>
+                      <button className='w-full bg-blue-100 text-blue-600 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider'>
+                        Yükselt
+                      </button>
                     </div>
 
                     <div className='bg-gradient-to-br from-amber-400 to-orange-500 rounded-3xl p-4 text-white shadow-xl flex items-center gap-3 group cursor-pointer'>
-                       <div className='w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center shrink-0'>
-                          <Crown size={16} />
-                       </div>
-                       <div>
-                          <p className='text-[10px] font-black uppercase'>Premium Paket</p>
-                          <p className='text-[8px] opacity-80 font-bold'>Sınırsız video & AI sayfaları</p>
-                       </div>
+                      <div className='w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center shrink-0'>
+                        <Crown size={16} />
+                      </div>
+                      <div>
+                        <p className='text-[10px] font-black uppercase'>Premium Paket</p>
+                        <p className='text-[8px] opacity-80 font-bold'>Sınırsız video & AI sayfaları</p>
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Quick Actions Mockup */}
                 <div className='mt-6 bg-white/60 backdrop-blur-sm rounded-3xl p-4 border border-white'>
-                   <h4 className='text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 px-2'>Hızlı İşlemler</h4>
-                   <div className='grid grid-cols-4 gap-3'>
-                      {[
-                        { icon: Plus, color: 'rose' },
-                        { icon: CloudUpload, color: 'purple' },
-                        { icon: PenTool, color: 'amber' },
-                        { icon: MessageSquare, color: 'green' }
-                      ].map((item, i) => (
-                        <div key={i} className={`aspect-square bg-${item.color}-50 rounded-2xl flex items-center justify-center border border-${item.color}-100 shadow-sm`}>
-                           <item.icon size={16} className={`text-${item.color}-500`} />
-                        </div>
-                      ))}
-                   </div>
+                  <h4 className='text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 px-2'>
+                    Hızlı İşlemler
+                  </h4>
+                  <div className='grid grid-cols-4 gap-3'>
+                    {[
+                      { icon: Plus, color: 'rose' },
+                      { icon: CloudUpload, color: 'purple' },
+                      { icon: PenTool, color: 'amber' },
+                      { icon: MessageSquare, color: 'green' }
+                    ].map((item, i) => (
+                      <div
+                        key={i}
+                        className={`aspect-square bg-${item.color}-50 rounded-2xl flex items-center justify-center border border-${item.color}-100 shadow-sm`}
+                      >
+                        <item.icon size={16} className={`text-${item.color}-500`} />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -310,16 +333,14 @@ export default function HowItWorksPage() {
                 <div className='p-8 md:p-10 relative bg-gradient-to-b from-white to-rose-50/30'>
                   {/* The "Deep" Question */}
                   <div className='relative mb-10'>
-                    <div className='absolute -top-6 -left-4 text-rose-200/50 text-8xl font-serif select-none'>
-                      &ldquo;
-                    </div>
+                    <div className='absolute -top-6 -left-4 text-rose-200/50 text-8xl select-none'>&ldquo;</div>
                     <div className='relative z-10 rounded-[2rem] p-8 text-center bg-white shadow-[0_10px_30px_-5px_rgba(244,63,94,0.1)] border border-rose-50'>
                       <p className='text-2xl md:text-3xl text-gray-800 leading-tight font-medium italic'>
                         &quot;Birbirimizin ruhunda hangi köşeyi keşfettiğinde &apos;işte bu benim evim&apos;
                         dedin?&quot;
                       </p>
                     </div>
-                    <div className='absolute -bottom-8 -right-4 text-rose-200/50 text-8xl font-serif select-none rotate-180'>
+                    <div className='absolute -bottom-8 -right-4 text-rose-200/50 text-8xl select-none rotate-180'>
                       &ldquo;
                     </div>
                   </div>
@@ -1094,7 +1115,7 @@ export default function HowItWorksPage() {
       </section>
 
       {/* Module 7: Notes */}
-      <section id='module-notes' className='py-32'>
+      <section id='module-notes' className='py-32 bg-white/40'>
         <div className='max-w-[1920px] mx-auto px-12'>
           <div className='grid grid-cols-1 lg:grid-cols-2 gap-24 items-center'>
             <div className='order-2 lg:order-2'>
@@ -1193,6 +1214,120 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
+      {/* Module 8: Time Capsule */}
+      <section id='module-time-capsule' className='py-32 bg-gradient-to-br from-amber-50 to-orange-50'>
+        <div className='max-w-[1920px] mx-auto px-12'>
+          <div className='grid grid-cols-1 lg:grid-cols-2 gap-24 items-center'>
+            <div>
+              <div className='inline-flex items-center space-x-2 bg-amber-100 px-4 py-2 rounded-full mb-6 border border-amber-200'>
+                <div className='w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center text-white font-bold'>
+                  8
+                </div>
+                <span className='text-sm font-semibold text-amber-700'>Modül 8</span>
+              </div>
+              <h2 className='text-5xl md:text-6xl font-bold text-gray-900 mb-6'>
+                Zaman
+                <br />
+                Kapsülleri
+              </h2>
+              <p className='text-xl text-gray-600 mb-8 leading-relaxed'>
+                Gelecekteki kendinize veya partnerinize dijital mektuplar, fotoğraflar ve videolar bırakın.
+                Belirlediğiniz tarihe kadar mühürlü kalsın, o gün geldiğinde heyecanla açılsın.
+              </p>
+              <div className='space-y-6'>
+                {[
+                  {
+                    icon: Hourglass,
+                    title: 'Dijital Mühürleme',
+                    desc: 'Belirlediğiniz açılış tarihine kadar içerikler tamamen gizli ve kilitli kalır'
+                  },
+                  {
+                    icon: Video,
+                    title: 'Zengin Medya Desteği',
+                    desc: 'Sadece metin değil, o günkü duygularınızı anlatan video ve fotoğraflar ekleyin'
+                  },
+                  {
+                    icon: MessageSquare,
+                    title: 'Düşünceler & Yorumlar',
+                    desc: 'Kapsül açıldığında o günden bugüne neler değiştiğini partnerinizle tartışın'
+                  }
+                ].map((item, i) => (
+                  <div key={i} className='flex items-start space-x-4'>
+                    <div className='w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0'>
+                      <item.icon className='text-amber-600 w-6 h-6' />
+                    </div>
+                    <div>
+                      <h4 className='font-bold text-gray-900 mb-1'>{item.title}</h4>
+                      <p className='text-gray-600'>{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className='relative'>
+              <div className='bg-white rounded-[3rem] p-8 md:p-10 border-2 border-amber-100 shadow-2xl relative overflow-hidden'>
+                {/* Mock Time Capsule Card */}
+                <div className='bg-white rounded-[2rem] p-6 border-2 border-amber-100 shadow-lg relative group transition-all'>
+                  <div className='flex items-center justify-between mb-6'>
+                    <div className='flex items-center space-x-3'>
+                      <div className='w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center text-white shadow-md'>
+                        <Lock size={20} />
+                      </div>
+                      <span className='text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full text-amber-600 bg-amber-50'>
+                        KİLİTLİ
+                      </span>
+                    </div>
+                  </div>
+
+                  <h3 className='font-bold text-2xl text-gray-900 mb-4'>1. Yıl Dönümü Mektubumuz</h3>
+
+                  <div className='bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 mb-6 border border-amber-100/50'>
+                    <div className='flex items-center space-x-3 mb-4'>
+                      <Hourglass className='text-amber-600 animate-pulse' size={24} />
+                      <div>
+                        <p className='text-[10px] font-bold text-gray-500 uppercase tracking-wide'>Açılma Tarihi</p>
+                        <p className='font-black text-gray-900 text-sm'>20 Ocak 2025</p>
+                      </div>
+                    </div>
+                    <div className='bg-white rounded-xl p-3 text-center shadow-inner'>
+                      <p className='text-3xl font-black text-amber-600'>342</p>
+                      <p className='text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1'>gün kaldı</p>
+                    </div>
+                  </div>
+
+                  <div className='flex items-center justify-between pt-6 border-t border-gray-100'>
+                    <div className='flex items-center space-x-3'>
+                      <div className='relative w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-md'>
+                        <Image src='/man-pp.png' alt='' fill className='object-cover' />
+                      </div>
+                      <div>
+                        <p className='text-[10px] font-black text-gray-900 uppercase'>Ahmet</p>
+                        <p className='text-[8px] font-bold text-gray-400 uppercase tracking-tighter'>20 Oca 2024</p>
+                      </div>
+                    </div>
+
+                    <div className='flex items-center gap-2'>
+                      <div className='flex items-center gap-1.5 bg-rose-50 text-rose-600 px-3 py-2 rounded-2xl border border-rose-100 shadow-sm'>
+                        <ImageIcon size={14} strokeWidth={3} />
+                        <span className='text-[10px] font-black'>5</span>
+                      </div>
+                      <div className='flex items-center gap-1.5 bg-amber-50 text-amber-600 px-3 py-2 rounded-2xl border border-amber-100 shadow-sm'>
+                        <Video size={14} strokeWidth={3} />
+                        <span className='text-[10px] font-black'>VİDEO</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Second Stacked Card Preview */}
+                <div className='absolute -bottom-16 left-12 right-12 h-32 bg-white/40 backdrop-blur-sm rounded-t-[2rem] border-x-2 border-t-2 border-amber-50 opacity-50 shadow-2xl'></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Conversion */}
       <section
         id='cta-conversion'
@@ -1215,7 +1350,7 @@ export default function HowItWorksPage() {
           </h2>
 
           <p className='text-2xl text-white/90 mb-16 leading-relaxed font-medium'>
-            7 özel modül, sınırsız anı, tam güvenlik.{' '}
+            8 özel modül, sınırsız anı, tam güvenlik.{' '}
             <span className='bg-white/20 px-4 py-1 rounded-lg border border-white/30'>ahmet-ayse.ciftopia.com</span>{' '}
             gibi size özel bir dünyanız olsun.
           </p>
@@ -1246,6 +1381,7 @@ export default function HowItWorksPage() {
           </div>
         </div>
       </section>
+
     </div>
   )
 }
@@ -1269,38 +1405,4 @@ function History(props: React.SVGProps<SVGSVGElement>) {
       <path d='M12 7v5l4 2' />
     </svg>
   )
-}
-
-const styles = `
-  .cork-texture {
-    background-color: #D4A574;
-    background-image: 
-      radial-gradient(circle at 20% 30%, rgba(139, 90, 43, 0.15) 2px, transparent 2px),
-      radial-gradient(circle at 60% 70%, rgba(139, 90, 43, 0.15) 2px, transparent 2px),
-      radial-gradient(circle at 80% 20%, rgba(139, 90, 43, 0.15) 2px, transparent 2px),
-      radial-gradient(circle at 40% 80%, rgba(139, 90, 43, 0.15) 2px, transparent 2px);
-    background-size: 150px 150px;
-    border: 12px solid #8B5A2B;
-    box-shadow: inset 0 0 100px rgba(0,0,0,0.2), 0 20px 50px rgba(0,0,0,0.1);
-  }
-  .animate-bounce-slow {
-    animation: bounce 3s infinite;
-  }
-  .animate-float {
-    animation: float 6s ease-in-out infinite;
-  }
-  @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-  }
-  @keyframes bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
-  }
-`
-
-if (typeof document !== 'undefined') {
-  const styleSheet = document.createElement('style')
-  styleSheet.innerText = styles
-  document.head.appendChild(styleSheet)
 }

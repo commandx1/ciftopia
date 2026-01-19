@@ -9,6 +9,7 @@ import { Poem, PoemDocument } from '../../schemas/poem.schema';
 import { User, UserDocument } from '../../schemas/user.schema';
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
 import { CreatePoemDto } from './dto/poems.dto';
+import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
 export class PoemsService {
@@ -16,6 +17,7 @@ export class PoemsService {
     @InjectModel(Poem.name) private poemModel: Model<PoemDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
+    private activityService: ActivityService,
   ) {}
 
   async findAllBySubdomain(
@@ -126,6 +128,17 @@ export class PoemsService {
     });
 
     const savedPoem = await poem.save();
+
+    await this.activityService.logActivity({
+      userId,
+      coupleId: user.coupleId.toString(),
+      module: 'poems',
+      actionType: 'create',
+      resourceId: savedPoem._id.toString(),
+      description: `${user.firstName} yeni bir şiir paylaştı: "${savedPoem.title}"`,
+      metadata: { title: savedPoem.title },
+    });
+
     return savedPoem.populate([
       { path: 'authorId', select: 'firstName lastName avatar gender' },
       { path: 'dedicatedTo', select: 'firstName lastName avatar gender' },
@@ -148,6 +161,18 @@ export class PoemsService {
 
     Object.assign(poem, updatePoemDto);
     const updatedPoem = await poem.save();
+
+    const author = await this.userModel.findById(userId);
+    await this.activityService.logActivity({
+      userId,
+      coupleId: updatedPoem.coupleId.toString(),
+      module: 'poems',
+      actionType: 'update',
+      resourceId: poemId,
+      description: `${author?.firstName || 'Biri'} "${updatedPoem.title}" şiirini güncelledi.`,
+      metadata: { title: updatedPoem.title },
+    });
+
     return updatedPoem.populate([
       { path: 'authorId', select: 'firstName lastName avatar gender' },
       { path: 'dedicatedTo', select: 'firstName lastName avatar gender' },
@@ -161,11 +186,24 @@ export class PoemsService {
     }
 
     const user = await this.userModel.findById(userId);
-    if (!user || poem.authorId.toString() !== userId) {
+    if (!user || poem.authorId.toString() !== userId.toString()) {
       throw new ForbiddenException('Bu şiiri silme yetkiniz yok');
     }
 
+    const poemTitle = poem.title;
+    const coupleId = poem.coupleId;
     await this.poemModel.findByIdAndDelete(poemId);
+
+    const author = await this.userModel.findById(userId);
+    await this.activityService.logActivity({
+      userId,
+      coupleId: coupleId.toString(),
+      module: 'poems',
+      actionType: 'delete',
+      description: `${author?.firstName || 'Biri'} "${poemTitle}" isimli şiiri sildi.`,
+      metadata: { title: poemTitle },
+    });
+
     return { success: true };
   }
 }

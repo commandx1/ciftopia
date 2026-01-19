@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Schema as MongooseSchema } from 'mongoose';
+import { Document, Types } from 'mongoose';
 import { User } from './user.schema';
 import { Couple } from './couple.schema';
 
@@ -14,11 +14,11 @@ export interface PhotoMetadata {
 
 @Schema({ timestamps: true })
 export class ImportantDate {
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Couple', required: true })
-  coupleId: Couple;
+  @Prop({ type: Types.ObjectId, ref: 'Couple', required: true })
+  coupleId: Types.ObjectId;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
-  authorId: User;
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  authorId: Types.ObjectId;
 
   @Prop({ required: true })
   title: string;

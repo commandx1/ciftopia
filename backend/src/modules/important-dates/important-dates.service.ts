@@ -5,6 +5,7 @@ import { ImportantDate, ImportantDateDocument } from '../../schemas/important-da
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
 import { CreateImportantDateDto, UpdateImportantDateDto } from './dto/important-date.dto';
 import { UploadService } from '../upload/upload.service';
+import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
 export class ImportantDatesService {
@@ -12,6 +13,7 @@ export class ImportantDatesService {
     @InjectModel(ImportantDate.name) private importantDateModel: Model<ImportantDateDocument>,
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
     private uploadService: UploadService,
+    private activityService: ActivityService,
   ) {}
 
   async findAllBySubdomain(subdomain: string) {
@@ -47,7 +49,20 @@ export class ImportantDatesService {
     });
 
     const saved = await newDate.save();
-    const transformed = await this.transformDate(saved);
+    const populated = await saved.populate('authorId', 'firstName lastName avatar gender');
+
+    const user = await this.coupleModel.db.model('User').findById(userId);
+    await this.activityService.logActivity({
+      userId,
+      coupleId: couple._id.toString(),
+      module: 'important-dates',
+      actionType: 'create',
+      resourceId: populated._id.toString(),
+      description: `${user?.firstName || 'Biri'} yeni bir önemli tarih ekledi: "${populated.title}"`,
+      metadata: { title: populated.title, date: populated.date },
+    });
+
+    const transformed = await this.transformDate(populated);
     return {
       date: transformed,
       storageUsed: couple.storageUsed,
@@ -59,7 +74,7 @@ export class ImportantDatesService {
     const item = await this.importantDateModel.findById(id);
     if (!item) throw new NotFoundException('Tarih bulunamadı');
 
-    if (item.authorId.toString() !== userId) {
+    if (item.authorId.toString() !== userId.toString()) {
       throw new ForbiddenException('Bu tarihi düzenleme yetkiniz yok');
     }
 
@@ -85,7 +100,20 @@ export class ImportantDatesService {
 
     item.set(cleanUpdateDto);
     const updated = await item.save();
-    const transformed = await this.transformDate(updated);
+    const populated = await updated.populate('authorId', 'firstName lastName avatar gender');
+
+    const user = await this.coupleModel.db.model('User').findById(userId);
+    await this.activityService.logActivity({
+      userId,
+      coupleId: populated.coupleId.toString(),
+      module: 'important-dates',
+      actionType: 'update',
+      resourceId: id,
+      description: `${user?.firstName || 'Biri'} "${populated.title}" önemli tarihini güncelledi.`,
+      metadata: { title: populated.title },
+    });
+
+    const transformed = await this.transformDate(populated);
     return {
       date: transformed,
       storageUsed: couple.storageUsed,
@@ -97,7 +125,7 @@ export class ImportantDatesService {
     const item = await this.importantDateModel.findById(id);
     if (!item) throw new NotFoundException('Tarih bulunamadı');
 
-    if (item.authorId.toString() !== userId) {
+    if (item.authorId.toString() !== userId.toString()) {
       throw new ForbiddenException('Bu tarihi silme yetkiniz yok');
     }
 
@@ -109,7 +137,20 @@ export class ImportantDatesService {
       await couple.save();
     }
 
+    const dateTitle = item.title;
+    const coupleId = item.coupleId;
     await item.deleteOne();
+
+    const user = await this.coupleModel.db.model('User').findById(userId);
+    await this.activityService.logActivity({
+      userId,
+      coupleId: coupleId.toString(),
+      module: 'important-dates',
+      actionType: 'delete',
+      description: `${user?.firstName || 'Biri'} "${dateTitle}" tarihini sildi.`,
+      metadata: { title: dateTitle },
+    });
+
     return { success: true, storageUsed: couple?.storageUsed };
   }
 

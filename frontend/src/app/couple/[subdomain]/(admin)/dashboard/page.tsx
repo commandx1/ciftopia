@@ -12,16 +12,17 @@ import {
   Database,
   ArrowUp,
   Crown,
-  Lightbulb,
   Camera,
   Heart,
-  ArrowRight
+  ArrowRight,
+  Hourglass
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { authServiceServer } from '@/services/api-server';
 import { redirect } from 'next/navigation';
 import { getUserAvatar, getPublicAssetUrl } from '@/lib/utils';
+import BulbIcon from '@/components/ui/icons/BulbIcon';
 
 export default async function DashboardPage() {
   const user = await authServiceServer.me();
@@ -72,19 +73,19 @@ export default async function DashboardPage() {
 
       <section id="quick-actions-section" className="mb-8">
         <h2 className=" text-2xl font-bold text-gray-900 mb-6">Hızlı İşlemler</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           {[
-            { id: 1, title: "Yeni Anı Ekle", desc: "Özel bir anınızı paylaşın", icon: Plus, color: "rose" },
-            { id: 2, title: "Fotoğraf Yükle", desc: "Galerinize fotoğraf ekleyin", icon: CloudUpload, color: "purple" },
-            { id: 3, title: "Şiir Yaz", desc: "Romantik bir şiir yazın", icon: PenTool, color: "amber" },
-            { id: 4, title: "Not Bırak", desc: "Sevgilinize mesaj gönderin", icon: MessageSquare, color: "green" },
+            { id: 1, title: "Yeni Anı", href: "/memories", icon: Plus, color: "rose" },
+            { id: 2, title: "Fotoğraf", href: "/gallery", icon: CloudUpload, color: "purple" },
+            { id: 3, title: "Şiir Yaz", href: "/poems", icon: PenTool, color: "amber" },
+            { id: 4, title: "Not Bırak", href: "/notes", icon: MessageSquare, color: "green" },
+            { id: 5, title: "Zaman Kapsülü", href: "/time-capsule", icon: Hourglass, color: "indigo" },
           ].map((action) => (
-            <Link key={action.id} href="#" className="bg-white rounded-2xl p-6 shadow-md hover:shadow-xl transition-all hover:-translate-y-1 group">
-              <div className={`w-16 h-16 bg-gradient-to-br from-${action.color}-100 to-${action.color}-200 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+            <Link key={action.id} href={action.href} className="bg-white rounded-2xl p-6 shadow-md hover:shadow-xl transition-all hover:-translate-y-1 group text-center">
+              <div className={`w-16 h-16 bg-${action.color}-100 rounded-2xl flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform`}>
                 <action.icon className={`text-${action.color}-500 w-8 h-8`} />
               </div>
-              <h3 className="font-bold text-lg text-gray-900 mb-2">{action.title}</h3>
-              <p className="text-gray-600 text-sm">{action.desc}</p>
+              <h3 className="font-bold text-sm text-gray-900">{action.title}</h3>
             </Link>
           ))}
         </div>
@@ -329,13 +330,13 @@ export default async function DashboardPage() {
         <h2 className=" text-2xl font-bold text-gray-900 mb-6">İpuçları & Öneriler</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
-            { id: 1, title: "Düzenli Paylaşım", desc: "Her gün küçük de olsa bir anınızı paylaşın. Zaman içinde harika bir koleksiyon oluşturun.", icon: Lightbulb, color: "blue" },
+            { id: 1, title: "Düzenli Paylaşım", desc: "Her gün küçük de olsa bir anınızı paylaşın. Zaman içinde harika bir koleksiyon oluşturun.", icon: BulbIcon, color: "blue" },
             { id: 2, title: "Fotoğraf Kalitesi", desc: "Yüksek çözünürlüklü fotoğraflar yükleyin. Gelecekte daha güzel hatıralar için.", icon: Camera, color: "purple" },
             { id: 3, title: "Romantik Sürprizler", desc: "Zaman kapsülü özelliğini kullanarak gelecekte açılacak romantik mesajlar bırakın.", icon: Heart, color: "rose" },
           ].map((tip) => (
             <div key={tip.id} className={`bg-gradient-to-br from-${tip.color}-50 to-${tip.color === 'rose' ? 'pink' : tip.color === 'blue' ? 'cyan' : 'indigo'}-50 rounded-2xl p-6 border-2 border-${tip.color}-100`}>
               <div className={`w-12 h-12 bg-${tip.color}-500 rounded-full flex items-center justify-center mb-4`}>
-                <tip.icon className="text-white w-6 h-6" />
+                <tip.icon className="text-white w-6 h-6" size={24} />
               </div>
               <h3 className="font-bold text-lg text-gray-900 mb-2">{tip.title}</h3>
               <p className="text-gray-700 text-sm">{tip.desc}</p>

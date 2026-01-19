@@ -5,6 +5,7 @@ import { NotesService } from './notes.service';
 import { Note, NoteSchema } from '../../schemas/note.schema';
 import { User, UserSchema } from '../../schemas/user.schema';
 import { Couple, CoupleSchema } from '../../schemas/couple.schema';
+import { ActivityModule } from '../activity/activity.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { Couple, CoupleSchema } from '../../schemas/couple.schema';
       { name: User.name, schema: UserSchema },
       { name: Couple.name, schema: CoupleSchema },
     ]),
+    ActivityModule,
   ],
   controllers: [NotesController],
   providers: [NotesService],

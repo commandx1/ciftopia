@@ -77,6 +77,51 @@ export class UploadController {
     return { photos, storageUsed: updatedCouple?.storageUsed };
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Post('video')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadVideo(
+    @Req() req: AuthRequest,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) {
+      throw new BadRequestException('Lütfen bir video dosyası seçin.');
+    }
+
+    if (!file.mimetype.startsWith('video/')) {
+      throw new BadRequestException('Yalnızca video dosyaları yüklenebilir.');
+    }
+
+    const user = req.user;
+    if (!user.coupleId) {
+      throw new BadRequestException(
+        'Dosya yüklemek için bir çifte bağlı olmalısınız.',
+      );
+    }
+
+    const couple = await this.coupleModel.findById(user.coupleId);
+    if (!couple) {
+      throw new BadRequestException('Çift bulunamadı.');
+    }
+
+    if (couple.storageUsed + file.size > couple.storageLimit) {
+      throw new BadRequestException(
+        'Yetersiz depolama alanı. Lütfen bazı dosyaları silin veya planınızı yükseltin.',
+      );
+    }
+
+    const video = await this.uploadService.uploadFile(file, 'videos');
+
+    // Update storage used
+    const updatedCouple = await this.coupleModel.findByIdAndUpdate(
+      user.coupleId,
+      { $inc: { storageUsed: file.size } },
+      { new: true },
+    );
+
+    return { video, storageUsed: updatedCouple?.storageUsed };
+  }
+
   @Post('avatar')
   @UseInterceptors(FileInterceptor('file'))
   async uploadAvatar(

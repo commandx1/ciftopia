@@ -9,6 +9,7 @@ import { Note, NoteDocument } from '../../schemas/note.schema';
 import { User, UserDocument } from '../../schemas/user.schema';
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
 import { CreateNoteDto, UpdateNotePositionDto } from './dto/notes.dto';
+import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
 export class NotesService {
@@ -16,6 +17,7 @@ export class NotesService {
     @InjectModel(Note.name) private noteModel: Model<NoteDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
+    private activityService: ActivityService,
   ) {}
 
   async findAllBySubdomain(subdomain: string) {
@@ -46,6 +48,17 @@ export class NotesService {
     });
 
     const savedNote = await note.save();
+
+    await this.activityService.logActivity({
+      userId,
+      coupleId: user.coupleId.toString(),
+      module: 'notes',
+      actionType: 'create',
+      resourceId: savedNote._id.toString(),
+      description: `${user.firstName} panoya yeni bir not bıraktı.`,
+      metadata: { content: savedNote.content.substring(0, 50) },
+    });
+
     return savedNote.populate('authorId', 'firstName lastName avatar gender');
   }
 
@@ -65,6 +78,18 @@ export class NotesService {
 
     Object.assign(note, updateNoteDto);
     const updatedNote = await note.save();
+
+    const author = await this.userModel.findById(userId);
+    await this.activityService.logActivity({
+      userId,
+      coupleId: updatedNote.coupleId.toString(),
+      module: 'notes',
+      actionType: 'update',
+      resourceId: noteId,
+      description: `${author?.firstName || 'Biri'} bir notu güncelledi.`,
+      metadata: { content: updatedNote.content.substring(0, 50) },
+    });
+
     return updatedNote.populate('authorId', 'firstName lastName avatar gender');
   }
 
@@ -103,7 +128,7 @@ export class NotesService {
     }
 
     // Only mark as read if the current user is NOT the author
-    if (note.authorId.toString() !== userId) {
+    if (note.authorId.toString() !== userId.toString()) {
       note.isRead = true;
       note.readAt = new Date();
       await note.save();
@@ -118,11 +143,22 @@ export class NotesService {
     }
 
     const user = await this.userModel.findById(userId);
-    if (!user || note.authorId.toString() !== userId) {
+    if (!user || note.authorId.toString() !== userId.toString()) {
       throw new ForbiddenException('Bu notu silme yetkiniz yok');
     }
 
+    const coupleId = note.coupleId;
     await this.noteModel.findByIdAndDelete(noteId);
+
+    const author = await this.userModel.findById(userId);
+    await this.activityService.logActivity({
+      userId,
+      coupleId: coupleId.toString(),
+      module: 'notes',
+      actionType: 'delete',
+      description: `${author?.firstName || 'Biri'} bir notu sildi.`,
+    });
+
     return { success: true };
   }
 }

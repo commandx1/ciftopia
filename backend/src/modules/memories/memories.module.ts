@@ -5,6 +5,7 @@ import { MemoriesService } from './memories.service';
 import { Memory, MemorySchema } from '../../schemas/memory.schema';
 import { Couple, CoupleSchema } from '../../schemas/couple.schema';
 import { UploadModule } from '../upload/upload.module';
+import { ActivityModule } from '../activity/activity.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { UploadModule } from '../upload/upload.module';
       { name: Couple.name, schema: CoupleSchema },
     ]),
     UploadModule,
+    ActivityModule,
   ],
   controllers: [MemoriesController],
   providers: [MemoriesService],
