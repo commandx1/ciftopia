@@ -213,4 +213,54 @@ interface Activity {
   updatedAt: string
 }
 
-export type { ApiError, User, Memory, PhotoMetadata, Poem, Note, Album, GalleryPhoto, AuthorStats, RelationshipProfile, DailyQuestion, QuestionAnswer, CoupleQuestionStats, BucketListItem, ImportantDate, TimeCapsule, Activity }
+interface DashboardData {
+  stats: {
+    memoryCount: number
+    photoCount: number
+    poemCount: number
+    noteCount: number
+    totalContent: number
+  }
+  coupleInfo: {
+    daysActive: number
+    storageUsed: number
+    storageLimit: number
+    relationshipStartDate?: string
+    coupleName?: string
+    partner1: User
+    partner2: User
+  }
+  recentActivities: Activity[]
+  weeklyActivity: {
+    day: string
+    count: number
+    date: string
+  }[]
+  distribution: {
+    label: string
+    count: number
+    color: string
+    percentage: number
+  }[]
+}
+
+export type {
+  ApiError,
+  User,
+  Memory,
+  PhotoMetadata,
+  Poem,
+  Note,
+  Album,
+  GalleryPhoto,
+  AuthorStats,
+  RelationshipProfile,
+  DailyQuestion,
+  QuestionAnswer,
+  CoupleQuestionStats,
+  BucketListItem,
+  ImportantDate,
+  TimeCapsule,
+  Activity,
+  DashboardData
+}

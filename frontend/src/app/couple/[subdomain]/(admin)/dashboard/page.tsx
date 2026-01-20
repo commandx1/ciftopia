@@ -22,10 +22,11 @@ import Image from 'next/image';
 import { authServiceServer } from '@/services/api-server';
 import { dashboardServiceServer } from '@/services/dashboard-server';
 import { redirect } from 'next/navigation';
-import { getUserAvatar, getPublicAssetUrl, formatBytes } from '@/lib/utils';
+import { getUserAvatar, formatBytes } from '@/lib/utils';
 import BulbIcon from '@/components/ui/icons/BulbIcon';
 import { format, formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
+import { Activity } from '@/lib/type';
 
 export default async function DashboardPage() {
   const user = await authServiceServer.me();
@@ -236,7 +237,7 @@ export default async function DashboardPage() {
         <div className="bg-white rounded-3xl shadow-lg p-8 border border-gray-50">
           <div className="space-y-6">
             {recentActivities.length > 0 ? (
-              recentActivities.map((activity: any) => (
+              recentActivities.map((activity: Activity) => (
                 <div key={activity._id} className="flex items-start space-x-4 pb-6 border-b border-gray-100 last:border-0 last:pb-0">
                   <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-rose-200 relative">
                     <Image 
@@ -283,8 +284,8 @@ export default async function DashboardPage() {
               <ArrowUp size={20} className="text-rose-500" />
             </div>
             <div className="space-y-4">
-              {weeklyActivity.map((item: any, i: number) => {
-                const maxCount = Math.max(...weeklyActivity.map((a: any) => a.count), 1);
+              {weeklyActivity.map((item, i: number) => {
+                const maxCount = Math.max(...weeklyActivity.map(a => a.count), 1);
                 const width = `${(item.count / maxCount) * 100}%`;
                 
                 return (
@@ -311,7 +312,7 @@ export default async function DashboardPage() {
               <Clock size={20} className="text-purple-500" />
             </div>
             <div className="space-y-6">
-              {distribution.map((item: any, i: number) => (
+              {distribution.map((item, i: number) => (
                 <div key={i}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-3">

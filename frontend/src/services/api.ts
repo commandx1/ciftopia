@@ -1,5 +1,16 @@
 import axios from 'axios'
-import { PhotoMetadata, BucketListItem, ImportantDate, User, DailyQuestion, QuestionAnswer, RelationshipProfile, TimeCapsule, Activity } from '@/lib/type'
+import { 
+  PhotoMetadata, 
+  BucketListItem, 
+  ImportantDate, 
+  User, 
+  DailyQuestion, 
+  QuestionAnswer, 
+  RelationshipProfile, 
+  TimeCapsule, 
+  Activity,
+  DashboardData
+} from '@/lib/type'
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -144,7 +155,7 @@ export const activityService = {
 }
 
 export const dashboardService = {
-  getStats: () => api.get<any>('/dashboard/stats')
+  getStats: () => api.get<DashboardData>('/dashboard/stats')
 }
 
 export default api

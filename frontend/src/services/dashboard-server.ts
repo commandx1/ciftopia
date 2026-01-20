@@ -1,9 +1,10 @@
 import { cookies } from 'next/headers';
+import { DashboardData } from '@/lib/type';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const dashboardServiceServer = {
-  getStats: async () => {
+  getStats: async (): Promise<DashboardData | null> => {
     const cookieStore = await cookies();
     const token = cookieStore.get('accessToken')?.value;
 
