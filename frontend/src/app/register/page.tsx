@@ -33,7 +33,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { authService, onboardingService, paymentService, uploadService } from '@/services/api'
-import { ApiError } from '@/lib/type'
+import { ApiError, PhotoMetadata } from '@/lib/type'
 import { useRouter } from 'next/navigation';
 import { showCustomToast } from '@/components/ui/CustomToast'
 
@@ -105,14 +105,14 @@ export default function RegisterPage() {
     firstName: '',
     lastName: '',
     gender: 'male',
-    avatar: '',
+    avatar: undefined as PhotoMetadata | undefined,
     partnerFirstName: '',
     partnerLastName: '',
     partnerEmail: '',
     partnerPassword: '',
     partnerPasswordConfirm: '',
     partnerGender: 'female',
-    partnerAvatar: '',
+    partnerAvatar: undefined as PhotoMetadata | undefined,
     relationshipStartDate: '',
     relationshipStatus: 'dating',
     subdomain: ''

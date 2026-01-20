@@ -33,10 +33,9 @@ export function formatBytes(bytes: number, decimals = 2) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
 }
 
-export function getUserAvatar(user?: { avatar?: PhotoMetadata | string; gender?: string }) {
-  if (user?.avatar) {
-    if (typeof user.avatar === 'string') return user.avatar
-    if (user.avatar.url) return user.avatar.url
+export function getUserAvatar(user?: { avatar?: PhotoMetadata; gender?: string }) {
+  if (user?.avatar?.url) {
+    return user.avatar.url
   }
   const defaultPic = user?.gender === 'female' ? '/woman-pp.png' : '/man-pp.png'
   return getPublicAssetUrl(defaultPic)

@@ -410,7 +410,7 @@ export default function PoemsPage() {
                               <div className='relative'>
                                 <Image
                                   src={getUserAvatar({
-                                    avatar: typeof poem.authorId.avatar === 'string' ? undefined : poem.authorId.avatar,
+                                    avatar: poem.authorId.avatar,
                                     gender: poem.authorId.gender
                                   })}
                                   alt={poem.authorId.firstName}

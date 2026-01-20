@@ -21,7 +21,7 @@ import { authService, onboardingService } from '@/services/api'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 import DeleteSiteModal from './DeleteSiteModal'
-import { PhotoMetadata, User as UserType } from '@/lib/type'
+import { User as UserType } from '@/lib/type'
 import { getUserAvatar } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 
@@ -55,7 +55,7 @@ export default function SettingsClient({ user }: SettingsClientProps) {
   ]
 
   const userDisplayName = user?.firstName + ' ' + (user?.lastName || '')
-  const userAvatar = getUserAvatar({ avatar: user?.avatar as PhotoMetadata, gender: user?.gender })
+  const userAvatar = getUserAvatar({ avatar: user?.avatar, gender: user?.gender })
   const subdomain = user?.coupleId?.subdomain
   const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN
 

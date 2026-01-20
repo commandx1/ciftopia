@@ -51,7 +51,7 @@ export default function PoemDetailModal({ poem, onClose, onEdit, onDelete, curre
             <div className='flex items-center space-x-4'>
               <Image
                 src={getUserAvatar({
-                  avatar: typeof poem.authorId.avatar === 'string' ? undefined : poem.authorId.avatar,
+                  avatar: poem.authorId.avatar,
                   gender: poem.authorId.gender
                 })}
                 alt={poem.authorId.firstName}

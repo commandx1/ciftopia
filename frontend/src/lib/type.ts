@@ -19,7 +19,7 @@ interface User {
   firstName: string
   lastName: string
   email: string
-  avatar: PhotoMetadata | string
+  avatar?: PhotoMetadata
   gender: string
   coupleNames?: string // Token veya /auth/me üzerinden gelen çift isimleri
   coupleId?: {
