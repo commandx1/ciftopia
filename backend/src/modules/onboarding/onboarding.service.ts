@@ -88,7 +88,7 @@ export class OnboardingService {
     return {
       available: !existingCouple,
       couple: existingCouple
-        ? `${capitalizeFirstLetter((existingCouple.partner1 as unknown as User).firstName)} & ${capitalizeFirstLetter((existingCouple.partner2 as unknown as User).firstName)}`
+        ? `${capitalizeFirstLetter((existingCouple.partner1 as unknown as User)?.firstName || '')} & ${capitalizeFirstLetter((existingCouple.partner2 as unknown as User)?.firstName || '')}`
         : null,
     };
   }
