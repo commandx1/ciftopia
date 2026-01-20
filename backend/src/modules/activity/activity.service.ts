@@ -2,12 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Activity, ActivityDocument } from '../../schemas/activity.schema';
-import { CoupleDocument } from 'src/schemas/couple.schema'
+import { CoupleDocument } from 'src/schemas/couple.schema';
+import { UploadService } from '../upload/upload.service';
 
 @Injectable()
 export class ActivityService {
   constructor(
     @InjectModel(Activity.name) private activityModel: Model<ActivityDocument>,
+    private uploadService: UploadService,
   ) {}
 
   async logActivity(data: {
@@ -56,6 +58,9 @@ export class ActivityService {
         .exec(),
       this.activityModel.countDocuments(filter),
     ]);
+
+    // Transform avatar URLs
+    await this.uploadService.transformAvatars(activities, 'userId');
 
     return {
       activities,

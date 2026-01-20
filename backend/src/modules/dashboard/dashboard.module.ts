@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { DashboardService } from './dashboard.service';
 import { DashboardController } from './dashboard.controller';
+import { UploadModule } from '../upload/upload.module';
 import { Memory, MemorySchema } from '../../schemas/memory.schema';
 import { GalleryPhoto, GalleryPhotoSchema } from '../../schemas/gallery-photo.schema';
 import { Poem, PoemSchema } from '../../schemas/poem.schema';
@@ -29,6 +30,7 @@ import { QuestionAnswer, QuestionAnswerSchema } from '../../schemas/question-ans
       { name: TimeCapsule.name, schema: TimeCapsuleSchema },
       { name: QuestionAnswer.name, schema: QuestionAnswerSchema },
     ]),
+    UploadModule,
   ],
   controllers: [DashboardController],
   providers: [DashboardService],

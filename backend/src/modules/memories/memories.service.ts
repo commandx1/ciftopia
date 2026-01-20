@@ -62,21 +62,8 @@ export class MemoriesService {
         }
 
         // Transform author avatar if populated
-        if (memoryObj.authorId && (memoryObj.authorId as any).avatar) {
-          const authorAvatar = (memoryObj.authorId as any).avatar;
-          const avatarKey =
-            typeof authorAvatar === 'string' ? authorAvatar : authorAvatar.url;
-          const presignedAvatarUrl =
-            await this.uploadService.getPresignedUrl(avatarKey);
-
-          if (typeof authorAvatar === 'string') {
-            (memoryObj.authorId as any).avatar = presignedAvatarUrl;
-          } else {
-            (memoryObj.authorId as any).avatar = {
-              ...authorAvatar,
-              url: presignedAvatarUrl,
-            };
-          }
+        if (memoryObj.authorId) {
+          await this.uploadService.transformAvatar(memoryObj.authorId);
         }
 
         return memoryObj;

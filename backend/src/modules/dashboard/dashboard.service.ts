@@ -27,6 +27,7 @@ import {
   QuestionAnswer,
   QuestionAnswerDocument,
 } from '../../schemas/question-answer.schema';
+import { UploadService } from '../upload/upload.service';
 
 @Injectable()
 export class DashboardService {
@@ -47,6 +48,7 @@ export class DashboardService {
     private timeCapsuleModel: Model<TimeCapsuleDocument>,
     @InjectModel(QuestionAnswer.name)
     private questionAnswerModel: Model<QuestionAnswerDocument>,
+    private uploadService: UploadService,
   ) {}
 
   async getStats(coupleId: string) {
@@ -215,6 +217,12 @@ export class DashboardService {
         .sort({ createdAt: -1 })
         .limit(5)
         .exec();
+
+      // Transform avatar URLs for partners and activity users
+      if (coupleObj?.partner1) await this.uploadService.transformAvatar(coupleObj.partner1);
+      if (coupleObj?.partner2) await this.uploadService.transformAvatar(coupleObj.partner2);
+
+      await this.uploadService.transformAvatars(recentActivities, 'userId');
 
       return {
         stats: {

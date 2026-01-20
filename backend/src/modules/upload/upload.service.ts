@@ -129,4 +129,23 @@ export class UploadService {
       console.error('S3 dosya silme hatası:', err);
     }
   }
+
+  async transformAvatar(user: any): Promise<void> {
+    if (user?.avatar?.url && !user.avatar.url.startsWith('http')) {
+      user.avatar.url = await this.getPresignedUrl(user.avatar.url);
+    }
+  }
+
+  async transformAvatars(entities: any[], userPath: string = 'authorId'): Promise<void> {
+    if (!entities || !Array.isArray(entities)) return;
+    
+    await Promise.all(
+      entities.map(async (entity) => {
+        const user = userPath.split('.').reduce((obj, key) => obj?.[key], entity);
+        if (user) {
+          await this.transformAvatar(user);
+        }
+      })
+    );
+  }
 }

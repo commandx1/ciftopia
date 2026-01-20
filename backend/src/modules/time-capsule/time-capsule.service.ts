@@ -60,33 +60,17 @@ export class TimeCapsuleService {
     }
 
     // Transform author avatar if populated
-    if (obj.authorId && obj.authorId.avatar) {
-      const avatar = obj.authorId.avatar;
-      const key = typeof avatar === 'string' ? avatar : avatar.url;
-      const presignedAvatarUrl = await this.uploadService.getPresignedUrl(key);
-      if (typeof avatar === 'string') {
-        obj.authorId.avatar = presignedAvatarUrl;
-      } else {
-        obj.authorId.avatar = { ...avatar, url: presignedAvatarUrl };
-      }
+    if (obj.authorId) {
+      await this.uploadService.transformAvatar(obj.authorId);
     }
 
     // Transform reflection author avatars
     if (obj.reflections && obj.reflections.length > 0) {
-      obj.reflections = await Promise.all(
+      await Promise.all(
         obj.reflections.map(async (refl: any) => {
-          if (refl.authorId && refl.authorId.avatar) {
-            const avatar = refl.authorId.avatar;
-            const key = typeof avatar === 'string' ? avatar : avatar.url;
-            const presignedAvatarUrl =
-              await this.uploadService.getPresignedUrl(key);
-            if (typeof avatar === 'string') {
-              refl.authorId.avatar = presignedAvatarUrl;
-            } else {
-              refl.authorId.avatar = { ...avatar, url: presignedAvatarUrl };
-            }
+          if (refl.authorId) {
+            await this.uploadService.transformAvatar(refl.authorId);
           }
-          return refl;
         }),
       );
     }

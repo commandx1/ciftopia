@@ -13,12 +13,6 @@ export function getBaseUrl() {
   return `${protocol}://${mainDomain}`
 }
 
-export function getPublicAssetUrl(path: string) {
-  return path
-  // const cleanPath = path.startsWith('/') ? path : `/${path}`
-  // return `${getBaseUrl()}${cleanPath}`
-}
-
 export function formatBytes(bytes: number, decimals = 2) {
   if (!bytes || isNaN(bytes) || bytes <= 0) return '0 Bytes'
 
@@ -35,8 +29,16 @@ export function formatBytes(bytes: number, decimals = 2) {
 
 export function getUserAvatar(user?: { avatar?: PhotoMetadata; gender?: string }) {
   if (user?.avatar?.url) {
-    return user.avatar.url
+    const url = user.avatar.url
+    // Eğer URL bir S3 key ise (http ile başlamıyor ve / ile başlamıyorsa), 
+    // bunu bir şekilde göstermemiz lazım. Normalde backend presigned URL dönmeli.
+    // Ama güvenlik amaçlı, geçersiz formatları kontrol edelim.
+    if (url.startsWith('http') || url.startsWith('/')) {
+      return url
+    }
+    // Eğer sadece key gelmişse, fallback gösterelim ki uygulama çökmesin
+    console.warn('Avatar URL format is incorrect:', url)
   }
   const defaultPic = user?.gender === 'female' ? '/woman-pp.png' : '/man-pp.png'
-  return getPublicAssetUrl(defaultPic)
+  return defaultPic
 }

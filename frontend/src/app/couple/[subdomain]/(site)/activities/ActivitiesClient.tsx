@@ -103,7 +103,7 @@ export default function ActivitiesClient({ initialActivities, initialHasMore }: 
   })
 
   return (
-    <div className='max-w-4xl mx-auto px-4 py-12'>
+    <div className='max-w-4xl mx-auto px-4 pb-12 pt-24'>
       {/* ... existing header ... */}
       <div className='flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6'>
         <div>
