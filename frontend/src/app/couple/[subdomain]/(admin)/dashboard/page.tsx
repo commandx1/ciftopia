@@ -20,20 +20,41 @@ import {
 import Link from 'next/link';
 import Image from 'next/image';
 import { authServiceServer } from '@/services/api-server';
+import { dashboardServiceServer } from '@/services/dashboard-server';
 import { redirect } from 'next/navigation';
-import { getUserAvatar, getPublicAssetUrl } from '@/lib/utils';
+import { getUserAvatar, getPublicAssetUrl, formatBytes } from '@/lib/utils';
 import BulbIcon from '@/components/ui/icons/BulbIcon';
+import { format, formatDistanceToNow } from 'date-fns';
+import { tr } from 'date-fns/locale';
 
 export default async function DashboardPage() {
   const user = await authServiceServer.me();
+  
+  let dashboardData = null;
+  if (dashboardServiceServer && dashboardServiceServer.getStats) {
+    dashboardData = await dashboardServiceServer.getStats();
+  }
 
   if (!user) {
     redirect('/login');
   }
 
+  if (!dashboardData) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <h2 className="text-2xl font-bold text-gray-800">Veriler yüklenemedi</h2>
+        <p className="text-gray-600">Lütfen sayfayı yenilemeyi deneyin.</p>
+      </div>
+    );
+  }
+
+  const { stats, coupleInfo, recentActivities, weeklyActivity, distribution } = dashboardData;
+
   const subdomain = user?.coupleId?.subdomain;
   const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'ciftopia.local:3000';
   const coupleUrl = '/';
+
+  const storagePercentage = Math.round((coupleInfo.storageUsed / coupleInfo.storageLimit) * 100);
 
   return (
     <div id="main-dashboard" className="max-w-7xl mx-auto px-6 py-8">
@@ -43,7 +64,7 @@ export default async function DashboardPage() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-4xl font-bold text-gray-900 mb-2">Merhaba {user?.firstName}! 👋</h1>
-              <p className="text-gray-600 text-lg">Siteniz <span className="font-bold text-rose-600">23 gündür</span> aktif</p>
+              <p className="text-gray-600 text-lg">Siteniz <span className="font-bold text-rose-600">{coupleInfo.daysActive} gündür</span> aktif</p>
             </div>
             <div className="hidden md:block">
               <div className="w-20 h-20 bg-gradient-to-br from-rose-primary to-coral-warm rounded-full flex items-center justify-center animate-pulse">
@@ -54,10 +75,10 @@ export default async function DashboardPage() {
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { id: 1, label: "Anı", value: "12", icon: Clock, color: "rose" },
-              { id: 2, label: "Fotoğraf", value: "45", icon: Images, color: "purple" },
-              { id: 3, label: "Şiir", value: "8", icon: Feather, color: "amber" },
-              { id: 4, label: "Not", value: "5", icon: StickyNote, color: "green" },
+              { id: 1, label: "Anı", value: stats.memoryCount, icon: Clock, color: "rose" },
+              { id: 2, label: "Fotoğraf", value: stats.photoCount, icon: Images, color: "purple" },
+              { id: 3, label: "Şiir", value: stats.poemCount, icon: Feather, color: "amber" },
+              { id: 4, label: "Not", value: stats.noteCount, icon: StickyNote, color: "green" },
             ].map((stat) => (
               <div key={stat.id} className="bg-white rounded-2xl p-6 text-center shadow-sm hover:shadow-md transition-shadow">
                 <div className={`w-12 h-12 bg-${stat.color}-100 rounded-full flex items-center justify-center mx-auto mb-3`}>
@@ -109,34 +130,38 @@ export default async function DashboardPage() {
               
               <div className="flex items-center justify-center space-x-6 py-8">
                 <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-xl relative">
-                  <Image src={getUserAvatar(user)} alt="Partner 1" className="object-cover" fill />
+                  <Image src={getUserAvatar(coupleInfo.partner1)} alt="Partner 1" className="object-cover" fill />
                 </div>
                 <div className="text-5xl text-white">
                   <Heart className="animate-pulse fill-current" />
                 </div>
                 <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-xl relative">
-                  <Image src={getPublicAssetUrl('/woman-pp.png')} alt="Partner 2" className="object-cover" fill />
+                  <Image src={getUserAvatar(coupleInfo.partner2)} alt="Partner 2" className="object-cover" fill />
                 </div>
               </div>
               
               <div className="text-center">
-                <h3 className=" text-3xl font-bold text-white mb-2">{user?.firstName} & Partner</h3>
-                <p className="text-white/90">14 Şubat 2024&apos;ten beri birlikte 💕</p>
+                <h3 className=" text-3xl font-bold text-white mb-2">{coupleInfo.coupleName || `${user?.firstName} & Partner`}</h3>
+                <p className="text-white/90">
+                  {coupleInfo.relationshipStartDate 
+                    ? `${format(new Date(coupleInfo.relationshipStartDate), 'd MMMM yyyy', { locale: tr })}'den beri birlikte 💕`
+                    : "Mutluluğa ilk adımdan beri birlikte 💕"}
+                </p>
               </div>
             </div>
             
             <div className="p-6 bg-gradient-to-br from-gray-50 to-white">
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="bg-white rounded-xl p-4 text-center shadow-sm">
-                  <div className="text-2xl font-bold text-rose-500 mb-1">23</div>
+                  <div className="text-2xl font-bold text-rose-500 mb-1">{coupleInfo.daysActive}</div>
                   <div className="text-xs text-gray-600">Gün</div>
                 </div>
                 <div className="bg-white rounded-xl p-4 text-center shadow-sm">
-                  <div className="text-2xl font-bold text-purple-500 mb-1">12</div>
+                  <div className="text-2xl font-bold text-purple-500 mb-1">{stats.memoryCount}</div>
                   <div className="text-xs text-gray-600">Anı</div>
                 </div>
                 <div className="bg-white rounded-xl p-4 text-center shadow-sm">
-                  <div className="text-2xl font-bold text-blue-500 mb-1">45</div>
+                  <div className="text-2xl font-bold text-blue-500 mb-1">{stats.photoCount}</div>
                   <div className="text-xs text-gray-600">Fotoğraf</div>
                 </div>
               </div>
@@ -163,7 +188,7 @@ export default async function DashboardPage() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-sm text-gray-600 mb-1">Kullanılan Alan</p>
-                <p className="text-2xl font-bold text-gray-900">234 MB</p>
+                <p className="text-2xl font-bold text-gray-900">{formatBytes(coupleInfo.storageUsed)}</p>
               </div>
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
                 <Database className="text-blue-500 w-8 h-8" />
@@ -172,32 +197,18 @@ export default async function DashboardPage() {
             
             <div className="mb-4">
               <div className="flex justify-between text-sm text-gray-600 mb-2">
-                <span>234 MB / 1 GB</span>
-                <span>23%</span>
+                <span>{formatBytes(coupleInfo.storageUsed)} / {formatBytes(coupleInfo.storageLimit)}</span>
+                <span>{storagePercentage}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                <div className="bg-gradient-to-r from-blue-500 to-cyan-500 h-full rounded-full" style={{ width: '23%' }}></div>
+                <div 
+                  className="bg-gradient-to-r from-blue-500 to-cyan-500 h-full rounded-full transition-all duration-1000" 
+                  style={{ width: `${storagePercentage}%` }}
+                ></div>
               </div>
             </div>
             
-            <div className="space-y-3 mb-6">
-              {[
-                { label: "Fotoğraflar", value: "156 MB", color: "purple" },
-                { label: "Anılar", value: "42 MB", color: "rose" },
-                { label: "Şiirler", value: "18 MB", color: "amber" },
-                { label: "Notlar", value: "18 MB", color: "green" },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-2">
-                    <div className={`w-3 h-3 bg-${item.color}-500 rounded-full`}></div>
-                    <span className="text-gray-700">{item.label}</span>
-                  </div>
-                  <span className="font-semibold text-gray-900">{item.value}</span>
-                </div>
-              ))}
-            </div>
-            
-            <Link href="#" className="block w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-center py-3 rounded-full font-semibold hover:shadow-lg transition-all">
+            <Link href="/settings" className="block w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-center py-3 rounded-full font-semibold hover:shadow-lg transition-all">
               <ArrowUp size={18} className="inline mr-2" />
               Depolamayı Yükselt
             </Link>
@@ -224,27 +235,38 @@ export default async function DashboardPage() {
         <h2 className=" text-2xl font-bold text-gray-900 mb-6">Son Aktiviteler</h2>
         <div className="bg-white rounded-3xl shadow-lg p-8 border border-gray-50">
           <div className="space-y-6">
-            {[
-              { id: 1, user: "Partner", action: "yeni bir fotoğraf ekledi", time: "2 saat önce", desc: "İlk tatilimizden harika bir fotoğraf paylaştı", avatar: getPublicAssetUrl('/woman-pp.png') },
-              { id: 2, user: user?.firstName, action: "bir anı paylaştı", time: "dün", desc: '"İlk buluşmamız" anısını ekledi', avatar: getUserAvatar(user) },
-            ].map((activity) => (
-              <div key={activity.id} className="flex items-start space-x-4 pb-6 border-b border-gray-100 last:border-0 last:pb-0">
-                <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-rose-200 relative">
-                  <Image src={activity.avatar} alt={activity.user || 'User'} className="object-cover" fill />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-semibold text-gray-900">{activity.user} {activity.action}</h4>
-                    <span className="text-sm text-gray-500">{activity.time}</span>
+            {recentActivities.length > 0 ? (
+              recentActivities.map((activity: any) => (
+                <div key={activity._id} className="flex items-start space-x-4 pb-6 border-b border-gray-100 last:border-0 last:pb-0">
+                  <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-rose-200 relative">
+                    <Image 
+                      src={getUserAvatar(activity.userId)} 
+                      alt={activity.userId?.firstName || 'User'} 
+                      className="object-cover" 
+                      fill 
+                    />
                   </div>
-                  <p className="text-gray-600 text-sm mb-3">{activity.desc}</p>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold text-gray-900">
+                        {activity.userId?.firstName} {activity.description}
+                      </h4>
+                      <span className="text-sm text-gray-500">
+                        {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true, locale: tr })}
+                      </span>
+                    </div>
+                  </div>
                 </div>
+              ))
+            ) : (
+              <div className="text-center py-10">
+                <p className="text-gray-500">Henüz bir aktivite bulunmuyor.</p>
               </div>
-            ))}
+            )}
           </div>
           
           <div className="mt-8 text-center">
-            <Link href="#" className="inline-flex items-center text-rose-primary font-semibold hover:text-rose-600 transition-colors">
+            <Link href="/activities" className="inline-flex items-center text-rose-primary font-semibold hover:text-rose-600 transition-colors">
               Tüm Aktiviteleri Gör
               <ArrowRight size={18} className="ml-2" />
             </Link>
@@ -261,25 +283,25 @@ export default async function DashboardPage() {
               <ArrowUp size={20} className="text-rose-500" />
             </div>
             <div className="space-y-4">
-              {[
-                { day: "Pazartesi", count: 5, width: "50%" },
-                { day: "Salı", count: 3, width: "30%" },
-                { day: "Çarşamba", count: 8, width: "80%" },
-                { day: "Perşembe", count: 6, width: "60%" },
-                { day: "Cuma", count: 10, width: "100%" },
-                { day: "Cumartesi", count: 7, width: "70%" },
-                { day: "Pazar", count: 4, width: "40%" },
-              ].map((item, i) => (
-                <div key={i}>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="text-gray-600">{item.day}</span>
-                    <span className="font-semibold text-gray-900">{item.count} içerik</span>
+              {weeklyActivity.map((item: any, i: number) => {
+                const maxCount = Math.max(...weeklyActivity.map((a: any) => a.count), 1);
+                const width = `${(item.count / maxCount) * 100}%`;
+                
+                return (
+                  <div key={i}>
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className="text-gray-600">{item.day}</span>
+                      <span className="font-semibold text-gray-900">{item.count} içerik</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                      <div 
+                        className="bg-gradient-to-r from-rose-500 to-pink-500 h-full rounded-full transition-all duration-1000" 
+                        style={{ width }}
+                      ></div>
+                    </div>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-gradient-to-r from-rose-500 to-pink-500 h-full rounded-full" style={{ width: item.width }}></div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
           
@@ -289,22 +311,20 @@ export default async function DashboardPage() {
               <Clock size={20} className="text-purple-500" />
             </div>
             <div className="space-y-6">
-              {[
-                { label: "Anılar", percentage: "35%", color: "rose" },
-                { label: "Fotoğraflar", percentage: "40%", color: "purple" },
-                { label: "Şiirler", percentage: "15%", color: "amber" },
-                { label: "Notlar", percentage: "10%", color: "green" },
-              ].map((item, i) => (
+              {distribution.map((item: any, i: number) => (
                 <div key={i}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-3">
                       <div className={`w-4 h-4 bg-${item.color}-500 rounded-full`}></div>
                       <span className="text-gray-700 font-medium">{item.label}</span>
                     </div>
-                    <span className="text-gray-900 font-bold">{item.percentage}</span>
+                    <span className="text-gray-900 font-bold">%{item.percentage}</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className={`bg-${item.color}-500 h-full rounded-full`} style={{ width: item.percentage }}></div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                    <div 
+                      className={`bg-${item.color}-500 h-full rounded-full transition-all duration-1000`} 
+                      style={{ width: `${item.percentage}%` }}
+                    ></div>
                   </div>
                 </div>
               ))}
@@ -314,11 +334,11 @@ export default async function DashboardPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Toplam İçerik</p>
-                  <p className="text-2xl font-bold text-gray-900">70</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.totalContent}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-gray-600 mb-1">Bu Ay</p>
-                  <p className="text-2xl font-bold text-green-600">+18</p>
+                  <p className="text-sm text-gray-600 mb-1">Site Ömrü</p>
+                  <p className="text-2xl font-bold text-rose-600">{coupleInfo.daysActive} Gün</p>
                 </div>
               </div>
             </div>

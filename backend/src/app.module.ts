@@ -16,6 +16,7 @@ import { BucketListModule } from './modules/bucket-list/bucket-list.module';
 import { ImportantDatesModule } from './modules/important-dates/important-dates.module';
 import { TimeCapsuleModule } from './modules/time-capsule/time-capsule.module';
 import { ActivityModule } from './modules/activity/activity.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { ActivityModule } from './modules/activity/activity.module';
     ImportantDatesModule,
     TimeCapsuleModule,
     ActivityModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],

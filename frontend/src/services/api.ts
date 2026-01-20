@@ -143,4 +143,8 @@ export const activityService = {
   getActivities: (params?: { page?: number; limit?: number; module?: string }) => api.get<{ activities: Activity[]; total: number; hasMore: boolean }>('/activity', { params })
 }
 
+export const dashboardService = {
+  getStats: () => api.get<any>('/dashboard/stats')
+}
+
 export default api
