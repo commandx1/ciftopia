@@ -9,7 +9,8 @@ import {
   RelationshipProfile, 
   TimeCapsule, 
   Activity,
-  DashboardData
+  DashboardData,
+  CreateFeedbackData
 } from '@/lib/type'
 
 const api = axios.create({
@@ -156,6 +157,11 @@ export const activityService = {
 
 export const dashboardService = {
   getStats: () => api.get<DashboardData>('/dashboard/stats')
+}
+
+export const feedbackService = {
+  create: (data: CreateFeedbackData) => api.post('/feedback', data),
+  getStats: () => api.get<{ totalFeedback: number; limit: number }>('/feedback/stats')
 }
 
 export default api

@@ -5,7 +5,8 @@ import {
   Heart, 
   LogOut, 
   Settings, 
-  ChevronDown
+  ChevronDown,
+  MessageSquare
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -58,6 +59,10 @@ export default function DashboardHeaderClient({
           <Link href="/settings" className={`flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 transition-colors ${pathname.includes('/settings') ? 'text-rose-primary' : 'text-gray-700'}`}>
             <Settings size={18} className={pathname.includes('/settings') ? 'text-rose-primary' : 'text-gray-500'} />
             <span>Ayarlar</span>
+          </Link>
+          <Link href="/feedback" className={`flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 transition-colors ${pathname.includes('/feedback') ? 'text-rose-primary' : 'text-gray-700'}`}>
+            <MessageSquare size={18} className={pathname.includes('/feedback') ? 'text-rose-primary' : 'text-gray-500'} />
+            <span>Geri Bildirim</span>
           </Link>
           <button 
             onClick={handleLogout}

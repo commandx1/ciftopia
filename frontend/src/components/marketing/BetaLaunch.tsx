@@ -116,12 +116,6 @@ export default function BetaLaunch({ initialStatus }: BetaLaunchProps) {
                 color: "amber"
               },
               {
-                icon: Star,
-                title: "Kurucu Üye Rozeti",
-                desc: "Profilinizde ve sitenizde size özel 'Founding Couple' rozeti yer alacak.",
-                color: "purple"
-              },
-              {
                 icon: Cloud,
                 title: "1GB Depolama",
                 desc: "Anılarınız ve videolarınız için yüksek hızlı güvenli depolama alanı.",

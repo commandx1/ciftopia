@@ -31,7 +31,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const user = await this.userModel
       .findById(id)
       .select('-password')
-      .populate('coupleId');
+      .populate({
+        path: 'coupleId',
+        populate: [
+          { path: 'partner1', select: 'firstName lastName email avatar' },
+          { path: 'partner2', select: 'firstName lastName email avatar' },
+        ],
+      });
 
     if (!user) {
       throw new UnauthorizedException();

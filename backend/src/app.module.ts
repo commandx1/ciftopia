@@ -17,6 +17,7 @@ import { ImportantDatesModule } from './modules/important-dates/important-dates.
 import { TimeCapsuleModule } from './modules/time-capsule/time-capsule.module';
 import { ActivityModule } from './modules/activity/activity.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { FeedbackModule } from './modules/feedback/feedback.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     TimeCapsuleModule,
     ActivityModule,
     DashboardModule,
+    FeedbackModule,
   ],
   controllers: [AppController],
   providers: [AppService],

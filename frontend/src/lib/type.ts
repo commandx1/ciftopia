@@ -27,6 +27,8 @@ interface User {
     subdomain?: string
     storageUsed?: number
     storageLimit?: number
+    partner1?: User
+    partner2?: User
   }
   relationshipProfile?: RelationshipProfile
 }
@@ -244,6 +246,29 @@ interface DashboardData {
   }[]
 }
 
+interface CreateFeedbackData {
+  subdomain: string;
+  email: string;
+  partner1: string;
+  partner2: string;
+  rating: number;
+  features: string[];
+  liked_features: string;
+  improvements: string;
+  bugs?: string;
+  feature_requests?: string;
+  device: string;
+  frequency: string;
+  ease_of_use: number;
+  design: number;
+  performance: number;
+  recommend: string;
+  would_pay: string;
+  price_range?: string;
+  additional_comments?: string;
+  consent: boolean;
+}
+
 export type {
   ApiError,
   User,
@@ -262,5 +287,6 @@ export type {
   ImportantDate,
   TimeCapsule,
   Activity,
-  DashboardData
+  DashboardData,
+  CreateFeedbackData
 }
