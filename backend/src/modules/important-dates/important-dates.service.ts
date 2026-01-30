@@ -6,6 +6,7 @@ import { Couple, CoupleDocument } from '../../schemas/couple.schema';
 import { CreateImportantDateDto, UpdateImportantDateDto } from './dto/important-date.dto';
 import { UploadService } from '../upload/upload.service';
 import { ActivityService } from '../activity/activity.service';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class ImportantDatesService {
@@ -14,6 +15,7 @@ export class ImportantDatesService {
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
     private uploadService: UploadService,
     private activityService: ActivityService,
+    private notificationService: NotificationService,
   ) {}
 
   async findAllBySubdomain(subdomain: string) {
@@ -61,6 +63,14 @@ export class ImportantDatesService {
       description: `${user?.firstName || 'Biri'} yeni bir önemli tarih ekledi: "${populated.title}"`,
       metadata: { title: populated.title, date: populated.date },
     });
+
+    // Send notification to partner
+    this.notificationService.sendToPartner(
+      userId,
+      'Yeni Bir Tarih! 📅',
+      `${user?.firstName} takvime yeni bir tarih ekledi: "${populated.title}"`,
+      { screen: 'important-dates' },
+    );
 
     const transformed = await this.transformDate(populated);
     return {

@@ -18,6 +18,7 @@ import { TimeCapsuleModule } from './modules/time-capsule/time-capsule.module';
 import { ActivityModule } from './modules/activity/activity.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
+import { NotificationModule } from './modules/notification/notification.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { FeedbackModule } from './modules/feedback/feedback.module';
     ActivityModule,
     DashboardModule,
     FeedbackModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

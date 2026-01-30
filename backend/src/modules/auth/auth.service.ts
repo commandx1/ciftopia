@@ -131,6 +131,10 @@ export class AuthService {
     return { success: true, relationshipProfile: user.relationshipProfile };
   }
 
+  async updatePushToken(userId: string, pushToken: string) {
+    await this.userModel.findByIdAndUpdate(userId, { expoPushToken: pushToken });
+  }
+
   private async generateToken(user: UserDocument) {
     let subdomain: string | undefined;
     let coupleNames: string | undefined;

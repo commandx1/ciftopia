@@ -10,6 +10,7 @@ import { User, UserDocument } from '../../schemas/user.schema';
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
 import { CreateNoteDto, UpdateNotePositionDto } from './dto/notes.dto';
 import { ActivityService } from '../activity/activity.service';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class NotesService {
@@ -18,6 +19,7 @@ export class NotesService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
     private activityService: ActivityService,
+    private notificationService: NotificationService,
   ) {}
 
   async findAllBySubdomain(subdomain: string) {
@@ -58,6 +60,14 @@ export class NotesService {
       description: `${user.firstName} panoya yeni bir not bıraktı.`,
       metadata: { content: savedNote.content.substring(0, 50) },
     });
+
+    // Send notification to partner
+    this.notificationService.sendToPartner(
+      userId,
+      'Yeni Bir Not! 📝',
+      `${user.firstName} senin için bir not bıraktı: "${savedNote.content.substring(0, 50)}${savedNote.content.length > 50 ? '...' : ''}"`,
+      { screen: 'notes' },
+    );
 
     return savedNote.populate('authorId', 'firstName lastName avatar gender');
   }

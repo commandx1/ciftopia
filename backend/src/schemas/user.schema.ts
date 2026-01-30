@@ -78,6 +78,9 @@ export class User {
     coreNeed: string[];
     sensitivityArea: string[];
   };
+
+  @Prop({ index: true })
+  expoPushToken?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

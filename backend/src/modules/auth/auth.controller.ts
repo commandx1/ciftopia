@@ -66,6 +66,16 @@ export class AuthController {
     return result;
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Post('push-token')
+  async updatePushToken(
+    @Req() req: { user: UserDocument },
+    @Body('pushToken') pushToken: string,
+  ) {
+    await this.authService.updatePushToken(req.user._id.toString(), pushToken);
+    return { success: true };
+  }
+
   private setCookie(res: Response, token: string) {
     const domain = this.getCookieDomain();
 

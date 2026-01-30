@@ -9,6 +9,7 @@ import { Couple, CoupleDocument } from '../../schemas/couple.schema';
 import { CreateMemoryDto } from './dto/memories.dto';
 import { UploadService } from '../upload/upload.service';
 import { ActivityService } from '../activity/activity.service';
+import { NotificationService } from '../notification/notification.service';
 import { User } from '../../schemas/user.schema';
 
 interface QueryParams {
@@ -27,6 +28,7 @@ export class MemoriesService {
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
     private uploadService: UploadService,
     private activityService: ActivityService,
+    private notificationService: NotificationService,
   ) {}
 
   private async transformPhotos(memories: MemoryDocument | MemoryDocument[]) {
@@ -180,6 +182,14 @@ export class MemoriesService {
       description: `${user?.firstName || 'Biri'} "${populated.title}" isimli yeni bir anı ekledi.`,
       metadata: { title: populated.title },
     });
+
+    // Send notification to partner
+    this.notificationService.sendToPartner(
+      userId,
+      'Yeni Bir Anı! 📸',
+      `${user?.firstName} yeni bir anı paylaştı: "${populated.title}"`,
+      { screen: 'memories' },
+    );
 
     // Fetch updated storage for the couple
     const updatedCouple = await this.coupleModel.findById(couple._id);

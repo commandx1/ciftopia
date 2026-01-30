@@ -10,6 +10,7 @@ import { User, UserDocument } from '../../schemas/user.schema';
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
 import { CreatePoemDto } from './dto/poems.dto';
 import { ActivityService } from '../activity/activity.service';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class PoemsService {
@@ -18,6 +19,7 @@ export class PoemsService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
     private activityService: ActivityService,
+    private notificationService: NotificationService,
   ) {}
 
   async findAllBySubdomain(
@@ -138,6 +140,14 @@ export class PoemsService {
       description: `${user.firstName} yeni bir şiir paylaştı: "${savedPoem.title}"`,
       metadata: { title: savedPoem.title },
     });
+
+    // Send notification to partner
+    this.notificationService.sendToPartner(
+      userId,
+      'Yeni Bir Şiir! ✍️',
+      `${user.firstName} senin için yeni bir şiir paylaştı: "${savedPoem.title}"`,
+      { screen: 'poems' },
+    );
 
     return savedPoem.populate([
       { path: 'authorId', select: 'firstName lastName avatar gender' },
