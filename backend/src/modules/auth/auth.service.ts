@@ -52,6 +52,12 @@ export class AuthService {
     const userResponse = user.toObject();
     const { password: _password, ...result } = userResponse;
 
+    let subdomain: string | undefined;
+    if (user.coupleId) {
+      const couple = await this.coupleModel.findById(user.coupleId);
+      if (couple) subdomain = couple.subdomain;
+    }
+
     // Transform avatar to URL if exists
     if (result.avatar && (result.avatar as any).url) {
       result.avatar = {
@@ -63,13 +69,13 @@ export class AuthService {
     }
 
     return {
-      user: result,
+      user: { ...result, subdomain },
       accessToken: token,
     };
   }
 
   async login(loginDto: LoginDto) {
-    const { email, password, subdomain } = loginDto;
+    const { email, password, subdomain: loginSubdomain } = loginDto;
 
     const user = await this.userModel.findOne({ email });
     if (!user) {
@@ -82,14 +88,14 @@ export class AuthService {
     }
 
     // Subdomain ownership validation during login
-    if (subdomain && subdomain !== 'app' && subdomain !== 'www') {
+    if (loginSubdomain && loginSubdomain !== 'app' && loginSubdomain !== 'www') {
       const couple = await this.coupleModel.findOne({
         $or: [{ partner1: user._id }, { partner2: user._id }],
       });
 
       if (
         !couple ||
-        couple.subdomain.toLowerCase() !== subdomain.toLowerCase()
+        couple.subdomain.toLowerCase() !== loginSubdomain.toLowerCase()
       ) {
         throw new ForbiddenException('Geçersiz bilgiler.');
       }
@@ -99,6 +105,12 @@ export class AuthService {
 
     const userResponse = user.toObject();
     const { password: _password, ...result } = userResponse;
+
+    let userSubdomain: string | undefined;
+    if (user.coupleId) {
+      const couple = await this.coupleModel.findById(user.coupleId);
+      if (couple) userSubdomain = couple.subdomain;
+    }
 
     // Transform avatar to URL if exists
     if (result.avatar && (result.avatar as any).url) {
@@ -111,7 +123,7 @@ export class AuthService {
     }
 
     return {
-      user: result,
+      user: { ...result, subdomain: userSubdomain },
       accessToken: token,
     };
   }
