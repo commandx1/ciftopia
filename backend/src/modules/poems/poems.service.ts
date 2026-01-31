@@ -22,18 +22,13 @@ export class PoemsService {
     private notificationService: NotificationService,
   ) {}
 
-  async findAllBySubdomain(
-    subdomain: string,
+  async findAllByCoupleId(
+    coupleId: string,
     filters: { tag?: string; authorId?: string } = {},
     page: number = 1,
     limit: number = 9,
   ) {
-    const couple = await this.coupleModel.findOne({ subdomain });
-    if (!couple) {
-      throw new NotFoundException('Çift bulunamadı');
-    }
-
-    const query: Record<string, any> = { coupleId: couple._id };
+    const query: Record<string, any> = { coupleId: new Types.ObjectId(coupleId) };
     if (filters.tag) {
       query['tags'] = filters.tag;
     }
@@ -53,7 +48,7 @@ export class PoemsService {
       .exec();
 
     // Stats - Respect tag filter but not author filter for the tabs
-    const statsMatch: Record<string, any> = { coupleId: couple._id };
+    const statsMatch: Record<string, any> = { coupleId: new Types.ObjectId(coupleId) };
     if (filters.tag) {
       statsMatch['tags'] = filters.tag;
     }
@@ -63,15 +58,15 @@ export class PoemsService {
       { $group: { _id: '$authorId', count: { $sum: 1 } } },
     ]);
 
-    // Total count for the subdomain (considering tag filter but NOT authorId filter)
-    const totalSubdomainCount = await this.poemModel.countDocuments(statsMatch);
+    // Total count for the couple (considering tag filter but NOT authorId filter)
+    const totalCount = await this.poemModel.countDocuments(statsMatch);
 
     // Total count for the current query (filtered by author and tag)
     const totalFilteredCount = await this.poemModel.countDocuments(query);
 
     return {
       poems,
-      totalCount: totalSubdomainCount,
+      totalCount,
       authorStats,
       hasMore: totalFilteredCount > skip + poems.length,
     };
@@ -99,14 +94,9 @@ export class PoemsService {
     };
   }
 
-  async getDistinctTags(subdomain: string) {
-    const couple = await this.coupleModel.findOne({ subdomain });
-    if (!couple) {
-      throw new NotFoundException('Çift bulunamadı');
-    }
-
+  async getDistinctTags(coupleId: string) {
     const tags = await this.poemModel.distinct('tags', {
-      coupleId: couple._id,
+      coupleId: new Types.ObjectId(coupleId),
     });
     return tags;
   }
@@ -117,15 +107,22 @@ export class PoemsService {
       throw new ForbiddenException('Bir çift kaydı bulunamadı');
     }
 
-    const partner = await this.userModel.findOne({
-      coupleId: user.coupleId,
-      _id: { $ne: userId },
-    });
+    const couple = await this.coupleModel.findById(user.coupleId);
+    if (!couple) {
+      throw new ForbiddenException('Çift kaydı bulunamadı');
+    }
+
+    // partner1 veya partner2'den diğerini bul
+    const partnerId = couple.partner1.toString() === userId.toString() 
+      ? couple.partner2 
+      : couple.partner1;
+
+    const partner = partnerId ? await this.userModel.findById(partnerId) : null;
 
     const poem = new this.poemModel({
       ...createPoemDto,
       authorId: new Types.ObjectId(userId),
-      dedicatedTo: partner ? new Types.ObjectId(partner._id) : undefined,
+      dedicatedTo: partner ? new Types.ObjectId(partner._id.toString()) : undefined,
       coupleId: user.coupleId,
     });
 

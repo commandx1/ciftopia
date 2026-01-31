@@ -13,7 +13,6 @@ import {
 import { PoemsService } from './poems.service';
 import { CreatePoemDto } from './dto/poems.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CoupleOwnerGuard } from '../auth/guards/couple-owner.guard';
 import { Request } from 'express';
 
 interface AuthRequest extends Request {
@@ -38,17 +37,18 @@ export class PoemsController {
     );
   }
 
-  @Get(':subdomain')
-  @UseGuards(JwtAuthGuard, CoupleOwnerGuard)
+  @Get()
+  @UseGuards(JwtAuthGuard)
   async getPoems(
-    @Param('subdomain') subdomain: string,
+    @Req() req: AuthRequest,
     @Query('tag') tag?: string,
     @Query('author') author?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.poemsService.findAllBySubdomain(
-      subdomain,
+    const coupleId = req.user.coupleId?._id || req.user.coupleId;
+    return this.poemsService.findAllByCoupleId(
+      coupleId.toString(),
       {
         tag,
         authorId: author,
@@ -58,10 +58,11 @@ export class PoemsController {
     );
   }
 
-  @Get(':subdomain/tags')
-  @UseGuards(JwtAuthGuard, CoupleOwnerGuard)
-  async getTags(@Param('subdomain') subdomain: string) {
-    return this.poemsService.getDistinctTags(subdomain);
+  @Get('tags')
+  @UseGuards(JwtAuthGuard)
+  async getTags(@Req() req: AuthRequest) {
+    const coupleId = req.user.coupleId?._id || req.user.coupleId;
+    return this.poemsService.getDistinctTags(coupleId.toString());
   }
 
   @UseGuards(JwtAuthGuard)
