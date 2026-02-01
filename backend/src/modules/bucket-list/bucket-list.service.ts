@@ -11,6 +11,7 @@ import {
 } from './dto/bucket-list.dto';
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
 import { ActivityService } from '../activity/activity.service';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class BucketListService {
@@ -19,6 +20,7 @@ export class BucketListService {
     private bucketListItemModel: Model<BucketListItemDocument>,
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
     private activityService: ActivityService,
+    private notificationService: NotificationService,
   ) {}
 
   async findAllByCoupleId(coupleId: string) {
@@ -51,6 +53,14 @@ export class BucketListService {
       description: `${user?.firstName || 'Biri'} hayaller listesine yeni bir madde ekledi: "${savedItem.title}"`,
       metadata: { title: savedItem.title },
     });
+
+    // Send notification to partner
+    this.notificationService.sendToPartner(
+      userId,
+      'Yeni Bir Hayal! ✨',
+      `${user?.firstName || 'Partnerin'} hayaller listesine yeni bir madde ekledi: "${savedItem.title}"`,
+      { screen: 'bucket-list' },
+    );
 
     return savedItem.populate('authorId', 'firstName lastName avatar gender');
   }

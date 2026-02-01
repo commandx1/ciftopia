@@ -8,6 +8,7 @@ import {
 } from '../../schemas/bucket-list.schema';
 import { Couple, CoupleSchema } from '../../schemas/couple.schema';
 import { ActivityModule } from '../activity/activity.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { ActivityModule } from '../activity/activity.module';
       { name: Couple.name, schema: CoupleSchema },
     ]),
     ActivityModule,
+    NotificationModule,
   ],
   controllers: [BucketListController],
   providers: [BucketListService],
