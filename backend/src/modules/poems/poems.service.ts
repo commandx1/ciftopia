@@ -28,7 +28,9 @@ export class PoemsService {
     page: number = 1,
     limit: number = 9,
   ) {
-    const query: Record<string, any> = { coupleId: new Types.ObjectId(coupleId) };
+    const query: Record<string, any> = {
+      coupleId: new Types.ObjectId(coupleId),
+    };
     if (filters.tag) {
       query['tags'] = filters.tag;
     }
@@ -48,7 +50,9 @@ export class PoemsService {
       .exec();
 
     // Stats - Respect tag filter but not author filter for the tabs
-    const statsMatch: Record<string, any> = { coupleId: new Types.ObjectId(coupleId) };
+    const statsMatch: Record<string, any> = {
+      coupleId: new Types.ObjectId(coupleId),
+    };
     if (filters.tag) {
       statsMatch['tags'] = filters.tag;
     }
@@ -56,6 +60,22 @@ export class PoemsService {
     const authorStats = await this.poemModel.aggregate([
       { $match: statsMatch },
       { $group: { _id: '$authorId', count: { $sum: 1 } } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'author',
+        },
+      },
+      { $unwind: '$author' },
+      {
+        $project: {
+          _id: 1,
+          count: 1,
+          firstName: '$author.firstName',
+        },
+      },
     ]);
 
     // Total count for the couple (considering tag filter but NOT authorId filter)
@@ -113,16 +133,19 @@ export class PoemsService {
     }
 
     // partner1 veya partner2'den diğerini bul
-    const partnerId = couple.partner1.toString() === userId.toString() 
-      ? couple.partner2 
-      : couple.partner1;
+    const partnerId =
+      couple.partner1.toString() === userId.toString()
+        ? couple.partner2
+        : couple.partner1;
 
     const partner = partnerId ? await this.userModel.findById(partnerId) : null;
 
     const poem = new this.poemModel({
       ...createPoemDto,
       authorId: new Types.ObjectId(userId),
-      dedicatedTo: partner ? new Types.ObjectId(partner._id.toString()) : undefined,
+      dedicatedTo: partner
+        ? new Types.ObjectId(partner._id.toString())
+        : undefined,
       coupleId: user.coupleId,
     });
 

@@ -21,12 +21,9 @@ export class BucketListService {
     private activityService: ActivityService,
   ) {}
 
-  async findAllBySubdomain(subdomain: string) {
-    const couple = await this.coupleModel.findOne({ subdomain });
-    if (!couple) throw new NotFoundException('Site bulunamadı');
-
+  async findAllByCoupleId(coupleId: string) {
     return this.bucketListItemModel
-      .find({ coupleId: couple._id })
+      .find({ coupleId: new Types.ObjectId(coupleId) })
       .populate('authorId', 'firstName lastName avatar gender')
       .populate('completedBy', 'firstName lastName avatar gender')
       .sort({ isCompleted: 1, createdAt: -1 });

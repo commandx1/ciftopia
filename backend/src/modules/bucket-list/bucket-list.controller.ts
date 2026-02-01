@@ -31,10 +31,10 @@ interface AuthRequest extends Request {
 export class BucketListController {
   constructor(private readonly bucketListService: BucketListService) {}
 
-  @Get(':subdomain')
-  @UseGuards(CoupleOwnerGuard)
-  async getBucketList(@Param('subdomain') subdomain: string) {
-    return this.bucketListService.findAllBySubdomain(subdomain);
+  @Get()
+  async getBucketList(@Req() req: AuthRequest) {
+    const coupleId = req.user.coupleId?._id || req.user.coupleId;
+    return this.bucketListService.findAllByCoupleId(coupleId.toString());
   }
 
   @Post()
