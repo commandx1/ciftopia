@@ -12,25 +12,25 @@ interface AuthRequest extends Request {
 }
 
 @Controller('important-dates')
+@UseGuards(JwtAuthGuard)
 export class ImportantDatesController {
   constructor(private readonly importantDatesService: ImportantDatesService) {}
 
-  @Get(':subdomain')
-  findAll(@Param('subdomain') subdomain: string) {
-    return this.importantDatesService.findAllBySubdomain(subdomain);
+  @Get()
+  findAll(@Req() req: AuthRequest) {
+    const coupleId = req.user.coupleId?._id || req.user.coupleId;
+    return this.importantDatesService.findAllByCoupleId(coupleId.toString());
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Post(':subdomain')
+  @Post()
   create(
-    @Param('subdomain') subdomain: string,
     @Req() req: AuthRequest,
     @Body() createDto: CreateImportantDateDto,
   ) {
-    return this.importantDatesService.create(subdomain, req.user._id, createDto);
+    const coupleId = req.user.coupleId?._id || req.user.coupleId;
+    return this.importantDatesService.create(coupleId.toString(), req.user._id, createDto);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Put(':id')
   update(
     @Param('id') id: string,
@@ -40,7 +40,6 @@ export class ImportantDatesController {
     return this.importantDatesService.update(id, req.user._id, updateDto);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string, @Req() req: AuthRequest) {
     return this.importantDatesService.delete(id, req.user._id);

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { ImportantDate, ImportantDateDocument } from '../../schemas/important-date.schema';
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
 import { CreateImportantDateDto, UpdateImportantDateDto } from './dto/important-date.dto';
@@ -18,21 +18,18 @@ export class ImportantDatesService {
     private notificationService: NotificationService,
   ) {}
 
-  async findAllBySubdomain(subdomain: string) {
-    const couple = await this.coupleModel.findOne({ subdomain });
-    if (!couple) throw new NotFoundException('Çift bulunamadı');
-
+  async findAllByCoupleId(coupleId: string) {
     const dates = await this.importantDateModel
-      .find({ coupleId: couple._id as any })
+      .find({ coupleId: new Types.ObjectId(coupleId) })
       .populate('authorId', 'firstName lastName avatar gender')
       .sort({ date: 1 });
 
     return Promise.all(dates.map(date => this.transformDate(date)));
   }
 
-  async create(subdomain: string, userId: string, createDto: CreateImportantDateDto) {
+  async create(coupleId: string, userId: string, createDto: CreateImportantDateDto) {
     if (!userId) throw new BadRequestException('Kullanıcı bilgisi eksik');
-    const couple = await this.coupleModel.findOne({ subdomain });
+    const couple = await this.coupleModel.findById(coupleId);
     if (!couple) throw new NotFoundException('Çift bulunamadı');
 
     // Check storage limit if photo is provided
@@ -46,8 +43,8 @@ export class ImportantDatesService {
 
     const newDate = new this.importantDateModel({
       ...createDto,
-      coupleId: couple._id,
-      authorId: userId,
+      coupleId: new Types.ObjectId(coupleId),
+      authorId: new Types.ObjectId(userId),
     });
 
     const saved = await newDate.save();
