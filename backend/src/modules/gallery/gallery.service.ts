@@ -78,12 +78,9 @@ export class GalleryService {
     return isArray ? transformed : transformed[0];
   }
 
-  async findAllAlbumsBySubdomain(subdomain: string) {
-    const couple = await this.coupleModel.findOne({ subdomain });
-    if (!couple) throw new NotFoundException('Çift bulunamadı');
-
+  async findAllAlbumsByCoupleId(coupleId: string) {
     const albums = await this.albumModel
-      .find({ coupleId: couple._id })
+      .find({ coupleId: new Types.ObjectId(coupleId) })
       .populate('authorId', 'firstName lastName avatar gender')
       .populate({
         path: 'coupleId',
@@ -117,7 +114,13 @@ export class GalleryService {
       }
     }
 
-    return transformedAlbums;
+    const couple = await this.coupleModel.findById(coupleId);
+
+    return {
+      albums: transformedAlbums,
+      storageUsed: couple?.storageUsed || 0,
+      storageLimit: couple?.storageLimit || 0,
+    };
   }
 
   async findAlbumById(albumId: string) {
@@ -168,17 +171,21 @@ export class GalleryService {
     return (await this.transformPhotos(photos)) as any[];
   }
 
-  async findAllPhotosBySubdomain(subdomain: string) {
-    const couple = await this.coupleModel.findOne({ subdomain });
-    if (!couple) throw new NotFoundException('Çift bulunamadı');
-
+  async findAllPhotosByCoupleId(coupleId: string) {
     const photos = await this.photoModel
-      .find({ coupleId: couple._id })
+      .find({ coupleId: new Types.ObjectId(coupleId) })
       .populate('authorId', 'firstName lastName avatar gender')
       .sort({ createdAt: -1 })
       .exec();
 
-    return (await this.transformPhotos(photos)) as any[];
+    const transformedPhotos = (await this.transformPhotos(photos)) as any[];
+    const couple = await this.coupleModel.findById(coupleId);
+
+    return {
+      photos: transformedPhotos,
+      storageUsed: couple?.storageUsed || 0,
+      storageLimit: couple?.storageLimit || 0,
+    };
   }
 
   async createAlbum(userId: string, createAlbumDto: CreateAlbumDto) {
@@ -336,7 +343,7 @@ export class GalleryService {
       metadata: { albumTitle },
     });
 
-    return { success: true, storageUsed: couple?.storageUsed };
+    return { success: true, storageUsed: couple?.storageUsed, storageLimit: couple?.storageLimit };
   }
 
   async deletePhoto(userId: string, photoId: string) {
@@ -390,6 +397,6 @@ export class GalleryService {
       metadata: { photoId },
     });
 
-    return { success: true, storageUsed: couple?.storageUsed };
+    return { success: true, storageUsed: couple?.storageUsed, storageLimit: couple?.storageLimit };
   }
 }

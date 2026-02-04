@@ -75,16 +75,9 @@ export class MemoriesService {
     return isArray ? transformed : transformed[0];
   }
 
-  async findAllBySubdomain(subdomain: string, query: QueryParams) {
-    const couple = await this.coupleModel.findOne({
-      subdomain: subdomain.toLowerCase(),
-    });
-    if (!couple) {
-      throw new NotFoundException('Çift bulunamadı.');
-    }
-
+  async findAllByCoupleId(coupleId: string, query: QueryParams) {
     const filter: Record<string, any> = {
-      coupleId: couple._id,
+      coupleId: new Types.ObjectId(coupleId),
     };
     if (query.mood && query.mood !== 'all') {
       filter.mood = query.mood;
@@ -119,7 +112,7 @@ export class MemoriesService {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const [totalCount, thisMonthCount, favoriteCount] = await Promise.all([
+    const [totalCount, thisMonthCount, favoriteCount, couple] = await Promise.all([
       this.memoryModel.countDocuments(filter),
       this.memoryModel.countDocuments({
         ...filter,
@@ -129,6 +122,7 @@ export class MemoriesService {
         ...filter,
         favorites: query.userId ? new Types.ObjectId(query.userId) : undefined,
       }),
+      this.coupleModel.findById(coupleId),
     ]);
 
     const transformedMemories = (await this.transformPhotos(memories)) as any[];
@@ -140,6 +134,8 @@ export class MemoriesService {
         thisMonth: thisMonthCount,
         favorites: favoriteCount,
       },
+      storageUsed: couple?.storageUsed || 0,
+      storageLimit: couple?.storageLimit || 0,
       hasMore: totalCount > skip + limit,
     };
   }
@@ -335,9 +331,9 @@ export class MemoriesService {
     return { isFavorite: index === -1 };
   }
 
-  async exportAsPdf(subdomain: string): Promise<Buffer> {
+  async exportAsPdf(coupleId: string): Promise<Buffer> {
     const couple = await this.coupleModel
-      .findOne({ subdomain: subdomain.toLowerCase() })
+      .findById(coupleId)
       .populate('partner1')
       .populate('partner2');
 
@@ -346,7 +342,7 @@ export class MemoriesService {
     }
 
     const memories = await this.memoryModel
-      .find({ coupleId: couple._id })
+      .find({ coupleId: new Types.ObjectId(coupleId) })
       .sort({ date: -1 })
       .exec();
 
@@ -357,7 +353,7 @@ export class MemoriesService {
           size: 'A4',
           bufferPages: true,
           info: {
-            Title: `Anılarımız - ${subdomain}`,
+            Title: 'Anılarımız - Çiftopia',
             Author: 'Çiftopia',
           },
         });

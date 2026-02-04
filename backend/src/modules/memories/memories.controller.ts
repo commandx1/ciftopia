@@ -29,18 +29,18 @@ interface AuthRequest extends Request {
 export class MemoriesController {
   constructor(private readonly memoriesService: MemoriesService) {}
 
-  @Get(':subdomain')
-  @UseGuards(JwtAuthGuard, CoupleOwnerGuard)
+  @Get()
+  @UseGuards(JwtAuthGuard)
   async getMemories(
     @Req() req: AuthRequest,
-    @Param('subdomain') subdomain: string,
     @Query('mood') mood?: string,
     @Query('sortBy') sortBy?: string,
     @Query('limit') limit?: string,
     @Query('skip') skip?: string,
     @Query('onlyFavorites') onlyFavorites?: string,
   ) {
-    return this.memoriesService.findAllBySubdomain(subdomain, {
+    const coupleId = req.user.coupleId?._id || req.user.coupleId;
+    return this.memoriesService.findAllByCoupleId(coupleId.toString(), {
       mood,
       sortBy,
       limit: limit ? parseInt(limit) : 5,
@@ -79,14 +79,15 @@ export class MemoriesController {
     return this.memoriesService.toggleFavorite(req.user._id, id);
   }
 
-  @UseGuards(JwtAuthGuard, CoupleOwnerGuard)
-  @Get(':subdomain/export-pdf')
-  async exportPdf(@Param('subdomain') subdomain: string, @Res() res: Response) {
-    const pdfBuffer = await this.memoriesService.exportAsPdf(subdomain);
+  @UseGuards(JwtAuthGuard)
+  @Get('export-pdf')
+  async exportPdf(@Req() req: AuthRequest, @Res() res: Response) {
+    const coupleId = req.user.coupleId?._id || req.user.coupleId;
+    const pdfBuffer = await this.memoriesService.exportAsPdf(coupleId.toString());
 
     res.set({
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename=Anilarimiz-${subdomain}.pdf`,
+      'Content-Disposition': `attachment; filename=Anilarimiz.pdf`,
       'Content-Length': pdfBuffer.length,
     });
 

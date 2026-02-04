@@ -78,14 +78,9 @@ export class TimeCapsuleService {
     return obj;
   }
 
-  async findAllBySubdomain(subdomain: string) {
-    const couple = await this.coupleModel.findOne({
-      subdomain: subdomain.toLowerCase(),
-    });
-    if (!couple) throw new NotFoundException('Çift bulunamadı.');
-
+  async findAllByCoupleId(coupleId: CoupleDocument) {
     const capsules = await this.timeCapsuleModel
-      .find({ coupleId: couple._id })
+      .find({ coupleId: coupleId._id })
       .populate('authorId', 'firstName lastName avatar gender')
       .populate('reflections.authorId', 'firstName lastName avatar gender')
       .sort({ unlockDate: 1 })

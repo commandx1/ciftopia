@@ -31,16 +31,18 @@ interface AuthRequest extends Request {
 export class GalleryController {
   constructor(private readonly galleryService: GalleryService) {}
 
-  @Get(':subdomain/albums')
-  @UseGuards(JwtAuthGuard, CoupleOwnerGuard)
-  async getAlbums(@Param('subdomain') subdomain: string) {
-    return this.galleryService.findAllAlbumsBySubdomain(subdomain);
+  @Get('albums')
+  @UseGuards(JwtAuthGuard)
+  async getAlbums(@Req() req: AuthRequest) {
+    const coupleId = req.user.coupleId?._id || req.user.coupleId;
+    return this.galleryService.findAllAlbumsByCoupleId(coupleId.toString());
   }
 
-  @Get(':subdomain/photos')
-  @UseGuards(JwtAuthGuard, CoupleOwnerGuard)
-  async getAllPhotos(@Param('subdomain') subdomain: string) {
-    return this.galleryService.findAllPhotosBySubdomain(subdomain);
+  @Get('photos')
+  @UseGuards(JwtAuthGuard)
+  async getAllPhotos(@Req() req: AuthRequest) {
+    const coupleId = req.user.coupleId?._id || req.user.coupleId;
+    return this.galleryService.findAllPhotosByCoupleId(coupleId.toString());
   }
 
   @Get('albums/:id')

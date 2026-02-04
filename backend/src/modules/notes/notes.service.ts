@@ -22,14 +22,9 @@ export class NotesService {
     private notificationService: NotificationService,
   ) {}
 
-  async findAllBySubdomain(subdomain: string) {
-    const couple = await this.coupleModel.findOne({ subdomain });
-    if (!couple) {
-      throw new NotFoundException('Çift bulunamadı');
-    }
-
+  async findAllByCoupleId(coupleId: string) {
     const notes = await this.noteModel
-      .find({ coupleId: couple._id })
+      .find({ coupleId: new Types.ObjectId(coupleId) })
       .populate('authorId', 'firstName lastName avatar gender')
       .sort({ createdAt: -1 })
       .exec();

@@ -26,10 +26,11 @@ interface AuthRequest extends Request {
 export class NotesController {
   constructor(private readonly notesService: NotesService) {}
 
-  @Get(':subdomain')
-  @UseGuards(JwtAuthGuard, CoupleOwnerGuard)
-  async getNotes(@Param('subdomain') subdomain: string) {
-    return this.notesService.findAllBySubdomain(subdomain);
+  @Get()
+  @UseGuards(JwtAuthGuard)
+  async getNotes(@Req() req: AuthRequest) {
+    const coupleId = req.user.coupleId?._id || req.user.coupleId;
+    return this.notesService.findAllByCoupleId(coupleId.toString());
   }
 
   @UseGuards(JwtAuthGuard)

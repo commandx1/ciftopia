@@ -33,15 +33,15 @@ export class ActivityService {
     return activity.save();
   }
 
-  async findAllBySubdomain(
-    coupleId: CoupleDocument,
+  async findAllByCoupleId(
+    coupleId: string,
     page: number = 1,
     limit: number = 10,
     module?: string,
   ) {
     const skip = (page - 1) * limit;
     const filter: Record<string, any> = {
-      coupleId: new Types.ObjectId(coupleId._id.toString()),
+      coupleId: new Types.ObjectId(coupleId),
     };
 
     if (module && module !== 'all') {

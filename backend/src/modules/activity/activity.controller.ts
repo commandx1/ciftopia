@@ -21,11 +21,12 @@ export class ActivityController {
     @Query('limit') limit: string = '10',
     @Query('module') module?: string,
   ) {
-    if (!req.user.coupleId) {
+    const coupleId = req.user.coupleId?._id || req.user.coupleId;
+    if (!coupleId) {
       throw new ForbiddenException('Bir çifte bağlı değilsiniz.');
     }
-    return this.activityService.findAllBySubdomain(
-      req.user.coupleId,
+    return this.activityService.findAllByCoupleId(
+      coupleId.toString(),
       parseInt(page),
       parseInt(limit),
       module,
