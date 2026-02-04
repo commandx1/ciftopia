@@ -20,6 +20,8 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
 import { NotificationModule } from './modules/notification/notification.module';
 
+import { QuizModule } from './modules/quiz/quiz.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -48,6 +50,7 @@ import { NotificationModule } from './modules/notification/notification.module';
     DashboardModule,
     FeedbackModule,
     NotificationModule,
+    QuizModule,
   ],
   controllers: [AppController],
   providers: [AppService],
