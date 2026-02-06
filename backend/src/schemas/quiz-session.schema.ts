@@ -22,13 +22,19 @@ export class QuizSession {
 
   @Prop({
     required: true,
-    enum: ['waiting', 'in_progress', 'finished'],
+    enum: ['waiting', 'in_progress', 'finished', 'cancelled'],
     default: 'waiting',
   })
   status: string;
 
-  @Prop({ default: 0 })
-  currentQuestionIndex: number;
+  @Prop({
+    enum: ['self', 'guess'],
+    default: 'self',
+  })
+  currentStage: string;
+
+  @Prop({ type: Map, of: Number, default: {} })
+  userProgress: Map<string, number>; // Hangi kullanıcının hangi soruda olduğu
 
   @Prop({ type: [QuestionProgress], default: [{}, {}, {}, {}, {}] })
   questionsData: QuestionProgress[];

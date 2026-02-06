@@ -34,8 +34,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       .populate({
         path: 'coupleId',
         populate: [
-          { path: 'partner1', select: 'firstName lastName email avatar' },
-          { path: 'partner2', select: 'firstName lastName email avatar' },
+          { path: 'partner1', select: 'firstName lastName email avatar gender' },
+          { path: 'partner2', select: 'firstName lastName email avatar gender' },
         ],
       });
 

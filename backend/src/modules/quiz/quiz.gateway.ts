@@ -24,6 +24,8 @@ export class QuizGateway implements OnGatewayConnection, OnGatewayDisconnect {
   server: Server;
 
   private readonly logger = new Logger(QuizGateway.name);
+  private clientSessions = new Map<string, string>(); // clientId -> sessionId
+  private cleanupTimers = new Map<string, NodeJS.Timeout>(); // sessionId -> timeout
 
   constructor(private readonly quizService: QuizService) {}
 
@@ -31,8 +33,36 @@ export class QuizGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.logger.log(`Client connected: ${client.id}`);
   }
 
-  handleDisconnect(client: Socket) {
-    this.logger.log(`Client disconnected: ${client.id}`);
+  async handleDisconnect(client: Socket) {
+    const sessionId = this.clientSessions.get(client.id);
+    if (!sessionId) return;
+
+    this.clientSessions.delete(client.id);
+    this.logger.log(`Client disconnected from session ${sessionId}: ${client.id}`);
+
+    // Kısa bir gecikme ekleyelim ki socket odadan tamamen temizlensin
+    setTimeout(async () => {
+      // Odadaki mevcut socket sayısını güvenli bir şekilde kontrol et
+      const adapter = this.server.adapter as any;
+      const room = adapter.rooms?.get(sessionId);
+      const remainingCount = room ? room.size : 0;
+      
+      this.logger.log(`Remaining participants in room ${sessionId}: ${remainingCount}`);
+
+      // Eğer odada kimse kalmadıysa oturumu ANINDA iptal et
+      if (remainingCount === 0) {
+        try {
+          const session = await this.quizService.getSession(sessionId);
+          if (session && session.status !== 'finished' && session.status !== 'cancelled') {
+            session.status = 'cancelled';
+            await session.save();
+            this.logger.log(`Session ${sessionId} cancelled successfully because everyone left.`);
+          }
+        } catch (error) {
+          this.logger.error(`Error auto-cancelling session ${sessionId}`, error);
+        }
+      }
+    }, 500);
   }
 
   @SubscribeMessage('join:quiz')
@@ -42,11 +72,18 @@ export class QuizGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     const { sessionId, userId } = data;
     await client.join(sessionId);
+    this.clientSessions.set(client.id, sessionId);
+    (client as any).userId = userId;
+
+    if (this.cleanupTimers.has(sessionId)) {
+      clearTimeout(this.cleanupTimers.get(sessionId));
+      this.cleanupTimers.delete(sessionId);
+    }
 
     const session = await this.quizService.getSession(sessionId);
-
-    const clients = await this.server.in(sessionId).fetchSockets();
-    const participantCount = clients.length;
+    const adapter = this.server.adapter as any;
+    const room = adapter.rooms?.get(sessionId);
+    const participantCount = room ? room.size : 0;
 
     this.server
       .to(sessionId)
@@ -54,7 +91,12 @@ export class QuizGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     if (participantCount === 2 && session.status === 'waiting') {
       session.status = 'in_progress';
+      session.currentStage = 'self';
       session.startedAt = new Date();
+      
+      const couple = await this.quizService.getCouple(session.coupleId.toString());
+      session.userProgress.set(couple.partner1.toString(), 0);
+      session.userProgress.set(couple.partner2.toString(), 0);
 
       this.server.to(sessionId).emit('quiz:generating');
 
@@ -62,7 +104,12 @@ export class QuizGateway implements OnGatewayConnection, OnGatewayDisconnect {
         try {
           await session.save();
           this.server.to(sessionId).emit('quiz:start', session);
-          this.sendCurrentStep(sessionId, session);
+          
+          const sockets = await this.server.in(sessionId).fetchSockets();
+          for (const s of sockets) {
+            const uId = (s as any).userId;
+            this.sendUserCurrentStep(s as any, session, uId);
+          }
         } catch (error) {
           this.logger.error('Error starting quiz', error);
         }
@@ -70,7 +117,7 @@ export class QuizGateway implements OnGatewayConnection, OnGatewayDisconnect {
     } else {
       client.emit('quiz:state', session);
       if (session.status === 'in_progress') {
-        this.sendCurrentStep(sessionId, session);
+        this.sendUserCurrentStep(client, session, userId);
       }
     }
   }
@@ -88,11 +135,13 @@ export class QuizGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     const { sessionId, userId, answer, type } = data;
     
-    // Atomik işlem için güncel session'ı çekelim
     let session = await this.quizService.getSession(sessionId);
     if (session.status === 'finished') return;
 
-    const currentQData = session.questionsData[session.currentQuestionIndex];
+    const currentIndex = session.userProgress.get(userId) || 0;
+    if (currentIndex === 999) return;
+
+    const currentQData = session.questionsData[currentIndex];
 
     if (type === 'self') {
       currentQData.selfAnswers.set(userId, answer);
@@ -101,80 +150,86 @@ export class QuizGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     session.markModified('questionsData');
-    await session.save();
 
-    const partnerId = await this.getPartnerId(session, userId);
-    const bothDone =
-      type === 'self'
-        ? currentQData.selfAnswers.has(userId) &&
-          currentQData.selfAnswers.has(partnerId)
-        : currentQData.guesses.has(userId) &&
-          currentQData.guesses.has(partnerId);
-
-    if (bothDone) {
-      if (type === 'self') {
-        this.server.to(sessionId).emit('step:guessing_start');
-        this.sendCurrentStep(sessionId, session, 'guess');
-      } else {
-        // Round complete - RE-CALCULATE ALL SCORES (Fix for Bug 1)
-        const couple = await this.quizService.getCouple(session.coupleId.toString());
-        const p1Id = couple.partner1.toString();
-        const p2Id = couple.partner2.toString();
-
-        const newScores = new Map<string, number>();
-        newScores.set(p1Id, 0);
-        newScores.set(p2Id, 0);
-
-        // O ana kadar olan tüm soruları tara
-        for (let i = 0; i <= session.currentQuestionIndex; i++) {
-          const q = session.questionsData[i];
-          if (q.guesses.get(p1Id) === q.selfAnswers.get(p2Id)) {
-            newScores.set(p1Id, (newScores.get(p1Id) || 0) + 1);
-          }
-          if (q.guesses.get(p2Id) === q.selfAnswers.get(p1Id)) {
-            newScores.set(p2Id, (newScores.get(p2Id) || 0) + 1);
-          }
-        }
-
-        session.scores = newScores;
-        session.markModified('scores');
-        await session.save();
-
-        this.server.to(sessionId).emit('question:result', {
-          scores: Object.fromEntries(session.scores),
-        });
-
-        // Delay move to next or finish
-        setTimeout(async () => {
-          try {
-            // Fetch fresh to avoid race in multi-device
-            session = await this.quizService.getSession(sessionId);
-            if (session.status === 'finished') return;
-
-            const quiz = session.quizId as unknown as QuizDocument;
-
-            if (session.currentQuestionIndex < quiz.questions.length - 1) {
-              session.currentQuestionIndex += 1;
-              await session.save();
-              this.sendCurrentStep(sessionId, session, 'self');
-            } else {
-              session.status = 'finished';
-              session.finishedAt = new Date();
-              await session.save();
-
-              // Save to results collection (Fix for Bug 2)
-              await this.quizService.saveResult(session);
-              
-              this.server.to(sessionId).emit('quiz:finished', session);
-            }
-          } catch (error) {
-            this.logger.error('Error updating quiz step', error);
-          }
-        }, 3000);
-      }
+    const quiz = session.quizId as unknown as QuizDocument;
+    const nextIndex = currentIndex + 1;
+    
+    if (nextIndex < quiz.questions.length) {
+      session.userProgress.set(userId, nextIndex);
+      session.markModified('userProgress');
+      await session.save();
+      this.sendUserCurrentStep(client, session, userId);
     } else {
-      this.server.to(sessionId).emit('player:ready', { userId, type });
+      session.userProgress.set(userId, 999);
+      session.markModified('userProgress');
+      await session.save();
+
+      const partnerId = await this.getPartnerId(session, userId);
+      const partnerProgress = session.userProgress.get(partnerId);
+
+      if (partnerProgress === 999) {
+        if (session.currentStage === 'self') {
+          session.currentStage = 'guess';
+          session.userProgress.set(userId, 0);
+          session.userProgress.set(partnerId, 0);
+          session.markModified('userProgress');
+          await session.save();
+          
+          this.server.to(sessionId).emit('stage:changed', { stage: 'guess' });
+          
+          const sockets = await this.server.in(sessionId).fetchSockets();
+          for (const s of sockets) {
+            const uId = (s as any).userId;
+            this.sendUserCurrentStep(s as any, session, uId);
+          }
+        } else {
+          const couple = await this.quizService.getCouple(session.coupleId.toString());
+          const p1Id = couple.partner1.toString();
+          const p2Id = couple.partner2.toString();
+          const newScores = new Map<string, number>();
+          newScores.set(p1Id, 0);
+          newScores.set(p2Id, 0);
+
+          for (const q of session.questionsData) {
+            if (q.guesses.get(p1Id) === q.selfAnswers.get(p2Id)) {
+              newScores.set(p1Id, (newScores.get(p1Id) || 0) + 1);
+            }
+            if (q.guesses.get(p2Id) === q.selfAnswers.get(p1Id)) {
+              newScores.set(p2Id, (newScores.get(p2Id) || 0) + 1);
+            }
+          }
+
+          session.scores = newScores;
+          session.status = 'finished';
+          session.finishedAt = new Date();
+          session.markModified('scores');
+          await session.save();
+          await this.quizService.saveResult(session);
+          
+          this.server.to(sessionId).emit('quiz:finished', session);
+        }
+      } else {
+        client.emit('player:waiting_partner', { stage: session.currentStage });
+      }
     }
+  }
+
+  private sendUserCurrentStep(client: Socket, session: QuizSessionDocument, userId: string) {
+    const quiz = session.quizId as unknown as QuizDocument;
+    if (!quiz || !quiz.questions) return;
+
+    const progress = session.userProgress.get(userId);
+    if (progress === 999) return;
+
+    const currentQ = quiz.questions[progress || 0];
+    if (!currentQ) return;
+
+    client.emit('question:new', {
+      questionIndex: progress || 0,
+      questionText: currentQ.questionText,
+      options: currentQ.options,
+      type: session.currentStage,
+    });
   }
 
   private async getPartnerId(
@@ -187,28 +242,5 @@ export class QuizGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return couple.partner1.toString() === userId
       ? couple.partner2.toString()
       : couple.partner1.toString();
-  }
-
-  private sendCurrentStep(
-    sessionId: string,
-    session: QuizSessionDocument,
-    type: 'self' | 'guess' = 'self',
-  ) {
-    const quiz = session.quizId as unknown as QuizDocument;
-    
-    if (!quiz || !quiz.questions) {
-      this.logger.error(`Quiz data not found for session: ${sessionId}`);
-      return;
-    }
-
-    const currentQ = quiz.questions[session.currentQuestionIndex];
-    if (!currentQ) return;
-
-    this.server.to(sessionId).emit('question:new', {
-      questionIndex: session.currentQuestionIndex,
-      questionText: currentQ.questionText,
-      options: currentQ.options,
-      type: type,
-    });
   }
 }

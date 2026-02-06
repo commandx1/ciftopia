@@ -17,6 +17,7 @@ import {
   QuizResultDocument,
 } from '../../schemas/quiz-result.schema';
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class QuizService {
@@ -32,6 +33,7 @@ export class QuizService {
     private quizResultModel: Model<QuizResultDocument>,
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
     private configService: ConfigService,
+    private notificationService: NotificationService,
   ) {
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
     this.openai = new OpenAI({ apiKey: apiKey || '' });
@@ -93,6 +95,8 @@ export class QuizService {
       quizId: quiz._id,
       category,
       status: 'waiting',
+      currentStage: 'self',
+      userProgress: new Map(),
       scores,
       questionsData: [{}, {}, {}, {}, {}],
     });
@@ -165,17 +169,26 @@ The questions will be asked to BOTH partners about themselves first, then they w
     return session;
   }
 
+  async getResultDetails(resultId: string): Promise<QuizResultDocument> {
+    const result = await this.quizResultModel
+      .findById(resultId)
+      .populate('quizId');
+    if (!result) throw new NotFoundException('Result not found');
+    return result;
+  }
+
   async getCouple(coupleId: string): Promise<CoupleDocument> {
     const couple = await this.coupleModel.findById(coupleId);
     if (!couple) throw new NotFoundException('Couple not found');
     return couple;
   }
 
-  async getRecentSessions(coupleId: string): Promise<QuizResultDocument[]> {
+  async getRecentSessions(coupleId: string, offset: number = 0, limit: number = 5): Promise<QuizResultDocument[]> {
     return this.quizResultModel
       .find({ coupleId: new Types.ObjectId(coupleId) })
       .sort({ createdAt: -1 })
-      .limit(5);
+      .skip(offset)
+      .limit(limit);
   }
 
   async getActiveSession(coupleId: string): Promise<QuizSessionDocument | null> {
@@ -185,6 +198,19 @@ The questions will be asked to BOTH partners about themselves first, then they w
         status: { $in: ['waiting', 'in_progress'] },
       })
       .populate('quizId');
+  }
+
+  async cancelSession(sessionId: string): Promise<void> {
+    await this.quizSessionModel.findByIdAndUpdate(sessionId, { status: 'cancelled' });
+  }
+
+  async notifyPartner(userId: string, userName: string): Promise<void> {
+    await this.notificationService.sendToPartner(
+      userId,
+      'Quiz Zamanı! ❤️',
+      `${userName} seni bir quize davet ediyor. Hemen katıl!`,
+      { screen: 'quiz' },
+    );
   }
 
   async saveResult(session: QuizSessionDocument): Promise<QuizResultDocument | null> {
