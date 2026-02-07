@@ -193,6 +193,11 @@ export class AuthService {
     return { success: true, message: 'Doğrulama e-postası tekrar gönderildi.' };
   }
 
+  async checkEmailAvailability(email: string) {
+    const user = await this.userModel.findOne({ email });
+    return { available: !user };
+  }
+
   private async generateToken(user: UserDocument) {
     let subdomain: string | undefined;
     let coupleNames: string | undefined;
