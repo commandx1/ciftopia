@@ -8,11 +8,13 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { User, UserDocument } from '../../schemas/user.schema';
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
 import { RegisterDto, LoginDto } from './dto/auth.dto';
 import { UpdateRelationshipProfileDto } from './dto/profile.dto';
 import { UploadService } from '../upload/upload.service';
+import { MailService } from '../mail/mail.service';
 import capitalizeFirstLetter from '../../utils/capitalizeFirstLetter';
 
 @Injectable()
@@ -22,6 +24,7 @@ export class AuthService {
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
     private jwtService: JwtService,
     private uploadService: UploadService,
+    private mailService: MailService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -34,6 +37,7 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const verificationToken = crypto.randomBytes(32).toString('hex');
 
     const user = new this.userModel({
       email,
@@ -43,9 +47,14 @@ export class AuthService {
       gender,
       avatar,
       role: 'partner1', // First person to register is partner1
+      emailVerified: false,
+      emailVerifyToken: verificationToken,
     });
 
     await user.save();
+
+    // Send verification email
+    await this.mailService.sendVerificationEmail(email, verificationToken, firstName);
 
     const token = await this.generateToken(user);
 
@@ -85,6 +94,11 @@ export class AuthService {
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Geçersiz bilgiler.');
+    }
+
+    // Check if email is verified
+    if (!user.emailVerified) {
+      throw new ForbiddenException('Lütfen e-posta adresinizi doğrulayın.');
     }
 
     // Subdomain ownership validation during login
@@ -145,6 +159,38 @@ export class AuthService {
 
   async updatePushToken(userId: string, pushToken: string) {
     await this.userModel.findByIdAndUpdate(userId, { expoPushToken: pushToken });
+  }
+
+  async verifyEmail(token: string) {
+    const user = await this.userModel.findOne({ emailVerifyToken: token });
+    if (!user) {
+      throw new UnauthorizedException('Geçersiz veya süresi dolmuş doğrulama kodu.');
+    }
+
+    user.emailVerified = true;
+    user.emailVerifyToken = undefined;
+    await user.save();
+
+    return { success: true, message: 'E-posta adresiniz başarıyla doğrulandı.' };
+  }
+
+  async resendVerification(email: string) {
+    const user = await this.userModel.findOne({ email });
+    if (!user) {
+      throw new UnauthorizedException('Kullanıcı bulunamadı.');
+    }
+
+    if (user.emailVerified) {
+      return { success: true, message: 'E-posta adresiniz zaten doğrulanmış.' };
+    }
+
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    user.emailVerifyToken = verificationToken;
+    await user.save();
+
+    await this.mailService.sendVerificationEmail(email, verificationToken, user.firstName);
+
+    return { success: true, message: 'Doğrulama e-postası tekrar gönderildi.' };
   }
 
   private async generateToken(user: UserDocument) {

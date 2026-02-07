@@ -9,6 +9,7 @@ import { User, UserSchema } from '../../schemas/user.schema';
 import { Couple, CoupleSchema } from '../../schemas/couple.schema';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UploadModule } from '../upload/upload.module';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { UploadModule } from '../upload/upload.module';
       { name: Couple.name, schema: CoupleSchema },
     ]),
     UploadModule,
+    MailModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],
