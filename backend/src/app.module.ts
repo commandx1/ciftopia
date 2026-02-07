@@ -19,6 +19,7 @@ import { ActivityModule } from './modules/activity/activity.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
 import { NotificationModule } from './modules/notification/notification.module';
+import { MoodModule } from './modules/mood/mood.module';
 
 import { QuizModule } from './modules/quiz/quiz.module';
 
@@ -50,6 +51,7 @@ import { QuizModule } from './modules/quiz/quiz.module';
     DashboardModule,
     FeedbackModule,
     NotificationModule,
+    MoodModule,
     QuizModule,
   ],
   controllers: [AppController],
