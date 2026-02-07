@@ -22,6 +22,8 @@ function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [isChecking, setIsChecking] = useState(false)
   const [error, setError] = useState('')
+  const [showResend, setShowResend] = useState(false)
+  const [isResending, setIsResending] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   const { coupleNames, setCoupleNames } = useUserStore()
 
@@ -128,6 +130,7 @@ function LoginForm() {
     }
 
     setIsLoading(true)
+    setShowResend(false)
     try {
       const { email, password, rememberMe } = formData
 
@@ -156,9 +159,27 @@ function LoginForm() {
     } catch (err) {
       const msg = (err as ApiError).response?.data?.message || 'Giriş yapılamadı. Lütfen bilgilerinizi kontrol edin.'
       setError(msg)
+      if (msg.includes('doğrulayın')) {
+        setShowResend(true)
+      }
       showCustomToast.error('Hata', msg)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleResendVerification = async () => {
+    if (!formData.email) return
+    setIsResending(true)
+    try {
+      await authService.resendVerification(formData.email)
+      showCustomToast.success('Başarılı', 'Doğrulama e-postası tekrar gönderildi.')
+      setShowResend(false)
+    } catch (err) {
+      const msg = (err as ApiError).response?.data?.message || 'E-posta gönderilemedi.'
+      showCustomToast.error('Hata', msg)
+    } finally {
+      setIsResending(false)
     }
   }
 
@@ -285,9 +306,21 @@ function LoginForm() {
 
           {error && (
             <div className='bg-red-50 border-2 border-red-100 rounded-xl p-4 animate-in fade-in zoom-in duration-300'>
-              <div className='flex items-center space-x-3'>
-                <AlertCircle className='text-red-500 shrink-0' size={20} />
-                <p className='text-red-700 text-sm font-medium'>{error}</p>
+              <div className='flex items-center justify-between space-x-3'>
+                <div className='flex items-center space-x-3'>
+                  <AlertCircle className='text-red-500 shrink-0' size={20} />
+                  <p className='text-red-700 text-sm font-medium'>{error}</p>
+                </div>
+                {showResend && (
+                  <button
+                    type='button'
+                    onClick={handleResendVerification}
+                    disabled={isResending}
+                    className='text-rose-500 font-bold text-xs hover:underline shrink-0'
+                  >
+                    {isResending ? 'Gönderiliyor...' : 'Tekrar Gönder'}
+                  </button>
+                )}
               </div>
             </div>
           )}

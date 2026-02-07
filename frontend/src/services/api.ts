@@ -71,7 +71,9 @@ export const authService = {
   login: (data: LoginData) => api.post('/auth/login', data),
   logout: () => api.post('/auth/logout'),
   me: () => api.get<User>('/auth/me'),
-  saveRelationshipProfile: (data: Partial<RelationshipProfile>) => api.post<{ success: boolean; relationshipProfile: RelationshipProfile }>('/auth/relationship-profile', data)
+  saveRelationshipProfile: (data: Partial<RelationshipProfile>) => api.post<{ success: boolean; relationshipProfile: RelationshipProfile }>('/auth/relationship-profile', data),
+  verifyEmail: (token: string) => api.post('/auth/verify-email', { token }),
+  resendVerification: (email: string) => api.post('/auth/resend-verification', { email })
 }
 
 export const onboardingService = {

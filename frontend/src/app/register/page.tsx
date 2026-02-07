@@ -224,7 +224,7 @@ export default function RegisterPage() {
         gender: formData.gender,
         avatar: avatarMetadata
       })
-      showCustomToast.success('Başarılı', 'Hesabınız oluşturuldu!')
+      showCustomToast.success('Başarılı', 'Hesabınız oluşturuldu! Lütfen e-posta adresinizi doğrulayın.')
       setStep(2)
     } catch (err) {
       const msg = (err as ApiError).response?.data?.message || 'Kayıt sırasında bir hata oluştu.'
