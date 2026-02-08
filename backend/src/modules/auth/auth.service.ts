@@ -142,6 +142,56 @@ export class AuthService {
     };
   }
 
+  async updateProfile(
+    userId: string,
+    updateData: { firstName?: string; lastName?: string; avatar?: any },
+  ) {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException('Kullanıcı bulunamadı.');
+    }
+
+    if (updateData.firstName) user.firstName = updateData.firstName;
+    if (updateData.lastName) user.lastName = updateData.lastName;
+    if (updateData.avatar) user.avatar = updateData.avatar;
+
+    await user.save();
+
+    let avatarUrl = user.avatar?.url;
+    if (avatarUrl && !avatarUrl.startsWith('http')) {
+      avatarUrl = await this.uploadService.getPresignedUrl(avatarUrl);
+    }
+
+    return {
+      success: true,
+      message: 'Profil başarıyla güncellendi.',
+      data: {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        avatar: user.avatar ? { ...user.avatar, url: avatarUrl } : undefined,
+      },
+    };
+  }
+
+  async changePassword(userId: string, passwordData: any) {
+    const { currentPassword, newPassword } = passwordData;
+    const user = await this.userModel.findById(userId);
+
+    if (!user) {
+      throw new UnauthorizedException('Kullanıcı bulunamadı.');
+    }
+
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Mevcut şifreniz hatalı.');
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    return { success: true, message: 'Şifreniz başarıyla güncellendi.' };
+  }
+
   async updateRelationshipProfile(
     userId: string,
     profileDto: UpdateRelationshipProfileDto,

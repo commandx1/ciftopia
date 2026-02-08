@@ -70,6 +70,27 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post('update-profile')
+  async updateProfile(
+    @Req() req: { user: UserDocument },
+    @Body() updateData: { firstName?: string; lastName?: string; avatar?: any },
+  ) {
+    return this.authService.updateProfile(req.user._id.toString(), updateData);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('change-password')
+  async changePassword(
+    @Req() req: { user: UserDocument },
+    @Body() passwordData: any,
+  ) {
+    return this.authService.changePassword(
+      req.user._id.toString(),
+      passwordData,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post('relationship-profile')
   async updateRelationshipProfile(
     @Req() req: { user: UserDocument },
