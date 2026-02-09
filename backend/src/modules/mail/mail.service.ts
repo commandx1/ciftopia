@@ -6,7 +6,7 @@ import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 export class MailService {
   private readonly sesClient: SESClient;
   private readonly logger = new Logger(MailService.name);
-  private readonly fromEmail = 'service@ciftopia.com'; // SES'te doğrulanmış bir mail olmalı
+  private readonly fromEmail = 'ciftopia.services@gmail.com'; // SES'te doğrulanmış bir mail olmalı
 
   constructor(private configService: ConfigService) {
     this.sesClient = new SESClient({
