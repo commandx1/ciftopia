@@ -19,16 +19,23 @@ export class MailService {
   }
 
   async sendVerificationEmail(email: string, token: string, firstName: string) {
-    const verificationUrl = `${this.configService.get('FRONTEND_URL') || 'https://ciftopia.com'}/verify-email?token=${token}`;
-    
+    const baseUrl = this.configService.get('FRONTEND_URL') || 'https://ciftopia.com';
+    const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
+    const logoUrl = `${baseUrl}/ciftopia-logo.png`;
+
     const subject = 'Ciftopia - E-posta Adresinizi Doğrulayın';
     const body = `
-      <h1>Merhaba ${firstName}!</h1>
-      <p>Ciftopia'ya hoş geldin! Hesabını aktifleştirmek için lütfen aşağıdaki bağlantıya tıkla:</p>
-      <p><a href="${verificationUrl}">E-posta Adresini Doğrula</a></p>
-      <p>Eğer bu hesabı sen oluşturmadıysan, bu maili görmezden gelebilirsin.</p>
-      <br>
-      <p>Sevgiler,<br>Ciftopia Ekibi</p>
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+        <p style="text-align: center; margin-bottom: 24px;">
+          <img src="${logoUrl}" alt="Ciftopia" width="120" height="120" style="display: block; margin: 0 auto;" />
+        </p>
+        <h1 style="color: #1f2937;">Merhaba ${firstName}!</h1>
+        <p>Ciftopia'ya hoş geldin! Hesabını aktifleştirmek için lütfen aşağıdaki bağlantıya tıkla:</p>
+        <p><a href="${verificationUrl}" style="color: #C44569; font-weight: 600;">E-posta Adresini Doğrula</a></p>
+        <p style="color: #6b7280; font-size: 14px;">Eğer bu hesabı sen oluşturmadıysan, bu maili görmezden gelebilirsin.</p>
+        <br>
+        <p>Sevgiler,<br><strong>Ciftopia Ekibi</strong></p>
+      </div>
     `;
 
     return this.sendEmail(email, subject, body);
