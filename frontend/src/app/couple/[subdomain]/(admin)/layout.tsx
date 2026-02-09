@@ -86,11 +86,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                 </li>
                 <li>
                   <Link href='#' className='hover:text-white transition-colors'>
-                    Fiyatlandırma
-                  </Link>
-                </li>
-                <li>
-                  <Link href='#' className='hover:text-white transition-colors'>
                     Demo
                   </Link>
                 </li>

@@ -1,14 +1,10 @@
-import React from 'react';
-import Link from 'next/link';
-import { Instagram, Twitter, Facebook, Youtube } from 'lucide-react';
-import Logo from '../ui/Logo'
 import Image from 'next/image'
 
 export const Footer = () => {
   return (
-    <footer id="footer" className="bg-slate-950 text-white py-20 border-t border-white/5">
+    <footer id="footer" className="bg-slate-950 text-white pb-10 border-t border-white/5">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-20">
+        {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-20">
           <div className="space-y-8">
             <Logo />
             <p className="text-gray-400 leading-relaxed text-lg">
@@ -34,11 +30,6 @@ export const Footer = () => {
               <li>
                 <Link href="/how-it-works" className="text-gray-400 hover:text-rose-400 transition-colors text-lg inline-block">
                   Nasıl Çalışır?
-                </Link>
-              </li>
-              <li>
-                <Link href="/pricing" className="text-gray-400 hover:text-rose-400 transition-colors text-lg inline-block">
-                  Fiyatlandırma
                 </Link>
               </li>
               <li>
@@ -92,7 +83,7 @@ export const Footer = () => {
               </li>
             </ul>
           </div>
-        </div>
+        </div> */}
         
         <div className="pt-10 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-6">
           <p className="text-gray-500 text-lg">

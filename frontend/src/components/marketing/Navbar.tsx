@@ -24,12 +24,6 @@ export const Navbar = () => {
               Nasıl Çalışır
             </Link>
             <Link
-              href='/pricing'
-              className='text-gray-700 hover:text-rose-primary transition-colors font-medium dark:text-gray-300 dark:hover:text-rose-400'
-            >
-              Fiyatlandırma
-            </Link>
-            <Link
               href='/#testimonials'
               className='text-gray-700 hover:text-rose-primary transition-colors font-medium dark:text-gray-300 dark:hover:text-rose-400'
             >
@@ -44,14 +38,6 @@ export const Navbar = () => {
           </div>
 
           <div className='flex items-center space-x-4'>
-            <Link href='/login'>
-              <Button
-                variant='ghost'
-                className='font-medium text-gray-700 hover:text-rose-primary dark:text-gray-300 dark:hover:text-rose-400'
-              >
-                Giriş Yap
-              </Button>
-            </Link>
             <Link href='/register'>
               <Button className='bg-gradient-to-r from-rose-primary to-coral-warm text-white rounded-full font-semibold hover:shadow-lg transition-all border-none'>
                 Hemen Başla

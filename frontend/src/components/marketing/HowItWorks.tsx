@@ -98,7 +98,6 @@ export const HowItWorks = () => {
               <ArrowRight className="ml-3" />
             </Button>
           </Link>
-          <p className="text-gray-500 dark:text-gray-400 mt-6 font-medium">Kredi kartı gerekmez • 7 gün ücretsiz deneme</p>
         </div>
       </div>
     </section>
