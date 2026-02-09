@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { authService } from '@/services/api'
-import Link from 'next/link'
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import { ApiError } from '@/lib/type'
 
@@ -55,12 +54,6 @@ export default function VerifyEmailPage() {
             <CheckCircle2 className="w-12 h-12 text-green-500 mb-4" />
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Başarılı!</h1>
             <p className="text-gray-600 mb-6">{message}</p>
-            <Link 
-              href="/login"
-              className="bg-rose-500 text-white px-6 py-2 rounded-full font-semibold hover:bg-rose-600 transition-colors"
-            >
-              Giriş Yap
-            </Link>
           </div>
         )}
 
@@ -69,12 +62,6 @@ export default function VerifyEmailPage() {
             <XCircle className="w-12 h-12 text-red-500 mb-4" />
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Hata!</h1>
             <p className="text-gray-600 mb-6">{message}</p>
-            <Link 
-              href="/login"
-              className="text-rose-500 font-semibold hover:underline"
-            >
-              Giriş sayfasına dön
-            </Link>
           </div>
         )}
       </div>
