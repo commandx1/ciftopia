@@ -1,14 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { authService } from '@/services/api'
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import { ApiError } from '@/lib/type'
 
 export default function VerifyEmailPage() {
   const searchParams = useSearchParams()
-  const router = useRouter()
   const token = searchParams.get('token')
   
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
@@ -25,10 +24,7 @@ export default function VerifyEmailPage() {
       try {
         await authService.verifyEmail(token)
         setStatus('success')
-        setMessage('E-posta adresiniz başarıyla doğrulandı! Giriş yapabilirsiniz.')
-        setTimeout(() => {
-          router.push('/login')
-        }, 3000)
+        setMessage('E-posta adresiniz başarıyla doğrulandı! Bu sekmeyi kapatıp uygulamaya dönebilirsiniz.')
       } catch (error) {
         setStatus('error')
         setMessage((error as ApiError).response?.data?.message || 'Doğrulama işlemi başarısız oldu.')
@@ -36,7 +32,7 @@ export default function VerifyEmailPage() {
     }
 
     verify()
-  }, [token, router])
+  }, [token])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
