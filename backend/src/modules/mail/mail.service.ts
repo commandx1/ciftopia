@@ -1,21 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
+import { Resend } from 'resend';
 
 @Injectable()
 export class MailService {
-  private readonly sesClient: SESClient;
+  private readonly resend: Resend;
   private readonly logger = new Logger(MailService.name);
-  private readonly fromEmail = 'service@ciftopia.com'; // SES'te doğrulanmış bir mail olmalı
+  private readonly fromEmail = 'Çiftopia <service@ciftopia.com>';
 
   constructor(private configService: ConfigService) {
-    this.sesClient = new SESClient({
-      region: this.configService.get('AWS_REGION'),
-      credentials: {
-        accessKeyId: this.configService.get('AWS_ACCESS_KEY_ID') || '',
-        secretAccessKey: this.configService.get('AWS_SECRET_ACCESS_KEY') || '',
-      },
-    });
+    this.resend = new Resend(this.configService.get('RESEND_API_KEY'));
   }
 
   async sendVerificationEmail(email: string, token: string, firstName: string) {
@@ -113,31 +107,18 @@ export class MailService {
   }
 
   private async sendEmail(to: string, subject: string, body: string) {
-    const command = new SendEmailCommand({
-      Destination: {
-        ToAddresses: [to],
-      },
-      Message: {
-        Body: {
-          Html: {
-            Charset: 'UTF-8',
-            Data: body,
-          },
-        },
-        Subject: {
-          Charset: 'UTF-8',
-          Data: subject,
-        },
-      },
-      Source: this.fromEmail,
-    });
-
     try {
-      await this.sesClient.send(command);
-      this.logger.log(`Email sent successfully to ${to}`);
+      const data = await this.resend.emails.send({
+        from: this.fromEmail,
+        to: [to],
+        subject: subject,
+        html: body,
+      });
+
+      this.logger.log(`Email sent successfully to ${to}. ID: ${data.data?.id}`);
+      return data;
     } catch (error) {
       this.logger.error(`Failed to send email to ${to}`, error.stack);
-      // Geliştirme ortamında hata fırlatmayalım ki akış bozulmasın
       if (process.env.NODE_ENV === 'production') {
         throw error;
       }
