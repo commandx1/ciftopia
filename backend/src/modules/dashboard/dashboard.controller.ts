@@ -15,4 +15,13 @@ export class DashboardController {
     }
     return this.dashboardService.getStats(coupleId.toString());
   }
+
+  @Get('space')
+  async getSpaceStats(@Req() req: any) {
+    const coupleId = req.user.coupleId?._id || req.user.coupleId;
+    if (!coupleId) {
+      return { success: false, message: 'Çift hesabı bulunamadı.' };
+    }
+    return this.dashboardService.getSpaceStats(coupleId.toString());
+  }
 }

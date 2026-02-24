@@ -250,4 +250,41 @@ export class DashboardService {
       throw error;
     }
   }
+
+  async getSpaceStats(coupleId: string) {
+    try {
+      const cid = new Types.ObjectId(coupleId);
+
+      const [
+        poemCount,
+        memoryCount,
+        albumCount,
+        answerCount,
+        bucketCount,
+      ] = await Promise.all([
+        this.poemModel.countDocuments({ coupleId: cid }),
+        this.memoryModel.countDocuments({ coupleId: cid }),
+        this.albumModel.countDocuments({ coupleId: cid }),
+        this.questionAnswerModel.countDocuments({ coupleId: cid }),
+        this.bucketListModel.countDocuments({ coupleId: cid }),
+      ]);
+
+      const calculateLevels = (total: number) => {
+        const fullItems = Math.floor(total / 15);
+        const remainder = total % 15;
+        return { fullItems, remainder };
+      };
+
+      return {
+        poems: calculateLevels(poemCount), // stars
+        memories: calculateLevels(memoryCount), // planet_a
+        albums: calculateLevels(albumCount), // planet_b
+        questions: calculateLevels(answerCount), // planet_c
+        bucketList: calculateLevels(bucketCount), // comet
+      };
+    } catch (error) {
+      console.error('Space stats calculation error:', error);
+      throw error;
+    }
+  }
 }
