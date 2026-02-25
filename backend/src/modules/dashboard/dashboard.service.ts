@@ -261,12 +261,14 @@ export class DashboardService {
         albumCount,
         answerCount,
         bucketCount,
+        timeCapsuleCount,
       ] = await Promise.all([
         this.poemModel.countDocuments({ coupleId: cid }),
         this.memoryModel.countDocuments({ coupleId: cid }),
         this.albumModel.countDocuments({ coupleId: cid }),
         this.questionAnswerModel.countDocuments({ coupleId: cid }),
         this.bucketListModel.countDocuments({ coupleId: cid }),
+        this.timeCapsuleModel.countDocuments({ coupleId: cid }),
       ]);
 
       const calculateLevels = (total: number) => {
@@ -281,6 +283,7 @@ export class DashboardService {
         albums: calculateLevels(albumCount), // planet_b
         questions: calculateLevels(answerCount), // planet_c
         bucketList: calculateLevels(bucketCount), // comet
+        timeCapsules: calculateLevels(timeCapsuleCount), // ufo
       };
     } catch (error) {
       console.error('Space stats calculation error:', error);
