@@ -30,6 +30,34 @@ export class PlanLimit {
 
   @Prop({ default: true })
   isActive: boolean;
+
+  @Prop({
+    type: {
+      photosPerContent: Number,
+      photosPerAlbum: Number,
+      dailyQuiz: Number,
+      storageBytes: Number,
+      videoUpload: Boolean,
+      maxVideoDuration: Number,
+      adFree: Boolean,
+      aiCommentFree: Boolean,
+      weeklyReport: Boolean,
+      yearlyReport: Boolean,
+      allCosmetics: Boolean,
+    },
+  })
+  limits?: {
+    photosPerContent?: number;
+    photosPerAlbum?: number;
+    dailyQuiz?: number; // Sınırsız için istersen -1 veya çok büyük bir sayı tut
+    storageBytes?: number;
+    videoUpload?: boolean;
+    maxVideoDuration?: number; // saniye
+    adFree?: boolean;
+    aiCommentFree?: boolean;
+    weeklyReport?: boolean;
+    yearlyReport?: boolean;
+    allCosmetics?: boolean;
+  };
 }
 export const PlanLimitSchema = SchemaFactory.createForClass(PlanLimit);
-
