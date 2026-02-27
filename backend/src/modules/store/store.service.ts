@@ -7,7 +7,7 @@ import {
   PlanType,
 } from '../../schemas/plan-limit.schema';
 
-interface GroupedPlans {
+export interface GroupedPlans {
   subscriptions: PlanLimit[];
   addons: PlanLimit[];
 }
@@ -35,4 +35,3 @@ export class StoreService {
     };
   }
 }
-
