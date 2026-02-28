@@ -12,6 +12,12 @@ export class PlanLimit {
   @Prop({ required: true, unique: true, index: true })
   code: string;
 
+  @Prop()
+  title?: string;
+
+  @Prop()
+  subtitle?: string;
+
   @Prop({ required: true, enum: ['subscription', 'addon'] })
   type: PlanType;
 
