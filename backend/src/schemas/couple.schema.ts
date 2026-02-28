@@ -59,6 +59,14 @@ export class Couple {
   @Prop({ type: Types.ObjectId, ref: 'Subscription' })
   subscriptionId?: Types.ObjectId;
 
+  /** Abonelik planı: free | plus | premium (plan_limits.code ile eşleşir) */
+  @Prop({ default: 'free', index: true })
+  planCode: string;
+
+  /** RevenueCat app user id (couple bazlı paylaşım için) */
+  @Prop()
+  revenueCatAppUserId?: string;
+
   @Prop({ default: 0 })
   storageUsed: number;
 

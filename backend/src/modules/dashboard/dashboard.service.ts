@@ -236,6 +236,7 @@ export class DashboardService {
           daysActive,
           storageUsed: (coupleObj?.storageUsed as number) || 0,
           storageLimit: (coupleObj?.storageLimit as number) || 1073741824,
+          planCode: (coupleObj?.planCode as string) || 'free',
           relationshipStartDate: coupleObj?.relationshipStartDate as string,
           coupleName: coupleObj?.coupleName as string,
           partner1: coupleObj?.partner1,
