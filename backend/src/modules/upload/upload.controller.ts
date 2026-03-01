@@ -9,6 +9,9 @@ import {
   Req,
 } from '@nestjs/common';
 import { FilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
+
+/** Video için boyut kısıtı yok; sadece kullanıcı kotası geçerli. 500MB sunucu tarafı limiti varsayılan kısıtları aşmak için. */
+const VIDEO_UPLOAD_LIMIT = 500 * 1024 * 1024;
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UploadService } from './upload.service';
@@ -79,7 +82,9 @@ export class UploadController {
 
   @UseGuards(JwtAuthGuard)
   @Post('video')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: VIDEO_UPLOAD_LIMIT } }),
+  )
   async uploadVideo(
     @Req() req: AuthRequest,
     @UploadedFile() file: Express.Multer.File,
@@ -110,16 +115,23 @@ export class UploadController {
       );
     }
 
-    const video = await this.uploadService.uploadFile(file, 'videos');
+    try {
+      const video = await this.uploadService.uploadFile(file, 'videos');
 
-    // Update storage used
-    const updatedCouple = await this.coupleModel.findByIdAndUpdate(
-      user.coupleId,
-      { $inc: { storageUsed: file.size } },
-      { new: true },
-    );
+      const updatedCouple = await this.coupleModel.findByIdAndUpdate(
+        user.coupleId,
+        { $inc: { storageUsed: file.size } },
+        { new: true },
+      );
 
-    return { video, storageUsed: updatedCouple?.storageUsed };
+      return { video, storageUsed: updatedCouple?.storageUsed };
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'Video yüklenirken bir hata oluştu. Lütfen tekrar deneyin.';
+      throw new BadRequestException(message);
+    }
   }
 
   @Post('avatar')
