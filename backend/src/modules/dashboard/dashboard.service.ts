@@ -28,6 +28,7 @@ import {
   QuestionAnswerDocument,
 } from '../../schemas/question-answer.schema';
 import { UploadService } from '../upload/upload.service';
+import { PlanLimitsService } from '../plan-limits/plan-limits.service';
 
 @Injectable()
 export class DashboardService {
@@ -49,6 +50,7 @@ export class DashboardService {
     @InjectModel(QuestionAnswer.name)
     private questionAnswerModel: Model<QuestionAnswerDocument>,
     private uploadService: UploadService,
+    private planLimitsService: PlanLimitsService,
   ) {}
 
   async getStats(coupleId: string) {
@@ -224,6 +226,9 @@ export class DashboardService {
 
       await this.uploadService.transformAvatars(recentActivities, 'userId');
 
+      const planCode = (coupleObj?.planCode as string) || 'free';
+      const limits = await this.planLimitsService.getLimits(planCode);
+
       return {
         stats: {
           memoryCount,
@@ -236,7 +241,8 @@ export class DashboardService {
           daysActive,
           storageUsed: (coupleObj?.storageUsed as number) || 0,
           storageLimit: (coupleObj?.storageLimit as number) || 1073741824,
-          planCode: (coupleObj?.planCode as string) || 'free',
+          planCode,
+          limits,
           relationshipStartDate: coupleObj?.relationshipStartDate as string,
           coupleName: coupleObj?.coupleName as string,
           partner1: coupleObj?.partner1,

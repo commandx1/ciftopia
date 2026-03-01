@@ -22,6 +22,7 @@ import { NotificationModule } from './modules/notification/notification.module';
 import { MoodModule } from './modules/mood/mood.module';
 import { QuizModule } from './modules/quiz/quiz.module';
 import { StoreModule } from './modules/store/store.module';
+import { PlanLimitsModule } from './modules/plan-limits/plan-limits.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { StoreModule } from './modules/store/store.module';
     MoodModule,
     QuizModule,
     StoreModule,
+    PlanLimitsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

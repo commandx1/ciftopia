@@ -14,6 +14,7 @@ import { BucketListItem, BucketListItemSchema } from '../../schemas/bucket-list.
 import { ImportantDate, ImportantDateSchema } from '../../schemas/important-date.schema';
 import { TimeCapsule, TimeCapsuleSchema } from '../../schemas/time-capsule.schema';
 import { QuestionAnswer, QuestionAnswerSchema } from '../../schemas/question-answer.schema';
+import { PlanLimitsModule } from '../plan-limits/plan-limits.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { QuestionAnswer, QuestionAnswerSchema } from '../../schemas/question-ans
       { name: QuestionAnswer.name, schema: QuestionAnswerSchema },
     ]),
     UploadModule,
+    PlanLimitsModule,
   ],
   controllers: [DashboardController],
   providers: [DashboardService],
