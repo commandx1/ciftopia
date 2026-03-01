@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Body,
   UseInterceptors,
   UploadedFiles,
   UploadedFile,
@@ -78,6 +79,53 @@ export class UploadController {
     );
 
     return { photos, storageUsed: updatedCouple?.storageUsed };
+  }
+
+  /** Video için presigned URL döner; istemci doğrudan S3'e yükler. Sunucuya video bytes gelmez. */
+  @UseGuards(JwtAuthGuard)
+  @Post('presigned-video')
+  async getPresignedVideoUrl(
+    @Req() req: AuthRequest,
+    @Body('filename') filename: string,
+    @Body('contentType') contentType: string,
+    @Body('size') size: number,
+  ) {
+    if (!filename || typeof filename !== 'string') {
+      throw new BadRequestException('filename gerekli.');
+    }
+    if (!contentType?.startsWith('video/')) {
+      throw new BadRequestException('Yalnızca video dosyaları yüklenebilir.');
+    }
+    const fileSize = Number(size);
+    if (!Number.isFinite(fileSize) || fileSize <= 0) {
+      throw new BadRequestException('Geçerli size gerekli.');
+    }
+
+    const user = req.user;
+    if (!user.coupleId) {
+      throw new BadRequestException(
+        'Dosya yüklemek için bir çifte bağlı olmalısınız.',
+      );
+    }
+
+    const couple = await this.coupleModel.findById(user.coupleId);
+    if (!couple) {
+      throw new BadRequestException('Çift bulunamadı.');
+    }
+
+    if (couple.storageUsed + fileSize > couple.storageLimit) {
+      throw new BadRequestException(
+        'Yetersiz depolama alanı. Lütfen bazı dosyaları silin veya planınızı yükseltin.',
+      );
+    }
+
+    const { uploadUrl, key } = await this.uploadService.getPresignedUploadUrl(
+      'videos',
+      filename,
+      contentType,
+      fileSize,
+    );
+    return { uploadUrl, key };
   }
 
   @UseGuards(JwtAuthGuard)

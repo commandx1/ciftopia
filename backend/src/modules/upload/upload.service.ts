@@ -73,6 +73,30 @@ export class UploadService {
     };
   }
 
+  /**
+   * İstemcinin S3'e doğrudan yükleme yapması için presigned PUT URL üretir.
+   * Video bytes backend'e gelmez; sunucu bellek kullanılmaz.
+   */
+  async getPresignedUploadUrl(
+    folder: string,
+    filename: string,
+    contentType: string,
+    contentLength: number,
+  ): Promise<{ uploadUrl: string; key: string }> {
+    const sanitized = filename.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '_');
+    const key = `${folder}/${randomUUID()}-${sanitized}`;
+    const command = new PutObjectCommand({
+      Bucket: this.bucketName,
+      Key: key,
+      ContentType: contentType,
+      ContentLength: contentLength,
+    });
+    const uploadUrl = await getSignedUrl(this.s3Client, command, {
+      expiresIn: 3600,
+    });
+    return { uploadUrl, key };
+  }
+
   async getPresignedUrl(key: string): Promise<string> {
     if (!key) return '';
     try {
