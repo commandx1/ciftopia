@@ -5,6 +5,10 @@ import {
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectCommand,
+  CreateMultipartUploadCommand,
+  UploadPartCommand,
+  CompleteMultipartUploadCommand,
+  AbortMultipartUploadCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'crypto';
@@ -97,6 +101,74 @@ export class UploadService {
       expiresIn: 3600,
     });
     return { uploadUrl, key };
+  }
+
+  /** S3 multipart upload: büyük videolar için. Part'lar client'tan doğrudan S3'e gider. */
+  async initiateMultipartUpload(
+    folder: string,
+    filename: string,
+    contentType: string,
+  ): Promise<{ uploadId: string; key: string }> {
+    const sanitized = filename
+      .replace(/\s+/g, '_')
+      .replace(/[^a-zA-Z0-9._-]/g, '_');
+    const key = `${folder}/${randomUUID()}-${sanitized}`;
+    const command = new CreateMultipartUploadCommand({
+      Bucket: this.bucketName,
+      Key: key,
+      ContentType: contentType,
+    });
+    const { UploadId } = await this.s3Client.send(command);
+    if (!UploadId) throw new Error('CreateMultipartUpload UploadId yok.');
+    return { uploadId: UploadId, key };
+  }
+
+  /** Her part için presigned PUT URL; paralel üretim. */
+  async getPresignedUrlsForParts(
+    key: string,
+    uploadId: string,
+    totalParts: number,
+  ): Promise<{ partNumber: number; url: string }[]> {
+    const promises = Array.from({ length: totalParts }, async (_, i) => {
+      const partNumber = i + 1;
+      const command = new UploadPartCommand({
+        Bucket: this.bucketName,
+        Key: key,
+        UploadId: uploadId,
+        PartNumber: partNumber,
+      });
+      const url = await getSignedUrl(this.s3Client, command, {
+        expiresIn: 3600,
+      });
+      return { partNumber, url };
+    });
+    return Promise.all(promises);
+  }
+
+  async completeMultipartUpload(
+    key: string,
+    uploadId: string,
+    parts: { PartNumber: number; ETag: string }[],
+  ): Promise<{ key: string }> {
+    const command = new CompleteMultipartUploadCommand({
+      Bucket: this.bucketName,
+      Key: key,
+      UploadId: uploadId,
+      MultipartUpload: {
+        Parts: [...parts].sort((a, b) => a.PartNumber - b.PartNumber),
+      },
+    });
+    await this.s3Client.send(command);
+    return { key };
+  }
+
+  async abortMultipartUpload(key: string, uploadId: string): Promise<void> {
+    const command = new AbortMultipartUploadCommand({
+      Bucket: this.bucketName,
+      Key: key,
+      UploadId: uploadId,
+    });
+    await this.s3Client.send(command);
   }
 
   async getPresignedUrl(key: string): Promise<string> {

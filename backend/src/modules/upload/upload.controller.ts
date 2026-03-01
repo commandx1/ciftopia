@@ -128,6 +128,105 @@ export class UploadController {
     return { uploadUrl, key };
   }
 
+  /** Büyük video için S3 multipart: initiate → client part'ları yükler → complete. Kota initiate'da kontrol edilir. */
+  @UseGuards(JwtAuthGuard)
+  @Post('initiate-multipart')
+  async initiateMultipart(
+    @Req() req: AuthRequest,
+    @Body('fileName') fileName: string,
+    @Body('contentType') contentType: string,
+    @Body('fileSize') fileSize: number,
+  ) {
+    if (!fileName || typeof fileName !== 'string') {
+      throw new BadRequestException('fileName gerekli.');
+    }
+    if (!contentType?.startsWith('video/')) {
+      throw new BadRequestException('Yalnızca video dosyaları yüklenebilir.');
+    }
+    const size = Number(fileSize);
+    if (!Number.isFinite(size) || size <= 0) {
+      throw new BadRequestException('Geçerli fileSize gerekli.');
+    }
+
+    const PART_SIZE = 10 * 1024 * 1024; // 10MB
+    const totalParts = Math.ceil(size / PART_SIZE);
+    if (totalParts > 10000) {
+      throw new BadRequestException(
+        'Dosya çok büyük; part sayısı 10000\'i aşamaz.',
+      );
+    }
+
+    const user = req.user;
+    if (!user.coupleId) {
+      throw new BadRequestException(
+        'Dosya yüklemek için bir çifte bağlı olmalısınız.',
+      );
+    }
+
+    const couple = await this.coupleModel.findById(user.coupleId);
+    if (!couple) {
+      throw new BadRequestException('Çift bulunamadı.');
+    }
+    if (couple.storageUsed + size > couple.storageLimit) {
+      throw new BadRequestException(
+        'Yetersiz depolama alanı. Lütfen bazı dosyaları silin veya planınızı yükseltin.',
+      );
+    }
+
+    const { uploadId, key } =
+      await this.uploadService.initiateMultipartUpload(
+        'videos',
+        fileName,
+        contentType,
+      );
+    const presignedUrls =
+      await this.uploadService.getPresignedUrlsForParts(
+        key,
+        uploadId,
+        totalParts,
+      );
+
+    return {
+      uploadId,
+      key,
+      presignedUrls,
+      partSize: PART_SIZE,
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('complete-multipart')
+  async completeMultipart(
+    @Req() req: AuthRequest,
+    @Body('key') key: string,
+    @Body('uploadId') uploadId: string,
+    @Body('parts') parts: { PartNumber: number; ETag: string }[],
+  ) {
+    if (!key || !uploadId || !Array.isArray(parts) || parts.length === 0) {
+      throw new BadRequestException('key, uploadId ve parts gerekli.');
+    }
+    const result = await this.uploadService.completeMultipartUpload(
+      key,
+      uploadId,
+      parts,
+    );
+    return { success: true, key: result.key };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('abort-multipart')
+  async abortMultipart(
+    @Req() req: AuthRequest,
+    @Body('key') key: string,
+    @Body('uploadId') uploadId: string,
+  ) {
+    if (!key || !uploadId) {
+      throw new BadRequestException('key ve uploadId gerekli.');
+    }
+    await this.uploadService.abortMultipartUpload(key, uploadId);
+    return { success: true };
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post('video')
   @UseInterceptors(
