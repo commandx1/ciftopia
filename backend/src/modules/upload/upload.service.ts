@@ -83,7 +83,9 @@ export class UploadService {
     contentType: string,
     contentLength: number,
   ): Promise<{ uploadUrl: string; key: string }> {
-    const sanitized = filename.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '_');
+    const sanitized = filename
+      .replace(/\s+/g, '_')
+      .replace(/[^a-zA-Z0-9._-]/g, '_');
     const key = `${folder}/${randomUUID()}-${sanitized}`;
     const command = new PutObjectCommand({
       Bucket: this.bucketName,
@@ -160,16 +162,21 @@ export class UploadService {
     }
   }
 
-  async transformAvatars(entities: any[], userPath: string = 'authorId'): Promise<void> {
+  async transformAvatars(
+    entities: any[],
+    userPath: string = 'authorId',
+  ): Promise<void> {
     if (!entities || !Array.isArray(entities)) return;
-    
+
     await Promise.all(
       entities.map(async (entity) => {
-        const user = userPath.split('.').reduce((obj, key) => obj?.[key], entity);
+        const user = userPath
+          .split('.')
+          .reduce((obj, key) => obj?.[key], entity);
         if (user) {
           await this.transformAvatar(user);
         }
-      })
+      }),
     );
   }
 }
