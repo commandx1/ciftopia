@@ -123,26 +123,42 @@ export class UploadService {
     return { uploadId: UploadId, key };
   }
 
-  /** Her part için presigned PUT URL; paralel üretim. */
+  /** Her part için presigned PUT URL. getSignedUrl yerel crypto (S3'e gitmez); batch ile paralel ama concurrency sınırlı. */
+  private static PRESIGN_BATCH_SIZE = 100;
+
   async getPresignedUrlsForParts(
     key: string,
     uploadId: string,
     totalParts: number,
   ): Promise<{ partNumber: number; url: string }[]> {
-    const promises = Array.from({ length: totalParts }, async (_, i) => {
-      const partNumber = i + 1;
-      const command = new UploadPartCommand({
-        Bucket: this.bucketName,
-        Key: key,
-        UploadId: uploadId,
-        PartNumber: partNumber,
-      });
-      const url = await getSignedUrl(this.s3Client, command, {
-        expiresIn: 3600,
-      });
-      return { partNumber, url };
-    });
-    return Promise.all(promises);
+    const results: { partNumber: number; url: string }[] = [];
+    for (
+      let offset = 0;
+      offset < totalParts;
+      offset += UploadService.PRESIGN_BATCH_SIZE
+    ) {
+      const batchSize = Math.min(
+        UploadService.PRESIGN_BATCH_SIZE,
+        totalParts - offset,
+      );
+      const batch = await Promise.all(
+        Array.from({ length: batchSize }, async (_, i) => {
+          const partNumber = offset + i + 1;
+          const command = new UploadPartCommand({
+            Bucket: this.bucketName,
+            Key: key,
+            UploadId: uploadId,
+            PartNumber: partNumber,
+          });
+          const url = await getSignedUrl(this.s3Client, command, {
+            expiresIn: 3600,
+          });
+          return { partNumber, url };
+        }),
+      );
+      results.push(...batch);
+    }
+    return results;
   }
 
   async completeMultipartUpload(
