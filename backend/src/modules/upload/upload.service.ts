@@ -5,8 +5,6 @@ import {
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectCommand,
-  ListObjectsV2Command,
-  DeleteObjectsCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'crypto';
@@ -25,7 +23,6 @@ export class UploadService {
   private s3Client: S3Client;
   private bucketName: string;
   private urlCache: Map<string, { url: string; expiresAt: number }> = new Map();
-  private cloudfrontDomain: string;
 
   constructor(private configService: ConfigService) {
     this.s3Client = new S3Client({
@@ -36,16 +33,6 @@ export class UploadService {
       },
     });
     this.bucketName = this.configService.get('AWS_S3_BUCKET') || '';
-    this.cloudfrontDomain = (
-      this.configService.get('AWS_CLOUDFRONT_DOMAIN') || ''
-    ).replace(/\/$/, '');
-  }
-
-  /** CloudFront üzerinden HLS veya diğer S3 key'leri için public URL. */
-  getCloudFrontUrl(key: string): string {
-    if (!key || !this.cloudfrontDomain) return '';
-    const path = key.startsWith('/') ? key.slice(1) : key;
-    return `${this.cloudfrontDomain}/${path}`;
   }
 
   async uploadFile(
@@ -153,9 +140,11 @@ export class UploadService {
 
   async deleteFile(key: string): Promise<void> {
     try {
-      if (key.startsWith('http')) return;
+      if (key.startsWith('http')) return; // Don't try to delete external URLs
 
+      // Remove from cache if exists
       this.urlCache.delete(key);
+
       await this.s3Client.send(
         new DeleteObjectCommand({
           Bucket: this.bucketName,
@@ -164,29 +153,6 @@ export class UploadService {
       );
     } catch (err) {
       console.error('S3 dosya silme hatası:', err);
-    }
-  }
-
-  /** HLS klasörü gibi prefix altındaki tüm nesneleri siler. */
-  async deleteByPrefix(prefix: string): Promise<void> {
-    try {
-      if (!prefix || prefix.startsWith('http')) return;
-      const list = await this.s3Client.send(
-        new ListObjectsV2Command({
-          Bucket: this.bucketName,
-          Prefix: prefix,
-        }),
-      );
-      const keys = (list.Contents || []).map((o) => o.Key).filter(Boolean) as string[];
-      if (keys.length === 0) return;
-      await this.s3Client.send(
-        new DeleteObjectsCommand({
-          Bucket: this.bucketName,
-          Delete: { Objects: keys.map((Key) => ({ Key })), Quiet: true },
-        }),
-      );
-    } catch (err) {
-      console.error('S3 prefix silme hatası:', err);
     }
   }
 
