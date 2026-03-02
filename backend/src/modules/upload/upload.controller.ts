@@ -11,8 +11,10 @@ import {
 } from '@nestjs/common';
 import { FilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
 
-/** Video için boyut kısıtı yok; sadece kullanıcı kotası geçerli. 500MB sunucu tarafı limiti varsayılan kısıtları aşmak için. */
-const VIDEO_UPLOAD_LIMIT = 500 * 1024 * 1024;
+const VIDEO_UPLOAD_LIMIT = 500 * 1024 * 1024; // 500MB — direct POST /upload/video (web) için
+const VIDEO_PART_SIZE = 5 * 1024 * 1024; // 5MB — multipart part boyutu (mobile büyük video)
+const MAX_MULTIPART_PARTS = 10_000;
+
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UploadService } from './upload.service';
@@ -49,6 +51,30 @@ export class UploadController {
       couple.storageLimit ||
       DEFAULT_STORAGE_BYTES
     );
+  }
+
+  /** Video yükleme için çift + kota kontrolü; geçersizse BadRequest atar. */
+  private async assertVideoStorage(
+    req: AuthRequest,
+    fileSize: number,
+  ): Promise<{ couple: CoupleDocument; storageLimit: number }> {
+    const user = req.user;
+    if (!user.coupleId) {
+      throw new BadRequestException(
+        'Dosya yüklemek için bir çifte bağlı olmalısınız.',
+      );
+    }
+    const couple = await this.coupleModel.findById(user.coupleId);
+    if (!couple) {
+      throw new BadRequestException('Çift bulunamadı.');
+    }
+    const storageLimit = await this.getStorageLimit(couple);
+    if (couple.storageUsed + fileSize > storageLimit) {
+      throw new BadRequestException(
+        'Yetersiz depolama alanı. Lütfen bazı dosyaları silin veya planınızı yükseltin.',
+      );
+    }
+    return { couple, storageLimit };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -118,24 +144,7 @@ export class UploadController {
       throw new BadRequestException('Geçerli size gerekli.');
     }
 
-    const user = req.user;
-    if (!user.coupleId) {
-      throw new BadRequestException(
-        'Dosya yüklemek için bir çifte bağlı olmalısınız.',
-      );
-    }
-
-    const couple = await this.coupleModel.findById(user.coupleId);
-    if (!couple) {
-      throw new BadRequestException('Çift bulunamadı.');
-    }
-
-    const storageLimit = await this.getStorageLimit(couple);
-    if (couple.storageUsed + fileSize > storageLimit) {
-      throw new BadRequestException(
-        'Yetersiz depolama alanı. Lütfen bazı dosyaları silin veya planınızı yükseltin.',
-      );
-    }
+    await this.assertVideoStorage(req, fileSize);
 
     const { uploadUrl, key } = await this.uploadService.getPresignedUploadUrl(
       'videos',
@@ -166,31 +175,14 @@ export class UploadController {
       throw new BadRequestException('Geçerli fileSize gerekli.');
     }
 
-    const PART_SIZE = 5 * 1024 * 1024; // 5MB
-    const totalParts = Math.ceil(size / PART_SIZE);
-    if (totalParts > 10000) {
+    const totalParts = Math.ceil(size / VIDEO_PART_SIZE);
+    if (totalParts > MAX_MULTIPART_PARTS) {
       throw new BadRequestException(
-        "Dosya çok büyük; part sayısı 10000'i aşamaz.",
+        `Dosya çok büyük; part sayısı ${MAX_MULTIPART_PARTS}'i aşamaz.`,
       );
     }
 
-    const user = req.user;
-    if (!user.coupleId) {
-      throw new BadRequestException(
-        'Dosya yüklemek için bir çifte bağlı olmalısınız.',
-      );
-    }
-
-    const couple = await this.coupleModel.findById(user.coupleId);
-    if (!couple) {
-      throw new BadRequestException('Çift bulunamadı.');
-    }
-    const storageLimit = await this.getStorageLimit(couple);
-    if (couple.storageUsed + size > storageLimit) {
-      throw new BadRequestException(
-        'Yetersiz depolama alanı. Lütfen bazı dosyaları silin veya planınızı yükseltin.',
-      );
-    }
+    await this.assertVideoStorage(req, size);
 
     const { uploadId, key } = await this.uploadService.initiateMultipartUpload(
       'videos',
@@ -207,7 +199,7 @@ export class UploadController {
       uploadId,
       key,
       presignedUrls,
-      partSize: PART_SIZE,
+      partSize: VIDEO_PART_SIZE,
     };
   }
 
@@ -244,6 +236,7 @@ export class UploadController {
     return { success: true };
   }
 
+  /** Web: FormData ile video gönderir; sunucu S3'e yükler. Mobile presigned/multipart kullanır. */
   @UseGuards(JwtAuthGuard)
   @Post('video')
   @UseInterceptors(
@@ -256,35 +249,17 @@ export class UploadController {
     if (!file) {
       throw new BadRequestException('Lütfen bir video dosyası seçin.');
     }
-
     if (!file.mimetype.startsWith('video/')) {
       throw new BadRequestException('Yalnızca video dosyaları yüklenebilir.');
     }
 
-    const user = req.user;
-    if (!user.coupleId) {
-      throw new BadRequestException(
-        'Dosya yüklemek için bir çifte bağlı olmalısınız.',
-      );
-    }
-
-    const couple = await this.coupleModel.findById(user.coupleId);
-    if (!couple) {
-      throw new BadRequestException('Çift bulunamadı.');
-    }
-
-    const storageLimit = await this.getStorageLimit(couple);
-    if (couple.storageUsed + file.size > storageLimit) {
-      throw new BadRequestException(
-        'Yetersiz depolama alanı. Lütfen bazı dosyaları silin veya planınızı yükseltin.',
-      );
-    }
+    await this.assertVideoStorage(req, file.size);
 
     try {
       const video = await this.uploadService.uploadFile(file, 'videos');
 
       const updatedCouple = await this.coupleModel.findByIdAndUpdate(
-        user.coupleId,
+        req.user.coupleId,
         { $inc: { storageUsed: file.size } },
         { new: true },
       );
