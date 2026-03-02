@@ -220,6 +220,7 @@ export class UploadController {
       uploadId,
       parts,
     );
+    // storageUsed, video referansı kaydedilirken güncellenir (örn. zaman kapsülü create)
     return { success: true, key: result.key };
   }
 
