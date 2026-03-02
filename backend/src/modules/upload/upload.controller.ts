@@ -10,8 +10,10 @@ import {
   Req,
 } from '@nestjs/common';
 import { FilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
-
-const MAX_VIDEO_SIZE = 5 * 1024 * 1024 * 1024; // 5GB — S3 tek PUT limiti
+import {
+  MAX_VIDEO_UPLOAD_BYTES,
+  MAX_VIDEO_S3_PUT_BYTES,
+} from './upload.constants';
 
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -138,14 +140,16 @@ export class UploadController {
       throw new BadRequestException('Yalnızca video dosyaları yüklenebilir.');
     }
     const fileSize = Number(size);
-    if (
-      !Number.isFinite(fileSize) ||
-      fileSize <= 0 ||
-      fileSize > MAX_VIDEO_SIZE
-    ) {
+    if (!Number.isFinite(fileSize) || fileSize <= 0) {
+      throw new BadRequestException('Geçerli video boyutu gerekli.');
+    }
+    if (fileSize > MAX_VIDEO_UPLOAD_BYTES) {
       throw new BadRequestException(
-        `Geçerli dosya boyutu gerekli (maks. ${MAX_VIDEO_SIZE / (1024 * 1024 * 1024)}GB).`,
+        `Video boyutu en fazla ${MAX_VIDEO_UPLOAD_BYTES / (1024 * 1024)}MB olabilir.`,
       );
+    }
+    if (fileSize > MAX_VIDEO_S3_PUT_BYTES) {
+      throw new BadRequestException('Video boyutu çok büyük.');
     }
 
     await this.assertVideoStorage(req, fileSize);

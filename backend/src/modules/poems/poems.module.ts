@@ -6,6 +6,7 @@ import { Poem, PoemSchema } from '../../schemas/poem.schema';
 import { User, UserSchema } from '../../schemas/user.schema';
 import { Couple, CoupleSchema } from '../../schemas/couple.schema';
 import { ActivityModule } from '../activity/activity.module';
+import { UploadModule } from '../upload/upload.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { ActivityModule } from '../activity/activity.module';
       { name: Couple.name, schema: CoupleSchema },
     ]),
     ActivityModule,
+    UploadModule,
   ],
   controllers: [PoemsController],
   providers: [PoemsService],

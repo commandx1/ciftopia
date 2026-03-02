@@ -11,6 +11,7 @@ import { Couple, CoupleDocument } from '../../schemas/couple.schema';
 import { CreatePoemDto } from './dto/poems.dto';
 import { ActivityService } from '../activity/activity.service';
 import { NotificationService } from '../notification/notification.service';
+import { UploadService } from '../upload/upload.service';
 
 @Injectable()
 export class PoemsService {
@@ -20,7 +21,14 @@ export class PoemsService {
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
     private activityService: ActivityService,
     private notificationService: NotificationService,
+    private uploadService: UploadService,
   ) {}
+
+  /** authorId ve dedicatedTo avatar URL'lerini presigned yapar. */
+  private async transformPoemAvatars(poem: any): Promise<void> {
+    if (poem?.authorId) await this.uploadService.transformAvatar(poem.authorId);
+    if (poem?.dedicatedTo) await this.uploadService.transformAvatar(poem.dedicatedTo);
+  }
 
   async findAllByCoupleId(
     coupleId: string,
@@ -84,6 +92,8 @@ export class PoemsService {
     // Total count for the current query (filtered by author and tag)
     const totalFilteredCount = await this.poemModel.countDocuments(query);
 
+    await Promise.all(poems.map((p) => this.transformPoemAvatars(p)));
+
     return {
       poems,
       totalCount,
@@ -106,6 +116,8 @@ export class PoemsService {
         .exec(),
       this.poemModel.countDocuments({ isPublic: true }),
     ]);
+
+    await Promise.all(poems.map((p) => this.transformPoemAvatars(p)));
 
     return {
       poems,
@@ -169,10 +181,12 @@ export class PoemsService {
       { screen: 'poems' },
     );
 
-    return savedPoem.populate([
+    const populated = await savedPoem.populate([
       { path: 'authorId', select: 'firstName lastName avatar gender' },
       { path: 'dedicatedTo', select: 'firstName lastName avatar gender' },
     ]);
+    await this.transformPoemAvatars(populated);
+    return populated;
   }
 
   async update(
@@ -203,10 +217,12 @@ export class PoemsService {
       metadata: { title: updatedPoem.title },
     });
 
-    return updatedPoem.populate([
+    const populated = await updatedPoem.populate([
       { path: 'authorId', select: 'firstName lastName avatar gender' },
       { path: 'dedicatedTo', select: 'firstName lastName avatar gender' },
     ]);
+    await this.transformPoemAvatars(populated);
+    return populated;
   }
 
   async delete(userId: string, poemId: string) {
