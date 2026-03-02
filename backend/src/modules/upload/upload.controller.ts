@@ -16,9 +16,12 @@ const VIDEO_UPLOAD_LIMIT = 500 * 1024 * 1024;
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UploadService } from './upload.service';
+import { PlanLimitsService } from '../plan-limits/plan-limits.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
 import { Request } from 'express';
+
+const DEFAULT_STORAGE_BYTES = 52428800; // 50MB
 
 interface AuthRequest extends Request {
   user: {
@@ -32,8 +35,21 @@ interface AuthRequest extends Request {
 export class UploadController {
   constructor(
     private readonly uploadService: UploadService,
+    private readonly planLimitsService: PlanLimitsService,
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
   ) {}
+
+  /** Çiftin seçili planına göre depolama limiti (plan_limits.storageBytes). */
+  private async getStorageLimit(couple: CoupleDocument): Promise<number> {
+    const limits = await this.planLimitsService.getLimits(
+      couple.planCode || 'free',
+    );
+    return (
+      Number(limits.storageBytes) ||
+      couple.storageLimit ||
+      DEFAULT_STORAGE_BYTES
+    );
+  }
 
   @UseGuards(JwtAuthGuard)
   @Post('memories')
@@ -58,9 +74,10 @@ export class UploadController {
       throw new BadRequestException('Çift bulunamadı.');
     }
 
+    const storageLimit = await this.getStorageLimit(couple);
     const totalSize = files.reduce((acc, file) => acc + file.size, 0);
 
-    if (couple.storageUsed + totalSize > couple.storageLimit) {
+    if (couple.storageUsed + totalSize > storageLimit) {
       throw new BadRequestException(
         'Yetersiz depolama alanı. Lütfen bazı dosyaları silin veya planınızı yükseltin.',
       );
@@ -113,7 +130,8 @@ export class UploadController {
       throw new BadRequestException('Çift bulunamadı.');
     }
 
-    if (couple.storageUsed + fileSize > couple.storageLimit) {
+    const storageLimit = await this.getStorageLimit(couple);
+    if (couple.storageUsed + fileSize > storageLimit) {
       throw new BadRequestException(
         'Yetersiz depolama alanı. Lütfen bazı dosyaları silin veya planınızı yükseltin.',
       );
@@ -152,7 +170,7 @@ export class UploadController {
     const totalParts = Math.ceil(size / PART_SIZE);
     if (totalParts > 10000) {
       throw new BadRequestException(
-        'Dosya çok büyük; part sayısı 10000\'i aşamaz.',
+        "Dosya çok büyük; part sayısı 10000'i aşamaz.",
       );
     }
 
@@ -167,24 +185,23 @@ export class UploadController {
     if (!couple) {
       throw new BadRequestException('Çift bulunamadı.');
     }
-    if (couple.storageUsed + size > couple.storageLimit) {
+    const storageLimit = await this.getStorageLimit(couple);
+    if (couple.storageUsed + size > storageLimit) {
       throw new BadRequestException(
         'Yetersiz depolama alanı. Lütfen bazı dosyaları silin veya planınızı yükseltin.',
       );
     }
 
-    const { uploadId, key } =
-      await this.uploadService.initiateMultipartUpload(
-        'videos',
-        fileName,
-        contentType,
-      );
-    const presignedUrls =
-      await this.uploadService.getPresignedUrlsForParts(
-        key,
-        uploadId,
-        totalParts,
-      );
+    const { uploadId, key } = await this.uploadService.initiateMultipartUpload(
+      'videos',
+      fileName,
+      contentType,
+    );
+    const presignedUrls = await this.uploadService.getPresignedUrlsForParts(
+      key,
+      uploadId,
+      totalParts,
+    );
 
     return {
       uploadId,
@@ -256,7 +273,8 @@ export class UploadController {
       throw new BadRequestException('Çift bulunamadı.');
     }
 
-    if (couple.storageUsed + file.size > couple.storageLimit) {
+    const storageLimit = await this.getStorageLimit(couple);
+    if (couple.storageUsed + file.size > storageLimit) {
       throw new BadRequestException(
         'Yetersiz depolama alanı. Lütfen bazı dosyaları silin veya planınızı yükseltin.',
       );
@@ -300,7 +318,8 @@ export class UploadController {
     if (user && user.coupleId) {
       couple = await this.coupleModel.findById(user.coupleId);
       if (couple) {
-        if (couple.storageUsed + file.size > couple.storageLimit) {
+        const storageLimit = await this.getStorageLimit(couple);
+        if (couple.storageUsed + file.size > storageLimit) {
           throw new BadRequestException(
             'Yetersiz depolama alanı. Lütfen planınızı yükseltin.',
           );
