@@ -166,7 +166,7 @@ export class UploadController {
       throw new BadRequestException('Geçerli fileSize gerekli.');
     }
 
-    const PART_SIZE = 10 * 1024 * 1024; // 10MB
+    const PART_SIZE = 5 * 1024 * 1024; // 5MB
     const totalParts = Math.ceil(size / PART_SIZE);
     if (totalParts > 10000) {
       throw new BadRequestException(

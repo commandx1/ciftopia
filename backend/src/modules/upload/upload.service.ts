@@ -124,7 +124,7 @@ export class UploadService {
   }
 
   /** Her part için presigned PUT URL. getSignedUrl yerel crypto (S3'e gitmez); batch ile paralel ama concurrency sınırlı. */
-  private static PRESIGN_BATCH_SIZE = 100;
+  private static PRESIGN_BATCH_SIZE = 50;
 
   async getPresignedUrlsForParts(
     key: string,
