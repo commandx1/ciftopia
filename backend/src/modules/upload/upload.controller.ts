@@ -12,7 +12,7 @@ import {
 import { FilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
 
 const VIDEO_UPLOAD_LIMIT = 500 * 1024 * 1024; // 500MB — direct POST /upload/video (web) için
-const VIDEO_PART_SIZE = 5 * 1024 * 1024; // 5MB — multipart part boyutu (mobile büyük video)
+const VIDEO_PART_SIZE = 1024 * 1024; // 5MB — multipart part boyutu (mobile büyük video)
 const MAX_MULTIPART_PARTS = 10_000;
 
 import { InjectModel } from '@nestjs/mongoose';
@@ -189,6 +189,7 @@ export class UploadController {
       fileName,
       contentType,
     );
+    console.log('totalParts', totalParts);
     const presignedUrls = await this.uploadService.getPresignedUrlsForParts(
       key,
       uploadId,
