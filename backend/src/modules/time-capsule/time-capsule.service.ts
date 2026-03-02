@@ -160,13 +160,10 @@ export class TimeCapsuleService {
       .populate('authorId', 'firstName lastName avatar gender')
       .exec();
 
-    // Update storage used if photos or video were added
+    // Video kotası presigned-video isteğinde rezerve edildi; burada sadece foto boyutları eklenir.
     let totalSize = 0;
     if (dto.photos && dto.photos.length > 0) {
       totalSize += dto.photos.reduce((acc, p) => acc + (p.size || 0), 0);
-    }
-    if (dto.video) {
-      totalSize += dto.video.size || 0;
     }
 
     if (totalSize > 0) {

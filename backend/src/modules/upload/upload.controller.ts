@@ -11,9 +11,7 @@ import {
 } from '@nestjs/common';
 import { FilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
 
-const VIDEO_UPLOAD_LIMIT = 500 * 1024 * 1024; // 500MB — direct POST /upload/video (web) için
-const VIDEO_PART_SIZE = 10 * 1024 * 1024; // 10MB — multipart part boyutu (mobile büyük video)
-const MAX_MULTIPART_PARTS = 10_000;
+const MAX_VIDEO_SIZE = 5 * 1024 * 1024 * 1024; // 5GB — S3 tek PUT limiti
 
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -124,7 +122,7 @@ export class UploadController {
     return { photos, storageUsed: updatedCouple?.storageUsed };
   }
 
-  /** Video için presigned URL döner; istemci doğrudan S3'e yükler. Sunucuya video bytes gelmez. */
+  /** Video: presigned URL döner; istemci doğrudan S3'e tek PUT ile yükler. Kota hemen rezerve edilir. */
   @UseGuards(JwtAuthGuard)
   @Post('presigned-video')
   async getPresignedVideoUrl(
@@ -140,8 +138,10 @@ export class UploadController {
       throw new BadRequestException('Yalnızca video dosyaları yüklenebilir.');
     }
     const fileSize = Number(size);
-    if (!Number.isFinite(fileSize) || fileSize <= 0) {
-      throw new BadRequestException('Geçerli size gerekli.');
+    if (!Number.isFinite(fileSize) || fileSize <= 0 || fileSize > MAX_VIDEO_SIZE) {
+      throw new BadRequestException(
+        `Geçerli dosya boyutu gerekli (maks. ${MAX_VIDEO_SIZE / (1024 * 1024 * 1024)}GB).`,
+      );
     }
 
     await this.assertVideoStorage(req, fileSize);
@@ -152,128 +152,12 @@ export class UploadController {
       contentType,
       fileSize,
     );
+
+    await this.coupleModel.findByIdAndUpdate(req.user.coupleId, {
+      $inc: { storageUsed: fileSize },
+    });
+
     return { uploadUrl, key };
-  }
-
-  /** Büyük video için S3 multipart: initiate → client part'ları yükler → complete. Kota initiate'da kontrol edilir. */
-  @UseGuards(JwtAuthGuard)
-  @Post('initiate-multipart')
-  async initiateMultipart(
-    @Req() req: AuthRequest,
-    @Body('fileName') fileName: string,
-    @Body('contentType') contentType: string,
-    @Body('fileSize') fileSize: number,
-  ) {
-    if (!fileName || typeof fileName !== 'string') {
-      throw new BadRequestException('fileName gerekli.');
-    }
-    if (!contentType?.startsWith('video/')) {
-      throw new BadRequestException('Yalnızca video dosyaları yüklenebilir.');
-    }
-    const size = Number(fileSize);
-    if (!Number.isFinite(size) || size <= 0) {
-      throw new BadRequestException('Geçerli fileSize gerekli.');
-    }
-
-    const totalParts = Math.ceil(size / VIDEO_PART_SIZE);
-    if (totalParts > MAX_MULTIPART_PARTS) {
-      throw new BadRequestException(
-        `Dosya çok büyük; part sayısı ${MAX_MULTIPART_PARTS}'i aşamaz.`,
-      );
-    }
-
-    await this.assertVideoStorage(req, size);
-
-    const { uploadId, key } = await this.uploadService.initiateMultipartUpload(
-      'videos',
-      fileName,
-      contentType,
-    );
-    console.log('totalParts', totalParts);
-    const presignedUrls = await this.uploadService.getPresignedUrlsForParts(
-      key,
-      uploadId,
-      totalParts,
-    );
-
-    return {
-      uploadId,
-      key,
-      presignedUrls,
-      partSize: VIDEO_PART_SIZE,
-    };
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Post('complete-multipart')
-  async completeMultipart(
-    @Req() req: AuthRequest,
-    @Body('key') key: string,
-    @Body('uploadId') uploadId: string,
-    @Body('parts') parts: { PartNumber: number; ETag: string }[],
-  ) {
-    if (!key || !uploadId || !Array.isArray(parts) || parts.length === 0) {
-      throw new BadRequestException('key, uploadId ve parts gerekli.');
-    }
-    const result = await this.uploadService.completeMultipartUpload(
-      key,
-      uploadId,
-      parts,
-    );
-    // storageUsed, video referansı kaydedilirken güncellenir (örn. zaman kapsülü create)
-    return { success: true, key: result.key };
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Post('abort-multipart')
-  async abortMultipart(
-    @Req() req: AuthRequest,
-    @Body('key') key: string,
-    @Body('uploadId') uploadId: string,
-  ) {
-    if (!key || !uploadId) {
-      throw new BadRequestException('key ve uploadId gerekli.');
-    }
-    await this.uploadService.abortMultipartUpload(key, uploadId);
-    return { success: true };
-  }
-
-  /** Web: FormData ile video gönderir; sunucu S3'e yükler. Mobile presigned/multipart kullanır. */
-  @UseGuards(JwtAuthGuard)
-  @Post('video')
-  @UseInterceptors(
-    FileInterceptor('file', { limits: { fileSize: VIDEO_UPLOAD_LIMIT } }),
-  )
-  async uploadVideo(
-    @Req() req: AuthRequest,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    if (!file) {
-      throw new BadRequestException('Lütfen bir video dosyası seçin.');
-    }
-    if (!file.mimetype.startsWith('video/')) {
-      throw new BadRequestException('Yalnızca video dosyaları yüklenebilir.');
-    }
-
-    await this.assertVideoStorage(req, file.size);
-
-    try {
-      const video = await this.uploadService.uploadFile(file, 'videos');
-
-      const updatedCouple = await this.coupleModel.findByIdAndUpdate(
-        req.user.coupleId,
-        { $inc: { storageUsed: file.size } },
-        { new: true },
-      );
-
-      return { video, storageUsed: updatedCouple?.storageUsed };
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : 'Video yüklenirken bir hata oluştu. Lütfen tekrar deneyin.';
-      throw new BadRequestException(message);
-    }
   }
 
   @Post('avatar')
