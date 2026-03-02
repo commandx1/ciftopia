@@ -9,6 +9,7 @@ import {
 import { Couple, CoupleSchema } from '../../schemas/couple.schema';
 import { ActivityModule } from '../activity/activity.module';
 import { NotificationModule } from '../notification/notification.module';
+import { UploadModule } from '../upload/upload.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { NotificationModule } from '../notification/notification.module';
     ]),
     ActivityModule,
     NotificationModule,
+    UploadModule,
   ],
   controllers: [BucketListController],
   providers: [BucketListService],

@@ -12,6 +12,7 @@ import {
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
 import { ActivityService } from '../activity/activity.service';
 import { NotificationService } from '../notification/notification.service';
+import { UploadService } from '../upload/upload.service';
 
 @Injectable()
 export class BucketListService {
@@ -21,14 +22,26 @@ export class BucketListService {
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
     private activityService: ActivityService,
     private notificationService: NotificationService,
+    private uploadService: UploadService,
   ) {}
 
+  /** authorId ve completedBy avatar URL'lerini presigned yapar. */
+  private async transformItemAvatars(item: any): Promise<void> {
+    if (item?.authorId) await this.uploadService.transformAvatar(item.authorId);
+    if (item?.completedBy && Array.isArray(item.completedBy)) {
+      await Promise.all(item.completedBy.map((u: any) => this.uploadService.transformAvatar(u)));
+    }
+  }
+
   async findAllByCoupleId(coupleId: string) {
-    return this.bucketListItemModel
+    const items = await this.bucketListItemModel
       .find({ coupleId: new Types.ObjectId(coupleId) })
       .populate('authorId', 'firstName lastName avatar gender')
       .populate('completedBy', 'firstName lastName avatar gender')
-      .sort({ isCompleted: 1, createdAt: -1 });
+      .sort({ isCompleted: 1, createdAt: -1 })
+      .exec();
+    await Promise.all(items.map((i) => this.transformItemAvatars(i)));
+    return items;
   }
 
   async create(
@@ -62,7 +75,9 @@ export class BucketListService {
       { screen: 'bucket-list' },
     );
 
-    return savedItem.populate('authorId', 'firstName lastName avatar gender');
+    const populated = await savedItem.populate('authorId', 'firstName lastName avatar gender');
+    await this.transformItemAvatars(populated);
+    return populated;
   }
 
   async update(
@@ -124,10 +139,12 @@ export class BucketListService {
       });
     }
 
-    return updatedItem.populate([
+    const populated = await updatedItem.populate([
       { path: 'authorId', select: 'firstName lastName avatar gender' },
       { path: 'completedBy', select: 'firstName lastName avatar gender' },
     ]);
+    await this.transformItemAvatars(populated);
+    return populated;
   }
 
   async delete(userId: string, itemId: string) {
