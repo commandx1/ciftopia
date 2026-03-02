@@ -106,7 +106,7 @@ export class MediaConvertService {
     const command = new CreateJobCommand({
       Role: this.roleArn,
       UserMetadata: { sourceKey },
-      Settings: jobSettings as import('@aws-sdk/client-mediaconvert').JobSettings,
+      Settings: jobSettings as any,
     });
 
     const result = await client.send(command);
