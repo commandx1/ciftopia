@@ -44,12 +44,18 @@ export class TimeCapsule {
       key: String,
       url: String,
       size: Number,
+      hlsKey: String,
+      status: { type: String, enum: ['processing', 'ready'], default: 'processing' },
+      mediaConvertJobId: String,
     },
   })
   video?: {
     key: string;
     url: string;
     size: number;
+    hlsKey?: string;
+    status?: 'processing' | 'ready';
+    mediaConvertJobId?: string;
   };
 
   @Prop({

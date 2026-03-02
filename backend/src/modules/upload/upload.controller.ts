@@ -138,7 +138,11 @@ export class UploadController {
       throw new BadRequestException('Yalnızca video dosyaları yüklenebilir.');
     }
     const fileSize = Number(size);
-    if (!Number.isFinite(fileSize) || fileSize <= 0 || fileSize > MAX_VIDEO_SIZE) {
+    if (
+      !Number.isFinite(fileSize) ||
+      fileSize <= 0 ||
+      fileSize > MAX_VIDEO_SIZE
+    ) {
       throw new BadRequestException(
         `Geçerli dosya boyutu gerekli (maks. ${MAX_VIDEO_SIZE / (1024 * 1024 * 1024)}GB).`,
       );

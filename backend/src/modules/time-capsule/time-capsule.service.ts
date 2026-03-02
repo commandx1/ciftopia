@@ -15,6 +15,7 @@ import {
   UpdateTimeCapsuleDto,
 } from './dto/time-capsule.dto';
 import { UploadService } from '../upload/upload.service';
+import { MediaConvertService } from '../upload/media-convert.service';
 import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
@@ -24,6 +25,7 @@ export class TimeCapsuleService {
     private timeCapsuleModel: Model<TimeCapsuleDocument>,
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
     private uploadService: UploadService,
+    private mediaConvertService: MediaConvertService,
     private activityService: ActivityService,
   ) {}
 
@@ -50,12 +52,31 @@ export class TimeCapsuleService {
         );
       }
 
-      // Transform video to presigned URL
+      // Video: HLS ready ise CloudFront URL, değilse presigned; processing ise job kontrol et
       if (obj.video) {
-        const presignedUrl = await this.uploadService.getPresignedUrl(
-          obj.video.key || obj.video.url,
-        );
-        obj.video.url = presignedUrl;
+        if (obj.video.status === 'processing' && obj.video.mediaConvertJobId) {
+          try {
+            const { status } = await this.mediaConvertService.getJobStatus(
+              obj.video.mediaConvertJobId,
+            );
+            if (status === 'COMPLETE' && obj.video.hlsKey) {
+              await this.timeCapsuleModel.updateOne(
+                { _id: obj._id },
+                { 'video.status': 'ready' },
+              );
+              obj.video.status = 'ready';
+            }
+          } catch {
+            // Job henüz bitmemiş veya hata; orijinal URL ile devam
+          }
+        }
+        if (obj.video.status === 'ready' && obj.video.hlsKey) {
+          obj.video.url = this.uploadService.getCloudFrontUrl(obj.video.hlsKey);
+        } else {
+          obj.video.url = await this.uploadService.getPresignedUrl(
+            obj.video.key || obj.video.url,
+          );
+        }
       }
     }
 
@@ -133,8 +154,26 @@ export class TimeCapsuleService {
     });
     if (!couple) throw new NotFoundException('Çift hesabı bulunamadı.');
 
+    let videoPayload: typeof dto.video = dto.video;
+    if (dto.video?.key) {
+      try {
+        const { jobId, hlsKey } =
+          await this.mediaConvertService.createHlsJob(dto.video.key);
+        videoPayload = {
+          ...dto.video,
+          hlsKey,
+          status: 'processing',
+          mediaConvertJobId: jobId,
+        };
+      } catch (err) {
+        console.error('MediaConvert job başlatılamadı:', err);
+        videoPayload = { ...dto.video, status: 'processing' };
+      }
+    }
+
     const capsule = new this.timeCapsuleModel({
       ...dto,
+      video: videoPayload ?? dto.video,
       coupleId: couple._id,
       authorId: new Types.ObjectId(userId),
       unlockDate: new Date(dto.unlockDate),
@@ -237,6 +276,10 @@ export class TimeCapsuleService {
     if (capsule.video) {
       totalSize += capsule.video.size || 0;
       await this.uploadService.deleteFile(capsule.video.key || capsule.video.url);
+      if (capsule.video.hlsKey) {
+        const prefix = capsule.video.hlsKey.replace(/\/[^/]+$/, '/');
+        await this.uploadService.deleteByPrefix(prefix);
+      }
     }
 
     if (totalSize > 0) {
