@@ -76,32 +76,30 @@ export class DailyQuestionService {
       .limit(30)
       .select('question');
 
-    const prompt = `Sen, dünyanın en popüler çift içerikleri üreticisi ve samimi bir "Onedio" editörüsün. Görevin, aşağıdaki çiftin karakter analizine dayanarak, onlara her sabah "Hadi canım, bunu mu soruyorsun?" dedirtecek kadar merak uyandırıcı, bazen kahkahaya boğan, bazen de derinden yakalayan TEK BİR soru üretmek.
-
-# ÇİFT ANALİZİ (Bu verileri sorunun içinde açıkça kullanma, sorunun TONUNU belirlemek için kullan):
-- Partner 1 (${partner1.firstName}): Sevgi dili ${partner1.relationshipProfile.loveLanguage}, hassasiyeti ${partner1.relationshipProfile.sensitivityArea.join(', ')}.
-- Partner 2 (${partner2.firstName}): Sevgi dili ${partner2.relationshipProfile.loveLanguage}, hassasiyeti ${partner2.relationshipProfile.sensitivityArea.join(', ')}.
-- Ortak Dinamik: Biri ${partner1.relationshipProfile.decisionStyle}, diğeri ${partner2.relationshipProfile.decisionStyle} kararlar alıyor.
-
-# ALTIN KURALLAR:
-1. ONEDIO RUHU: Başlıkların çarpıcı olsun. "İtiraf saati!", "Hangimiz daha çok..." kalıplarını kullan.
-2. KISA VE ÖZ: Soru tek bir nefeste okunmalı. Uzun paragraflardan kaçın.
-3. RİSK AL: Biraz "edgy" (sınırları zorlayan) ama kırıcı olmayan, tatlı tartışma çıkaracak sorular sor.
-4. DAHA ÖNCE SORULANLAR (Bunlardan tamamen farklı bir tema seç): ${recentQuestions.map((q) => q.question).join(', ')}
-
-# KATEGORİ REHBERİ:
-- Deep: "Herkes bizi mükemmel sanıyor ama bizim 'kimse bilmese daha iyi' dediğimiz o küçük kusurumuz ne?"
-- Fun: "Zombi istilası çıksa ve tek bir kişilik yer kalsa, beni neden hayatta tutmalısın? 30 saniyen var!"
-- Memory: "İlk öpüşmemizde arka planda bir şarkı çalsaydı bu hangi şarkı olurdu?"
-- Future: "90 yaşına geldiğimizde balkonda sallanırken en çok hangi maceramıza güleceğiz?"
-- Challenge: "Telefonumdaki bir uygulamayı sonsuza dek silme hakkın olsa hangisini seçerdin?"
-
-# ÇIKTI FORMATI (Sadece JSON):
-{
-  "question": "Soru metni",
-  "category": "deep|fun|memory|future|challenge",
-  "emoji": "🔥"
-}`;
+    const prompt = `
+      Sen samimi, eğlenceli ve biraz kışkırtıcı bir çift içerik editörüsün.
+      
+      Görevin: Aşağıdaki çift dinamiklerine uygun, merak uyandıran, kısa ve vurucu TEK BİR soru üretmek.
+      
+      # Çift Dinamiği (Soru içinde açıkça kullanma, sadece tonu belirlemek için kullan):
+      - Partner 1 sevgi dili: ${partner1.relationshipProfile.loveLanguage}
+      - Partner 2 sevgi dili: ${partner2.relationshipProfile.loveLanguage}
+      - Karar stilleri: Biri ${partner1.relationshipProfile.decisionStyle}, diğeri ${partner2.relationshipProfile.decisionStyle}
+      
+      # Kurallar:
+      - Soru tek cümle olacak.
+      - Maksimum 20 kelime.
+      - Meydan okuma veya “Hangimiz” formatında olsun.
+      - Hafif tatlı tartışma çıkarabilecek olsun.
+      - “Neden?” gibi ikinci soru ekleme.
+      - Daha önce sorulanlarla aynı tema olmasın: ${recentQuestions.map((q) => q.question).join(', ')}
+      
+      # Çıktı (Sadece JSON):
+      {
+        "question": "",
+        "emoji": ""
+      }
+      `;
 
     const response = await this.openai.chat.completions.create({
       model: 'gpt-4o-mini',
