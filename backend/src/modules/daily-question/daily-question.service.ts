@@ -115,7 +115,8 @@ export class DailyQuestionService {
       model: 'gpt-5-mini',
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
-      max_completion_tokens: 200,
+      reasoning_effort: 'low',
+      max_completion_tokens: 500,
     });
 
     console.log('OPENAI RAW RESPONSE:', JSON.stringify(response, null, 2));
