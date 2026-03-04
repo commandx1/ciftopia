@@ -34,6 +34,14 @@ export class DailyQuestionController {
     );
   }
 
+  @Post('refresh')
+  async requestNewQuestion(@Req() req: AuthRequest) {
+    return this.dailyQuestionService.requestNewQuestion(
+      req.user._id,
+      req.user.coupleId._id.toString(),
+    );
+  }
+
   @Post('answer')
   async answerQuestion(
     @Req() req: AuthRequest,

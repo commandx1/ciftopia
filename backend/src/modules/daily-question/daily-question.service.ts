@@ -204,6 +204,43 @@ JSON formatında döndür:
     };
   }
 
+  /**
+   * Kullanıcı soruyu beğenmediyse yeni soru üretir. Sadece bugünkü soruya henüz kimse cevap vermemişse çalışır.
+   */
+  async requestNewQuestion(userId: string, coupleId: string) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const question = await this.dailyQuestionModel.findOne({
+      coupleId: new Types.ObjectId(coupleId),
+      date: today,
+    });
+
+    if (!question) {
+      throw new NotFoundException('Bugün için bir soru bulunamadı.');
+    }
+
+    const anyAnswer = await this.answerModel.exists({ questionId: question._id });
+    if (anyAnswer) {
+      throw new BadRequestException(
+        'Bu soruya biri cevap verdiği için artık yeni soru isteyemezsiniz.',
+      );
+    }
+
+    await this.dailyQuestionModel.deleteOne({ _id: question._id });
+
+    const couple = await this.coupleModel
+      .findById(coupleId)
+      .populate('partner1 partner2');
+    if (!couple || couple.status !== 'active') {
+      throw new BadRequestException('Çift bulunamadı veya aktif değil.');
+    }
+
+    await this.generateForCouple(couple);
+
+    return this.getTodaysQuestion(userId, coupleId);
+  }
+
   async answerQuestion(
     userId: string,
     coupleId: string,
