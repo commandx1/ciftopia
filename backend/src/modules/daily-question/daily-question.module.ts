@@ -17,6 +17,7 @@ import {
 import { Couple, CoupleSchema } from '../../schemas/couple.schema';
 import { User, UserSchema } from '../../schemas/user.schema';
 import { ActivityModule } from '../activity/activity.module';
+import { UploadModule } from '../upload/upload.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { ActivityModule } from '../activity/activity.module';
       { name: User.name, schema: UserSchema },
     ]),
     ActivityModule,
+    UploadModule,
   ],
   controllers: [DailyQuestionController],
   providers: [DailyQuestionService],

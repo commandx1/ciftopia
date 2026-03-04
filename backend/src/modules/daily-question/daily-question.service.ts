@@ -27,6 +27,7 @@ import { User, UserDocument } from '../../schemas/user.schema';
 import { AnswerQuestionDto } from './dto/daily-question.dto';
 import { ActivityService } from '../activity/activity.service';
 import { NotificationService } from '../notification/notification.service';
+import { UploadService } from '../upload/upload.service';
 
 @Injectable()
 export class DailyQuestionService {
@@ -45,6 +46,7 @@ export class DailyQuestionService {
     private configService: ConfigService,
     private activityService: ActivityService,
     private notificationService: NotificationService,
+    private uploadService: UploadService,
   ) {
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
     if (!apiKey) {
@@ -196,8 +198,21 @@ JSON formatında döndür:
       coupleId: new Types.ObjectId(coupleId),
     });
 
+    const questionObj = (
+      question.toObject ? question.toObject() : { ...question }
+    ) as {
+      coupleId?: { partner1?: any; partner2?: any };
+      [key: string]: any;
+    };
+    if (questionObj.coupleId?.partner1) {
+      await this.uploadService.transformAvatar(questionObj.coupleId.partner1);
+    }
+    if (questionObj.coupleId?.partner2) {
+      await this.uploadService.transformAvatar(questionObj.coupleId.partner2);
+    }
+
     return {
-      question,
+      question: questionObj,
       userAnswer,
       partnerAnswered: !!partnerAnswer,
       partnerAnswer: userAnswer ? partnerAnswer?.answer : null, // Lock: only show partner's answer if user has answered
@@ -220,7 +235,9 @@ JSON formatında döndür:
       throw new NotFoundException('Bugün için bir soru bulunamadı.');
     }
 
-    const anyAnswer = await this.answerModel.exists({ questionId: question._id });
+    const anyAnswer = await this.answerModel.exists({
+      questionId: question._id,
+    });
     if (anyAnswer) {
       throw new BadRequestException(
         'Bu soruya biri cevap verdiği için artık yeni soru isteyemezsiniz.',
@@ -280,7 +297,7 @@ JSON formatında döndür:
     });
 
     // Send notification to partner
-    this.notificationService.sendToPartner(
+    void this.notificationService.sendToPartner(
       userId,
       'Günün Sorusu 📝',
       `${user?.firstName} bugünün sorusunu cevapladı. Sende cevapla ve birbirinizin cevaplarını görün! 💕`,
