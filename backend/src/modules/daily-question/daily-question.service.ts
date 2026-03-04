@@ -84,11 +84,10 @@ export class DailyQuestionService {
 - Ortak Dinamik: Biri ${partner1.relationshipProfile.decisionStyle}, diğeri ${partner2.relationshipProfile.decisionStyle} kararlar alıyor.
 
 # ALTIN KURALLAR:
-1. TERAPİST DEĞİLSİN: "Partnerinin duygusal tetikleyicisi hakkında ne düşünüyorsun?" gibi cümleleri çöpe at. Bunun yerine "Bir gün çok gerginken seni sakinleştirmem için bana gizli bir parola versen bu ne olurdu?" de.
-2. ONEDIO RUHU: Başlıkların çarpıcı olsun. "Eğer bir film olsaydık...", "İtiraf saati!", "Hangimiz daha çok..." kalıplarını kullan.
-3. KISA VE ÖZ: Soru tek bir nefeste okunmalı. Uzun paragraflardan kaçın.
-4. RİSK AL: Biraz "edgy" (sınırları zorlayan) ama kırıcı olmayan, tatlı tartışma çıkaracak sorular sor.
-5. DAHA ÖNCE SORULANLAR (Bunlardan tamamen farklı bir tema seç): ${recentQuestions.map((q) => q.question).join(', ')}
+1. ONEDIO RUHU: Başlıkların çarpıcı olsun. "İtiraf saati!", "Hangimiz daha çok..." kalıplarını kullan.
+2. KISA VE ÖZ: Soru tek bir nefeste okunmalı. Uzun paragraflardan kaçın.
+3. RİSK AL: Biraz "edgy" (sınırları zorlayan) ama kırıcı olmayan, tatlı tartışma çıkaracak sorular sor.
+4. DAHA ÖNCE SORULANLAR (Bunlardan tamamen farklı bir tema seç): ${recentQuestions.map((q) => q.question).join(', ')}
 
 # KATEGORİ REHBERİ:
 - Deep: "Herkes bizi mükemmel sanıyor ama bizim 'kimse bilmese daha iyi' dediğimiz o küçük kusurumuz ne?"
