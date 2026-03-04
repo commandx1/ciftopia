@@ -59,46 +59,6 @@ export class DailyQuestionService {
     });
   }
 
-  /**
-   * Soru metnini Türkçe dil bilgisi (imla, noktalama, fiil çekimi, kelime sırası) açısından kontrol eder,
-   * gerekirse düzeltir. Hata veya boş cevap durumunda orijinal metni döndürür.
-   */
-  private async correctTurkishQuestion(rawQuestion: string): Promise<string> {
-    if (!rawQuestion || typeof rawQuestion !== 'string') {
-      return rawQuestion;
-    }
-
-    try {
-      const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'user',
-            content: `Aşağıdaki Türkçe soru cümlesini dil bilgisi kurallarına (imla, noktalama, fiil çekimi, kelime sırası, yazım) göre kontrol et. Mantık hatası varsa düzelt. Düzeltilmiş halini, tırnak veya açıklama olmadan tek satırda yaz. Zaten doğruysa aynen yaz.
-
-Soru: "${rawQuestion.replace(/"/g, '\\"')}"`,
-          },
-        ],
-        max_tokens: 300,
-      });
-
-      const rawContent = response.choices[0]?.message?.content;
-      const corrected = (
-        typeof rawContent === 'string' ? rawContent.trim() : ''
-      ).replace(/^["']|["']$/g, '');
-      if (corrected.length > 0) {
-        return corrected;
-      }
-    } catch (err) {
-      this.logger.warn(
-        'Turkish question correction failed, using original',
-        err instanceof Error ? err.message : err,
-      );
-    }
-
-    return rawQuestion;
-  }
-
   async generateForCouple(couple: CoupleDocument) {
     const partner1 = couple.partner1 as unknown as UserDocument;
     const partner2 = couple.partner2 as unknown as UserDocument;
@@ -177,11 +137,6 @@ JSON formatında döndür:
       category: 'deep' | 'fun' | 'memory' | 'future' | 'challenge';
       emoji: string;
     };
-
-    const correctedQuestion = await this.correctTurkishQuestion(
-      content.question?.trim() || content.question,
-    );
-    content.question = correctedQuestion;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
