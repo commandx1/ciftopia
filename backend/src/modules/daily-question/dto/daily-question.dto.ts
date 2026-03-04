@@ -1,4 +1,9 @@
-import { IsString, IsNotEmpty, IsMongoId } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsMongoId,
+  IsIn,
+} from 'class-validator';
 
 export class AnswerQuestionDto {
   @IsMongoId()
@@ -8,4 +13,13 @@ export class AnswerQuestionDto {
   @IsString()
   @IsNotEmpty()
   answer: string;
+}
+
+export class SubmitFeedbackDto {
+  @IsMongoId()
+  @IsNotEmpty()
+  questionId: string;
+
+  @IsIn(['like', 'dislike'])
+  type: 'like' | 'dislike';
 }

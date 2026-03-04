@@ -8,7 +8,7 @@ import {
   Res,
 } from '@nestjs/common';
 import { DailyQuestionService } from './daily-question.service';
-import { AnswerQuestionDto } from './dto/daily-question.dto';
+import { AnswerQuestionDto, SubmitFeedbackDto } from './dto/daily-question.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Request, Response } from 'express';
 import { CoupleDocument } from 'src/schemas/couple.schema';
@@ -39,6 +39,19 @@ export class DailyQuestionController {
     return this.dailyQuestionService.requestNewQuestion(
       req.user._id,
       req.user.coupleId._id.toString(),
+    );
+  }
+
+  @Post('feedback')
+  async submitFeedback(
+    @Req() req: AuthRequest,
+    @Body() dto: SubmitFeedbackDto,
+  ) {
+    const payload = dto as { questionId: string; type: 'like' | 'dislike' };
+    return this.dailyQuestionService.submitFeedback(
+      req.user._id,
+      req.user.coupleId._id.toString(),
+      payload,
     );
   }
 

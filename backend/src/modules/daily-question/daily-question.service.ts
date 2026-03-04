@@ -112,6 +112,7 @@ Partner 2 (${partner2.firstName}):
 4. Çiftin profiline (çatışma tarzı, hassas alanlar) dikkat et ama bunu profesyonel bir terapist gibi değil, en yakın arkadaşlarıymışsın gibi yansıt.
 5. Son sorulanlara benzememeli: ${recentQuestions.map((q) => q.question).join(', ')}
 6. Türkçe diline, esprilere ve samimiyete önem ver.
+7. Türkçe dil bilgisi (imla, noktalama, fiil çekimi, kelime sırası, yazım) açısından düzgün ve doğru olsun.
 
 JSON formatında döndür:
 {
@@ -211,12 +212,86 @@ JSON formatında döndür:
       await this.uploadService.transformAvatar(questionObj.coupleId.partner2);
     }
 
+    const likedByRaw =
+      (questionObj.likedBy as Types.ObjectId[] | undefined) ?? [];
+    const dislikedByRaw =
+      (questionObj.dislikedBy as Types.ObjectId[] | undefined) ?? [];
+    const likedByIds: string[] = likedByRaw.map((id) => id.toString());
+    const dislikedByIds: string[] = dislikedByRaw.map((id) => id.toString());
+    questionObj.currentUserFeedback = likedByIds.includes(userId.toString())
+      ? 'like'
+      : dislikedByIds.includes(userId.toString())
+        ? 'dislike'
+        : null;
+    questionObj.like = likedByIds.length;
+    questionObj.dislike = dislikedByIds.length;
+    delete questionObj.likedBy;
+    delete questionObj.dislikedBy;
+
     return {
       question: questionObj,
       userAnswer,
       partnerAnswered: !!partnerAnswer,
       partnerAnswer: userAnswer ? partnerAnswer?.answer : null, // Lock: only show partner's answer if user has answered
     };
+  }
+
+  /**
+   * Kullanıcının soru hakkındaki beğeni/beğenmeme geri bildirimi. Her kullanıcı tek oy.
+   * Pipeline ile tek atomik update: uid her iki diziden çıkarılır, sadece seçilen diziye eklenir.
+   * (Aynı path'e $pull ve $addToSet birlikte kullanılamadığı için pipeline gerekli.)
+   */
+  async submitFeedback(
+    userId: string,
+    coupleId: string,
+    dto: { questionId: string; type: 'like' | 'dislike' },
+  ) {
+    const { questionId, type } = dto;
+    const question = await this.dailyQuestionModel.findOne({
+      _id: new Types.ObjectId(questionId),
+      coupleId: new Types.ObjectId(coupleId),
+    });
+
+    if (!question) {
+      throw new NotFoundException('Soru bulunamadı.');
+    }
+
+    const uid = new Types.ObjectId(userId);
+
+    const cleanedLikedBy = {
+      $filter: {
+        input: { $ifNull: ['$likedBy', []] },
+        as: 'x',
+        cond: { $ne: ['$$x', uid] },
+      },
+    };
+    const cleanedDislikedBy = {
+      $filter: {
+        input: { $ifNull: ['$dislikedBy', []] },
+        as: 'x',
+        cond: { $ne: ['$$x', uid] },
+      },
+    };
+
+    const pipeline = [
+      {
+        $set: {
+          likedBy:
+            type === 'like'
+              ? { $concatArrays: [cleanedLikedBy, [uid]] }
+              : cleanedLikedBy,
+          dislikedBy:
+            type === 'dislike'
+              ? { $concatArrays: [cleanedDislikedBy, [uid]] }
+              : cleanedDislikedBy,
+        },
+      },
+    ];
+    await this.dailyQuestionModel.updateOne({ _id: question._id }, pipeline, {
+      updatePipeline: true,
+    });
+
+    return this.getTodaysQuestion(userId, coupleId);
   }
 
   /**

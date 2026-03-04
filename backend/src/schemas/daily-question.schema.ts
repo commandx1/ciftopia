@@ -25,6 +25,12 @@ export class DailyQuestion {
 
   @Prop()
   aiAnalysis?: string;
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
+  likedBy: Types.ObjectId[];
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
+  dislikedBy: Types.ObjectId[];
 }
 
 export const DailyQuestionSchema = SchemaFactory.createForClass(DailyQuestion);
