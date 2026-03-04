@@ -116,7 +116,6 @@ export class DailyQuestionService {
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
       max_completion_tokens: 200,
-      temperature: 0.9,
     });
 
     const contentString = response.choices[0].message.content;
