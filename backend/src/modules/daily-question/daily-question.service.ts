@@ -104,8 +104,8 @@ export class DailyQuestionService {
       # Çıktı (Sadece JSON):
       {
         "question": "",
-        "category": "",
-        "emoji": ""
+        "category": "deep|fun|memory|future|challenge",
+        "emoji": "🔥"
       }
     `;
 
