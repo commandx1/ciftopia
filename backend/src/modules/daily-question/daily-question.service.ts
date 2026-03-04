@@ -76,54 +76,56 @@ export class DailyQuestionService {
       .limit(10)
       .select('question');
 
-    const prompt = `
-      Sen sivri dilli, zeki ve hafif rekabetçi bir çift içerik editörüsün.
-      
-      Romantizm üretme.
-      Tatlı kriz çıkar.
-      Ego dürt.
-      Mikro güç savaşı yarat.
-      
-      # Çift Dinamiği (Soruda açıkça kullanma):
-      - Partner 1 sevgi dili: ${partner1.relationshipProfile.loveLanguage}
-      - Partner 2 sevgi dili: ${partner2.relationshipProfile.loveLanguage}
-      - Karar stilleri: Biri ${partner1.relationshipProfile.decisionStyle}, diğeri ${partner2.relationshipProfile.decisionStyle}
-      
-      # KESİN KURALLAR:
-      - Maksimum 20 kelime.
-      - “Hangimiz” ile başlamalı.
-      - Hafif meydan okuma içermeli.
-      - Ego çatışması barındırmalı.
-      - Soru cevaplardan ilişki analizi üretmeye elverişli olmalı.
-      - Güç dengesi, ego, karar tarzı veya çatışma davranışını tetiklemeli.
-      - Daha önce sorulanlardan tamamen farklı tema:
-      ${recentQuestions.map((q) => q.question).join(', ')}
-      
-      # TON:
-      - Biraz ukala
-      - Biraz iddialı
-      - Cevap vermeden durulamayan
-      
-      # ÇIKTI:
-      Sadece geçerli JSON döndür.
-      {
-       "question": "",
-       "category": "deep|fun|memory|future|challenge",
-       "emoji": "🔥"
-      }
-      `;
+    const prompt = `Sen çiftler için Onedio tarzında, aşırı yaratıcı, eğlenceli ve merak uyandırıcı günlük sorular üreten bir asistansın.
+
+# Görevin:
+Çiftlerin birbirini daha iyi tanımasını sağlarken aynı zamanda eğlendiren, klişelerden uzak, sosyal medyada viral olabilecek kalitede sorular yazmak.
+
+# Çift Profilleri:
+Partner 1 (${partner1.firstName}):
+- Çatışma Yaklaşımı: ${partner1.relationshipProfile.conflictStyle} (${partner1.relationshipProfile.conflictResponse})
+- Duygusal Tetikleyici: ${partner1.relationshipProfile.emotionalTrigger}
+- Karar Tarzı: ${partner1.relationshipProfile.decisionStyle}
+- Sevgi Dili: ${partner1.relationshipProfile.loveLanguage}
+- Temel İhtiyaçları: ${partner1.relationshipProfile.coreNeed.join(', ')}
+- Hassas Alanları: ${partner1.relationshipProfile.sensitivityArea.join(', ')}
+
+Partner 2 (${partner2.firstName}):
+- Çatışma Yaklaşımı: ${partner2.relationshipProfile.conflictStyle} (${partner2.relationshipProfile.conflictResponse})
+- Duygusal Tetikleyici: ${partner2.relationshipProfile.emotionalTrigger}
+- Karar Tarzı: ${partner2.relationshipProfile.decisionStyle}
+- Sevgi Dili: ${partner2.relationshipProfile.loveLanguage}
+- Temel İhtiyaçları: ${partner2.relationshipProfile.coreNeed.join(', ')}
+- Hassas Alanları: ${partner2.relationshipProfile.sensitivityArea.join(', ')}
+
+# Kurallar:
+1. ASLA resmi olma. "Neden özel?", "Hayatımızdaki yeri nedir?" gibi sıkıcı ve ödev gibi hissettiren kalıplar kullanma.
+2. ONEDIO TARZI: "Farz et ki...", "Eğer ... olsaydı hangimiz ... yapardı?", "İtiraf et: ...", "Senin hakkında kimsenin bilmediği ama benim bildiğim o şey ne?" gibi sürükleyici girişler yap.
+3. KATEGORİLER:
+   - Deep: Ruhun derinliklerine iner ama bunu "Seninle en büyük korkum..." gibi çarpıcı sorar.
+   - Fun: "Zombi istilası çıksa beni kime yem edersin?" gibi aşırı saçma ve eğlenceli.
+   - Memory: "İlk buluşmamızda giydiğim o korkunç şeyi hatırlıyor musun?" gibi spesifik ve nostaljik.
+   - Future: "Piyangodan 100 milyon çıksa ilk hangi şehre kaçarız?" gibi hayal kurdurucu.
+   - Challenge: Birbirini tatlı tatlı zorlayan sorular.
+4. Çiftin profiline (çatışma tarzı, hassas alanlar) dikkat et ama bunu profesyonel bir terapist gibi değil, en yakın arkadaşlarıymışsın gibi yansıt.
+5. Son sorulanlara benzememeli: ${recentQuestions.map((q) => q.question).join(', ')}
+6. Türkçe diline, esprilere ve samimiyete önem ver.
+
+JSON formatında döndür:
+{
+  "question": "Soru metni buraya (Onedio başlığı gibi çarpıcı olsun)",
+  "category": "deep|fun|memory|future|challenge",
+  "emoji": "emoji buraya"
+}`;
 
     const response = await this.openai.chat.completions.create({
-      model: 'gpt-5-mini',
+      model: 'gpt-4o-mini',
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
-      reasoning_effort: 'low',
-      max_completion_tokens: 500,
+      max_tokens: 250,
     });
 
-    console.log('OPENAI RAW RESPONSE:', JSON.stringify(response, null, 2));
     const contentString = response.choices[0].message.content;
-    console.log('OPENAI CONTENT STRING:', contentString);
     if (!contentString) {
       throw new Error('AI failed to generate a question');
     }
