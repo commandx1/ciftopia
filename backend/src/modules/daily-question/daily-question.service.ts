@@ -73,37 +73,39 @@ export class DailyQuestionService {
     const recentQuestions = await this.dailyQuestionModel
       .find({ coupleId: couple._id })
       .sort({ date: -1 })
-      .limit(30)
+      .limit(10)
       .select('question');
 
     const prompt = `
-      Sen cesur, zeki ve hafif provokatif bir çift içerik editörüsün.
-      Amacın romantik değil; tatlı kriz çıkaran, gülümseten, egoya minik dokunan TEK bir soru üretmek.
+      Sen sivri dilli, zeki ve hafif rekabetçi bir çift içerik editörüsün.
       
-      # Çift Dinamiği (Soruda açıkça kullanma, sadece tonu ayarla):
+      Romantizm üretme.
+      Tatlı kriz çıkar.
+      Ego dürt.
+      Mikro güç savaşı yarat.
+      
+      # Çift Dinamiği (Soruda açıkça kullanma):
       - Partner 1 sevgi dili: ${partner1.relationshipProfile.loveLanguage}
       - Partner 2 sevgi dili: ${partner2.relationshipProfile.loveLanguage}
       - Karar stilleri: Biri ${partner1.relationshipProfile.decisionStyle}, diğeri ${partner2.relationshipProfile.decisionStyle}
       
-      # KURALLAR (Mutlak Uyum):
-      - Tek cümle.
-      - Maksimum 18 kelime.
-      - “Hangimiz” veya net meydan okuma formatı zorunlu.
-      - Hafif ego dokunuşu içersin.
-      - Güvenli romantik soru üretme.
-      - "neden", "sence", "hatırlıyor musun" gibi kuyruk yasak.
-      - Tek odak noktası.
-      - Daha önce sorulan temalardan tamamen farklı olsun:
+      # KESİN KURALLAR:
+      - Maksimum 20 kelime.
+      - “Hangimiz” ile başlamalı.
+      - Hafif meydan okuma içermeli.
+      - Ego çatışması barındırmalı.
+      - Soru cevaplardan ilişki analizi üretmeye elverişli olmalı.
+      - Güç dengesi, ego, karar tarzı veya çatışma davranışını tetiklemeli.
+      - Daha önce sorulanlardan tamamen farklı tema:
       ${recentQuestions.map((q) => q.question).join(', ')}
       
       # TON:
-      - Biraz kışkırtıcı
-      - Hafif iddialı
-      - Cevap vermeden durulamayacak türde
+      - Biraz ukala
+      - Biraz iddialı
+      - Cevap vermeden durulamayan
       
       # ÇIKTI:
       Sadece geçerli JSON döndür.
-      
       {
        "question": "",
        "category": "deep|fun|memory|future|challenge",
