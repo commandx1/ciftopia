@@ -115,7 +115,7 @@ export class DailyQuestionService {
       model: 'gpt-5-mini',
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
-      max_tokens: 200,
+      max_completion_tokens: 200,
       temperature: 0.9,
     });
 
