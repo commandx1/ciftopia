@@ -118,7 +118,9 @@ export class DailyQuestionService {
       max_completion_tokens: 200,
     });
 
+    console.log('OPENAI RAW RESPONSE:', JSON.stringify(response, null, 2));
     const contentString = response.choices[0].message.content;
+    console.log('OPENAI CONTENT STRING:', contentString);
     if (!contentString) {
       throw new Error('AI failed to generate a question');
     }
