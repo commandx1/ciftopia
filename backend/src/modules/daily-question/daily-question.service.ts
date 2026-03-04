@@ -93,13 +93,21 @@ export class DailyQuestionService {
       - Hafif tatlı tartışma çıkarabilecek olsun.
       - “Neden?” gibi ikinci soru ekleme.
       - Daha önce sorulanlarla aynı tema olmasın: ${recentQuestions.map((q) => q.question).join(', ')}
+
+      # KATEGORİ REHBERİ:
+      - Deep: "Herkes bizi mükemmel sanıyor ama bizim 'kimse bilmese daha iyi' dediğimiz o küçük kusurumuz ne?"
+      - Fun: "Zombi istilası çıksa ve tek bir kişilik yer kalsa, beni neden hayatta tutmalısın? 30 saniyen var!"
+      - Memory: "İlk öpüşmemizde arka planda bir şarkı çalsaydı bu hangi şarkı olurdu?"
+      - Future: "90 yaşına geldiğimizde balkonda sallanırken en çok hangi maceramıza güleceğiz?"
+      - Challenge: "Telefonumdaki bir uygulamayı sonsuza dek silme hakkın olsa hangisini seçerdin?"
       
       # Çıktı (Sadece JSON):
       {
         "question": "",
+        "category": "",
         "emoji": ""
       }
-      `;
+    `;
 
     const response = await this.openai.chat.completions.create({
       model: 'gpt-4o-mini',
