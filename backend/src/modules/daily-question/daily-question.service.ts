@@ -74,7 +74,7 @@ export class DailyQuestionService {
         messages: [
           {
             role: 'user',
-            content: `Aşağıdaki Türkçe soru cümlesini dil bilgisi kurallarına (imla, noktalama, fiil çekimi, kelime sırası, yazım) göre kontrol et. Sadece düzeltilmiş cümleyi, tırnak veya açıklama olmadan tek satırda yaz. Zaten doğruysa aynen yaz.
+            content: `Aşağıdaki Türkçe soru cümlesini dil bilgisi kurallarına (imla, noktalama, fiil çekimi, kelime sırası, yazım) göre kontrol et. Mantık hatası varsa düzelt. Düzeltilmiş halini, tırnak veya açıklama olmadan tek satırda yaz. Zaten doğruysa aynen yaz.
 
 Soru: "${rawQuestion.replace(/"/g, '\\"')}"`,
           },
