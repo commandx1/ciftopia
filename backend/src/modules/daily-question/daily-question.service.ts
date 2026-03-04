@@ -77,43 +77,46 @@ export class DailyQuestionService {
       .select('question');
 
     const prompt = `
-      Sen samimi, eğlenceli ve biraz kışkırtıcı bir çift içerik editörüsün.
+      Sen cesur, zeki ve hafif provokatif bir çift içerik editörüsün.
+      Amacın romantik değil; tatlı kriz çıkaran, gülümseten, egoya minik dokunan TEK bir soru üretmek.
       
-      Görevin: Aşağıdaki çift dinamiklerine uygun, merak uyandıran, kısa ve vurucu TEK BİR soru üretmek.
-      
-      # Çift Dinamiği (Soru içinde açıkça kullanma, sadece tonu belirlemek için kullan):
+      # Çift Dinamiği (Soruda açıkça kullanma, sadece tonu ayarla):
       - Partner 1 sevgi dili: ${partner1.relationshipProfile.loveLanguage}
       - Partner 2 sevgi dili: ${partner2.relationshipProfile.loveLanguage}
       - Karar stilleri: Biri ${partner1.relationshipProfile.decisionStyle}, diğeri ${partner2.relationshipProfile.decisionStyle}
       
-      # Kurallar:
-      - Soru tek cümle olacak.
-      - Maksimum 20 kelime.
-      - Meydan okuma veya “Hangimiz” formatında olsun.
-      - Hafif tatlı tartışma çıkarabilecek olsun.
-      - “Neden?” gibi ikinci soru ekleme.
-      - Daha önce sorulanlarla aynı tema olmasın: ${recentQuestions.map((q) => q.question).join(', ')}
-
-      # KATEGORİ REHBERİ:
-      - Deep: "Herkes bizi mükemmel sanıyor ama bizim 'kimse bilmese daha iyi' dediğimiz o küçük kusurumuz ne?"
-      - Fun: "Zombi istilası çıksa ve tek bir kişilik yer kalsa, beni neden hayatta tutmalısın? 30 saniyen var!"
-      - Memory: "İlk öpüşmemizde arka planda bir şarkı çalsaydı bu hangi şarkı olurdu?"
-      - Future: "90 yaşına geldiğimizde balkonda sallanırken en çok hangi maceramıza güleceğiz?"
-      - Challenge: "Telefonumdaki bir uygulamayı sonsuza dek silme hakkın olsa hangisini seçerdin?"
+      # KURALLAR (Mutlak Uyum):
+      - Tek cümle.
+      - Maksimum 18 kelime.
+      - “Hangimiz” veya net meydan okuma formatı zorunlu.
+      - Hafif ego dokunuşu içersin.
+      - Güvenli romantik soru üretme.
+      - "neden", "sence", "hatırlıyor musun" gibi kuyruk yasak.
+      - Tek odak noktası.
+      - Daha önce sorulan temalardan tamamen farklı olsun:
+      ${recentQuestions.map((q) => q.question).join(', ')}
       
-      # Çıktı (Sadece JSON):
+      # TON:
+      - Biraz kışkırtıcı
+      - Hafif iddialı
+      - Cevap vermeden durulamayacak türde
+      
+      # ÇIKTI:
+      Sadece geçerli JSON döndür.
+      
       {
-        "question": "",
-        "category": "deep|fun|memory|future|challenge",
-        "emoji": "🔥"
+       "question": "",
+       "category": "deep|fun|memory|future|challenge",
+       "emoji": "🔥"
       }
-    `;
+      `;
 
     const response = await this.openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-5-mini',
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
-      max_tokens: 250,
+      max_tokens: 200,
+      temperature: 0.9,
     });
 
     const contentString = response.choices[0].message.content;
