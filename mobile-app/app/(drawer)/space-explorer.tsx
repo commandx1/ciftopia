@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useRef, useCallback, useEffect, Fragment } from 'react'
 import { View, StyleSheet, Dimensions, ActivityIndicator, TouchableOpacity } from 'react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Canvas, useFrame, useThree } from '@react-three/fiber/native'
 import { Vector3, Vector2, Euler, Raycaster } from 'three'
 import { SpaceObject } from '../../components/SpaceObject'
@@ -7,6 +8,7 @@ import { StarField, NebulaCloud } from '../../components/StarField'
 import { JoystickOverlay } from '../../components/JoystickOverlay'
 import { SpaceExplorerModal } from '../../components/space/SpaceExplorerModal'
 import { SpaceIntroAnimation } from '../../components/space/SpaceIntroAnimation'
+import { SpaceOnboarding } from '../../components/space/SpaceOnboarding'
 import { Text } from '../../components/ui/Text'
 import { ArrowLeft } from 'lucide-react-native'
 import { useRouter } from 'expo-router'
@@ -238,6 +240,7 @@ export default function SpaceExplorerScreen() {
   const { user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [showIntro, setShowIntro] = useState(true)
+  const [showOnboarding, setShowOnboarding] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [selectedItem, setSelectedItem] = useState<SpaceItem | null>(null)
   const [spaceData, setSpaceData] = useState<any>(null)
@@ -462,12 +465,33 @@ export default function SpaceExplorerScreen() {
     if (route) router.push(route as any)
   }, [selectedItem])
 
+  const handleIntroComplete = useCallback(async () => {
+    setShowIntro(false)
+    try {
+      const hasSeen = await AsyncStorage.getItem('hasSeenSpaceOnboarding')
+      if (!hasSeen) {
+        setShowOnboarding(true)
+      }
+    } catch (e) {
+      // Hata durumunda onboarding göstermeden devam et
+    }
+  }, [])
+
+  const handleOnboardingComplete = useCallback(async () => {
+    try {
+      await AsyncStorage.setItem('hasSeenSpaceOnboarding', 'true')
+    } catch (e) {}
+    setShowOnboarding(false)
+  }, [])
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.container}>
         {loading && <LoadingScreen />}
 
-        {showIntro && <SpaceIntroAnimation onComplete={() => setShowIntro(false)} />}
+        {showIntro && <SpaceIntroAnimation onComplete={handleIntroComplete} />}
+
+        <SpaceOnboarding isVisible={showOnboarding} onComplete={handleOnboardingComplete} />
 
         <View style={styles.canvasContainer}>
           <Canvas
