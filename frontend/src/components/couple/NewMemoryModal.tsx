@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { memoriesService, uploadService } from '@/services/api'
 import Image from 'next/image'
+import Link from 'next/link'
 import { moodConfigs } from './MemoryMoodBadge'
 import { Memory, PhotoMetadata, ApiError } from '@/lib/type'
 import { useUserStore } from '@/store/userStore'
@@ -51,6 +52,11 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess, editingMemo
   const currentStorageUsed = Number(user?.coupleId?.storageUsed) || 0
   const storageLimit = Number(user?.coupleId?.storageLimit) || 0
   
+  // Plan limiti: ileride user.coupleId?.planCode / API limits ile güncellenebilir
+  const maxPhotosPerContent = 5
+  const totalPhotos = existingPhotos.length + selectedFiles.length
+  const atPhotoLimit = totalPhotos >= maxPhotosPerContent
+
   const currentMemorySize = [
     ...existingPhotos.map(p => Number(p.size) || 0),
     ...selectedFiles.map(f => Number(f.size) || 0)
@@ -97,11 +103,18 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess, editingMemo
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files)
-      // Toplamda en fazla 5 fotoğraf olabilir (mevcut + yeniler)
       const currentTotal = existingPhotos.length + selectedFiles.length
-      const remainingSlots = 5 - currentTotal
-      
-      if (remainingSlots <= 0) return
+      const remainingSlots = maxPhotosPerContent - currentTotal
+
+      if (remainingSlots <= 0) {
+        showCustomToast.error(
+          'Fotoğraf limiti',
+          `Bu planla anı başına en fazla ${maxPhotosPerContent} fotoğraf ekleyebilirsiniz. Daha fazlası için planınızı yükseltin.`,
+          4000
+        )
+        e.target.value = ''
+        return
+      }
 
       const newFilesToSelect = files.slice(0, remainingSlots)
       setSelectedFiles(prev => [...prev, ...newFilesToSelect])
@@ -262,16 +275,32 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess, editingMemo
               <label className='flex items-center space-x-3 text-gray-900 font-bold text-xl'>
                 <Images className='text-[#E91E63]' size={24} />
                 <span>Fotoğraflar</span>
-                <span className='text-gray-400 text-sm font-normal'>(En fazla 5 adet)</span>
+                <span className='text-gray-400 text-sm font-normal'>(En fazla {maxPhotosPerContent} adet)</span>
               </label>
 
               <div className='grid grid-cols-2 sm:grid-cols-5 gap-4'>
                 <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className='aspect-square bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 border-2 border-dashed border-rose-300 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-rose-400 hover:from-rose-100 hover:to-pink-100 transition-all group'
+                  onClick={() => {
+                    if (atPhotoLimit) {
+                      showCustomToast.error(
+                        'Fotoğraf limiti',
+                        `Bu planla anı başına en fazla ${maxPhotosPerContent} fotoğraf ekleyebilirsiniz.`,
+                        3000
+                      )
+                      return
+                    }
+                    fileInputRef.current?.click()
+                  }}
+                  className={`aspect-square rounded-2xl flex flex-col items-center justify-center border-2 border-dashed transition-all group ${
+                    atPhotoLimit
+                      ? 'bg-gray-50 border-gray-200 cursor-not-allowed opacity-75'
+                      : 'bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 border-rose-300 cursor-pointer hover:border-rose-400 hover:from-rose-100 hover:to-pink-100'
+                  }`}
                 >
-                  <CloudUpload className='text-rose-400 group-hover:scale-110 transition-transform' size={40} />
-                  <span className='text-xs text-gray-600 mt-2 font-semibold'>Fotoğraf Ekle</span>
+                  <CloudUpload className={atPhotoLimit ? 'text-gray-400' : 'text-rose-400 group-hover:scale-110 transition-transform'} size={40} />
+                  <span className={`text-xs mt-2 font-semibold ${atPhotoLimit ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {atPhotoLimit ? 'Limite ulaştınız' : 'Fotoğraf Ekle'}
+                  </span>
                   <input
                     type='file'
                     ref={fileInputRef}
@@ -308,6 +337,21 @@ export default function NewMemoryModal({ isOpen, onClose, onSuccess, editingMemo
                   </div>
                 ))}
               </div>
+
+              {/* Limit aşımında: eğitici blok + Planı yükselt CTA */}
+              {atPhotoLimit && (
+                <div className='rounded-2xl border border-amber-200 bg-amber-50/80 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
+                  <p className='text-sm text-amber-800'>
+                    Bu planla anı başına en fazla <strong>{maxPhotosPerContent} fotoğraf</strong> ekleyebilirsiniz. Daha fazla fotoğraf için planınızı yükseltebilirsiniz.
+                  </p>
+                  <Link
+                    href='/pricing'
+                    className='shrink-0 inline-flex items-center justify-center px-5 py-2.5 rounded-xl font-semibold text-sm text-amber-900 bg-amber-200 hover:bg-amber-300 transition-colors'
+                  >
+                    Planı yükselt
+                  </Link>
+                </div>
+              )}
 
               {/* Depolama Durumu */}
               <div className='bg-blue-50/50 border border-blue-100 rounded-3xl p-6 mt-6'>

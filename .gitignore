@@ -5,3 +5,17 @@ node_modules/
 dist/
 .env*
 .DS_Store
+*.md
+*.qmd
+
+# Firebase service account keys
+mobile-app/*service-account*.json
+mobile-app/ciftopia-*.json
+
+# Expo local state
+mobile-app/.expo/
+mobile-app/.expo-shared/
+
+mobile-app/google-services.json
+
+*.mp3

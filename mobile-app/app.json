@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "Ciftopia",
+    "slug": "ciftopia",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "splash": {
+      "image": "./assets/ciftopia-logo.png",
+      "backgroundColor": "#000000",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.commandx1.ciftopia"
+    },
+    "android": {
+      "package": "com.commandx1.ciftopia",
+      "googleServicesFile": "./google-services.json",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/ciftopia-logo.png",
+        "backgroundColor": "#ffffff"
+      },
+      "permissions": [
+        "NOTIFICATIONS"
+      ]
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-notifications",
+      "react-native-compressor",
+      "@react-native-community/datetimepicker",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511"
+        }
+      ]
+    ],
+    "scheme": "ciftopia",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a260d69e-dd66-4b9c-b4c5-33fa83caf67c"
+      },
+      "revenueCatApiKeyIos": "test_fLQIQBzoMvqsiueKcfKsIXThJwu",
+      "revenueCatApiKeyAndroid": "test_fLQIQBzoMvqsiueKcfKsIXThJwu"
+    },
+    "owner": "commandx1"
+  }
+}

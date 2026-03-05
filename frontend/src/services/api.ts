@@ -112,12 +112,23 @@ export const uploadService = {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
   },
-  uploadVideo: (file: File) => {
-    const formData = new FormData()
-    formData.append('file', file)
-    return api.post('/upload/video', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+  /** Presigned URL al, doğrudan S3'e PUT ile yükle. Kota backend'de rezerve edilir. */
+  uploadVideo: async (file: File): Promise<{ data: { video: { key: string; url: string; size: number } } }> => {
+    const filename = file.name || `video_${Date.now()}.mp4`
+    const contentType = file.type || 'video/mp4'
+    const size = file.size
+    const { data } = await api.post<{ uploadUrl: string; key: string }>('/upload/presigned-video', {
+      filename,
+      contentType,
+      size
     })
+    const putRes = await fetch(data.uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': contentType },
+      body: file
+    })
+    if (!putRes.ok) throw new Error(putRes.statusText || 'Video yükleme başarısız.')
+    return { data: { video: { key: data.key, url: data.key, size } } }
   },
   uploadAvatar: (file: File) => {
     const formData = new FormData()
