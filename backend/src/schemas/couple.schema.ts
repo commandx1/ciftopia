@@ -5,9 +5,6 @@ export type CoupleDocument = Couple & Document;
 
 @Schema({ timestamps: true })
 export class Couple {
-  @Prop({ required: true, unique: true, index: true, lowercase: true })
-  subdomain: string;
-
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
   partner1: Types.ObjectId;
 

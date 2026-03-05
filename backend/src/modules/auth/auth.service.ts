@@ -61,12 +61,6 @@ export class AuthService {
     const userResponse = user.toObject();
     const { password: _password, ...result } = userResponse;
 
-    let subdomain: string | undefined;
-    if (user.coupleId) {
-      const couple = await this.coupleModel.findById(user.coupleId);
-      if (couple) subdomain = couple.subdomain;
-    }
-
     // Transform avatar to URL if exists
     if (result.avatar && (result.avatar as any).url) {
       result.avatar = {
@@ -78,13 +72,13 @@ export class AuthService {
     }
 
     return {
-      user: { ...result, subdomain },
+      user: { ...result },
       accessToken: token,
     };
   }
 
   async login(loginDto: LoginDto) {
-    const { email, password, subdomain: loginSubdomain } = loginDto;
+    const { email, password } = loginDto;
 
     const user = await this.userModel.findOne({ email });
     if (!user) {
@@ -101,30 +95,10 @@ export class AuthService {
       throw new ForbiddenException('Lütfen e-posta adresinizi doğrulayın.');
     }
 
-    // Subdomain ownership validation during login
-    if (loginSubdomain && loginSubdomain !== 'app' && loginSubdomain !== 'www') {
-      const couple = await this.coupleModel.findOne({
-        $or: [{ partner1: user._id }, { partner2: user._id }],
-      });
-
-      if (
-        !couple ||
-        couple.subdomain.toLowerCase() !== loginSubdomain.toLowerCase()
-      ) {
-        throw new ForbiddenException('Geçersiz bilgiler.');
-      }
-    }
-
     const token = await this.generateToken(user);
 
     const userResponse = user.toObject();
     const { password: _password, ...result } = userResponse;
-
-    let userSubdomain: string | undefined;
-    if (user.coupleId) {
-      const couple = await this.coupleModel.findById(user.coupleId);
-      if (couple) userSubdomain = couple.subdomain;
-    }
 
     // Transform avatar to URL if exists
     if (result.avatar && (result.avatar as any).url) {
@@ -137,7 +111,7 @@ export class AuthService {
     }
 
     return {
-      user: { ...result, subdomain: userSubdomain },
+      user: { ...result },
       accessToken: token,
     };
   }
@@ -249,7 +223,6 @@ export class AuthService {
   }
 
   private async generateToken(user: UserDocument) {
-    let subdomain: string | undefined;
     let coupleNames: string | undefined;
 
     if (user.coupleId) {
@@ -258,7 +231,6 @@ export class AuthService {
         .populate('partner1')
         .populate('partner2');
       if (couple) {
-        subdomain = couple.subdomain;
         const p1 = couple.partner1 as unknown as UserDocument;
         const p2 = couple.partner2 as unknown as UserDocument;
         if (p1 && p2) {
@@ -272,8 +244,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       coupleId: user.coupleId,
-      subdomain: subdomain,
-      coupleNames: coupleNames, // Token içine eklendi
+      coupleNames,
     };
     return this.jwtService.sign(payload);
   }

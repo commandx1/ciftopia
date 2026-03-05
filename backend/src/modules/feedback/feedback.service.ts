@@ -14,7 +14,6 @@ export class FeedbackService {
     const feedback = new this.feedbackModel({
       userId: new Types.ObjectId(userId),
       coupleId: new Types.ObjectId(coupleId),
-      subdomain: createFeedbackDto.subdomain,
       email: createFeedbackDto.email,
       partner1: createFeedbackDto.partner1,
       partner2: createFeedbackDto.partner2,

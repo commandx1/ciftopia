@@ -53,8 +53,9 @@ export class PaymentService {
       expireYear,
       cvc,
       amount,
-      subdomain,
     } = createPaymentDto;
+
+    const coupleId = (user.coupleId?._id ?? user.coupleId)?.toString() ?? 'unknown';
 
     // Ay ve yıl formatını doğrula (2 hane olmalı)
     const formattedMonth = expireMonth.toString().padStart(2, '0');
@@ -72,7 +73,7 @@ export class PaymentService {
       paidPrice: formattedAmount,
       currency: Iyzipay.CURRENCY.TRY,
       installment: '1',
-      basketId: `basket_${subdomain}`,
+      basketId: `basket_${coupleId}`,
       paymentChannel: Iyzipay.PAYMENT_CHANNEL.WEB,
       paymentGroup: Iyzipay.PAYMENT_GROUP.PRODUCT,
       paymentCard: {
@@ -114,8 +115,8 @@ export class PaymentService {
       },
       basketItems: [
         {
-          id: `item_${subdomain}`,
-          name: `Couple Site Plan - ${subdomain}`,
+          id: `item_${coupleId}`,
+          name: `Couple Site Plan`,
           category1: 'Subscription',
           itemType: Iyzipay.BASKET_ITEM_TYPE.VIRTUAL,
           price: amount.toString(),

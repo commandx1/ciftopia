@@ -6,8 +6,8 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
-import { User, UserDocument } from '../../schemas/user.schema';
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
+import { User, UserDocument } from '../../schemas/user.schema';
 import { Memory, MemoryDocument } from '../../schemas/memory.schema';
 import { Album, AlbumDocument } from '../../schemas/album.schema';
 import {
@@ -44,7 +44,6 @@ import {
 import { CreateCoupleDto } from './dto/onboarding.dto';
 import { UploadService } from '../upload/upload.service';
 import { ActivityService } from '../activity/activity.service';
-import capitalizeFirstLetter from '../../utils/capitalizeFirstLetter';
 
 @Injectable()
 export class OnboardingService {
@@ -74,25 +73,6 @@ export class OnboardingService {
     private activityService: ActivityService,
   ) {}
 
-  async checkSubdomain(subdomain: string) {
-    // add user names via partner1 and partner2 from couple collection
-    const existingCouple = await this.coupleModel
-      .findOne({
-        subdomain: subdomain.toLowerCase(),
-      })
-      .populate('partner1')
-      .populate('partner2')
-      .lean();
-    // available: true -> Bu subdomain boş, kullanılabilir.
-    // available: false -> Bu subdomain dolu, zaten alınmış.
-    return {
-      available: !existingCouple,
-      couple: existingCouple
-        ? `${capitalizeFirstLetter((existingCouple.partner1 as unknown as User)?.firstName || '')} & ${capitalizeFirstLetter((existingCouple.partner2 as unknown as User)?.firstName || '')}`
-        : null,
-    };
-  }
-
   async getEarlyBirdStatus() {
     const count = await this.coupleModel.countDocuments({ isEarlyBird: true });
     const limit = 50;
@@ -105,7 +85,6 @@ export class OnboardingService {
 
   async createCouple(userId: string, createCoupleDto: CreateCoupleDto) {
     const {
-      subdomain,
       partnerFirstName,
       partnerLastName,
       partnerEmail,
@@ -124,14 +103,6 @@ export class OnboardingService {
 
     if (user.coupleId) {
       throw new ConflictException('Kullanıcının zaten bir çift hesabı var.');
-    }
-
-    const lowerSubdomain = subdomain.toLowerCase();
-    const existingCouple = await this.coupleModel.findOne({
-      subdomain: lowerSubdomain,
-    });
-    if (existingCouple) {
-      throw new ConflictException('Bu subdomain zaten alınmış.');
     }
 
     // Check if partner email is already in use
@@ -162,7 +133,6 @@ export class OnboardingService {
     const isEarlyBird = earlyBirdStatus.available && !paymentTransactionId;
 
     const couple = new this.coupleModel({
-      subdomain: lowerSubdomain,
       partner1: new Types.ObjectId(userId),
       coupleName: `${user.firstName} & ${partnerFirstName}`,
       relationshipStartDate: relationshipStartDate
@@ -207,7 +177,6 @@ export class OnboardingService {
       actionType: 'create',
       resourceId: couple._id.toString(),
       description: `${user.firstName} ve ${partnerFirstName} için yeni bir dünya oluşturuldu! ❤️`,
-      metadata: { subdomain: lowerSubdomain },
     });
 
     return couple;

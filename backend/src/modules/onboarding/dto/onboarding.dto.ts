@@ -9,10 +9,6 @@ import {
 export class CreateCoupleDto {
   @IsString()
   @IsNotEmpty()
-  subdomain: string;
-
-  @IsString()
-  @IsNotEmpty()
   partnerFirstName: string;
 
   @IsString()
@@ -51,8 +47,3 @@ export class CreateCoupleDto {
   paymentTransactionId?: string;
 }
 
-export class CheckSubdomainDto {
-  @IsString()
-  @IsNotEmpty()
-  subdomain: string;
-}

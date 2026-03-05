@@ -10,9 +10,6 @@ export class Feedback extends Document {
   userId: Types.ObjectId;
 
   @Prop({ required: true })
-  subdomain: string;
-
-  @Prop({ required: true })
   email: string;
 
   @Prop({ required: true })

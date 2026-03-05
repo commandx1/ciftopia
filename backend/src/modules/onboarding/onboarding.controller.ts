@@ -6,7 +6,6 @@ import {
   Req,
   Res,
   Get,
-  Query,
   Delete,
 } from '@nestjs/common';
 import { OnboardingService } from './onboarding.service';
@@ -16,12 +15,6 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 @Controller('onboarding')
 export class OnboardingController {
   constructor(private readonly onboardingService: OnboardingService) {}
-
-  @Get('check-subdomain')
-  async checkSubdomain(@Query('subdomain') subdomain: string) {
-    const result = await this.onboardingService.checkSubdomain(subdomain);
-    return { success: true, data: result };
-  }
 
   @Get('early-bird-status')
   async getEarlyBirdStatus() {

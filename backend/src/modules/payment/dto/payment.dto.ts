@@ -27,8 +27,4 @@ export class CreatePaymentDto {
   @IsNumber()
   @IsNotEmpty()
   amount: number;
-
-  @IsString()
-  @IsNotEmpty()
-  subdomain: string;
 }

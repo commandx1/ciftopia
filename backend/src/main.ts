@@ -36,7 +36,6 @@ async function bootstrap() {
         return;
       }
 
-      // Check wildcard subdomain pattern
       const isWildcardMatch = wildcardPattern.test(origin);
 
       // Check exact match from env or localhost
@@ -54,7 +53,7 @@ async function bootstrap() {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-subdomain'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   await app.listen(configService.get('PORT') ?? 3001);

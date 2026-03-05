@@ -18,28 +18,21 @@ export class CoupleOwnerGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const user = request.user; // Set by JwtAuthGuard
-    const subdomain = request.params.subdomain || request.query.subdomain;
 
     if (!user) {
       throw new ForbiddenException('Oturum açmanız gerekiyor.');
     }
 
-    // If there is no subdomain in the request, we can't check ownership against a subdomain.
-    // This guard is specifically for routes that deal with a subdomain.
-    if (!subdomain) {
-      return true;
+    const coupleId = user.coupleId?._id ?? user.coupleId;
+    if (!coupleId) {
+      throw new ForbiddenException('Çift hesabı bulunamadı.');
     }
 
-    // Find the couple associated with this subdomain
-    const targetCouple = await this.coupleModel.findOne({
-      subdomain: subdomain.toLowerCase(),
-    });
-
+    const targetCouple = await this.coupleModel.findById(coupleId);
     if (!targetCouple) {
-      throw new NotFoundException('Böyle bir çift sayfası bulunamadı.');
+      throw new NotFoundException('Çift hesabı bulunamadı.');
     }
 
-    // Check if the current user is one of the partners of this couple
     const userId = new Types.ObjectId(user._id);
     const isPartner1 = targetCouple.partner1.equals(userId);
     const isPartner2 =
@@ -51,9 +44,7 @@ export class CoupleOwnerGuard implements CanActivate {
       );
     }
 
-    // Add coupleId to request for convenience in controllers
     request.coupleId = targetCouple._id;
-
     return true;
   }
 }

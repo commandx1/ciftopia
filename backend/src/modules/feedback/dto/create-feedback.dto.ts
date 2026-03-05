@@ -1,9 +1,6 @@
 import { IsString, IsEmail, IsNumber, IsArray, IsBoolean, IsOptional, Min, Max } from 'class-validator';
 
 export class CreateFeedbackDto {
-  @IsString()
-  subdomain: string;
-
   @IsEmail()
   email: string;
 
