@@ -94,10 +94,15 @@ export class DashboardService {
         Math.floor((Date.now() - createdAtTime) / (1000 * 60 * 60 * 24)),
       );
 
-      // 3. Weekly Activity - Aggregating from all collections
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setHours(0, 0, 0, 0);
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      // 3. Weekly Activity - Bu hafta (Pazartesi 00:00 → Pazar 23:59)
+      const now = new Date();
+      const daysToMonday = (now.getDay() + 6) % 7; // 0=Pazar → 6, 1=Pzt → 0, ...
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - daysToMonday);
+      weekStart.setHours(0, 0, 0, 0);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999);
 
       const modelsToTrack = [
         this.memoryModel,
@@ -116,7 +121,7 @@ export class DashboardService {
             {
               $match: {
                 coupleId: cid,
-                createdAt: { $gte: sevenDaysAgo },
+                createdAt: { $gte: weekStart, $lte: weekEnd },
               },
             },
             {
@@ -131,7 +136,6 @@ export class DashboardService {
         ),
       );
 
-      // Merge results from all models into a single map by date
       const activityMap = new Map<string, number>();
       weeklyResults.forEach((results: any[]) => {
         results.forEach((res) => {
@@ -141,8 +145,7 @@ export class DashboardService {
         });
       });
 
-      // Format last 7 days
-      const weeklyActivity = [];
+      const weeklyActivity: { day: string; count: number; date: string }[] = [];
       const dayNames = [
         'Pazar',
         'Pazartesi',
@@ -153,10 +156,13 @@ export class DashboardService {
         'Cumartesi',
       ];
 
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        const dateStr = d.toISOString().split('T')[0];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(weekStart);
+        d.setDate(weekStart.getDate() + i);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const dateStr = `${y}-${m}-${day}`;
         weeklyActivity.push({
           day: dayNames[d.getDay()],
           count: activityMap.get(dateStr) || 0,
