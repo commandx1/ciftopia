@@ -5,9 +5,18 @@ import { Calendar, MapPin, Edit2, Trash2, Images } from 'lucide-react-native';
 import { MemoryMoodBadge, moodConfigs } from './MemoryMoodBadge';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
+import { romanticRoseTheme } from '../../theme/romanticRose';
+import { nightBlueTheme } from '../../theme/nightBlue';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 80; // Sol çizgi ve paddingler çıktıktan sonra kalan alan
+
+const themes = {
+  romanticRose: romanticRoseTheme,
+  nightBlue: nightBlueTheme,
+} as const;
+
+const theme = themes.romanticRose;
 
 interface MemoryCardProps {
   memory: any;
@@ -25,7 +34,8 @@ export default function MemoryCard({
 }: MemoryCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
-  const moodConfig = moodConfigs[memory.mood] || { cardBg: '#FFFFFF', iconColor: '#E91E63', badgeBg: '#F3F4F6' };
+  const moodConfig =
+    moodConfigs[memory.mood] || { cardBg: theme.card, iconColor: theme.accent, badgeBg: theme.cardSoft };
   const dateObj = new Date(memory.date);
   const MoodIcon = moodConfig.icon;
 
@@ -94,12 +104,12 @@ export default function MemoryCard({
           
           <View style={styles.metaRow}>
             <View style={styles.metaItem}>
-              <Calendar size={12} color="#F43F5E" />
+              <Calendar size={12} color={theme.accent} />
               <Text style={styles.metaText}>{format(dateObj, 'd MMMM yyyy', { locale: tr })}</Text>
             </View>
             {memory.location?.name && (
               <View style={styles.metaItem}>
-                <MapPin size={12} color="#F43F5E" />
+                <MapPin size={12} color={theme.accent} />
                 <Text style={styles.metaText} numberOfLines={1}>{memory.location.name}</Text>
               </View>
             )}
@@ -155,7 +165,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 10,
     borderWidth: 2,
-    borderColor: 'white',
+    borderColor: theme.card,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -164,7 +174,7 @@ const styles = StyleSheet.create({
   },
   card: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: theme.card,
     borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -173,7 +183,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: theme.borderSofter,
     marginVertical: 5,
   },
   imageContainer: {
@@ -231,7 +241,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    color: '#111827',
+    color: theme.textPrimary,
     marginBottom: 8,
   },
   metaRow: {
@@ -247,18 +257,18 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 11,
-    color: '#6B7280',
+    color: theme.textSecondary,
   },
   contentContainer: {
     marginBottom: 15,
   },
   description: {
     fontSize: 13,
-    color: '#4B5563',
+    color: theme.textSecondary,
     lineHeight: 18,
   },
   readMore: {
-    color: '#F43F5E',
+    color: theme.accent,
     fontSize: 13,
   },
   footer: {
@@ -267,7 +277,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F9FAFB',
+    borderTopColor: theme.cardSoft,
   },
   actions: {
     flexDirection: 'row',

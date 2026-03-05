@@ -30,12 +30,21 @@ import NewMemoryModal from '../../components/memories/NewMemoryModal'
 import { moodConfigs } from '../../components/memories/MemoryMoodBadge'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
+import { romanticRoseTheme } from '../../theme/romanticRose'
+import { nightBlueTheme } from '../../theme/nightBlue'
 
 const SORT_OPTIONS = [
   { id: 'newest',label: 'En yeni',emoji: '🆕' },
   { id: 'oldest',label: 'En eski',emoji: '🕰️' },
   { id: 'alphabetical',label: 'Alfabetik',emoji: '🔤' },
 ]
+
+const themes = {
+  romanticRose: romanticRoseTheme,
+  nightBlue: nightBlueTheme,
+} as const
+
+const theme = themes.romanticRose
 
 export default function MemoriesScreen() {
   const { user } = useAuth()
@@ -155,7 +164,7 @@ export default function MemoriesScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#F43F5E']} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.accent]} />}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
@@ -163,7 +172,7 @@ export default function MemoriesScreen() {
           <View style={styles.headerMain}>
             <View style={styles.headerLeft}>
               <View style={styles.iconContainer}>
-                <LinearGradient colors={['#E91E63','#FF6B6B']} style={styles.iconGradient}>
+                <LinearGradient colors={theme.accentGradient} style={styles.iconGradient}>
                   <Clock color="white" size={32} />
                 </LinearGradient>
                 <View style={styles.heartBadge}>
@@ -183,7 +192,7 @@ export default function MemoriesScreen() {
               }}
               style={styles.addBtn}
             >
-              <LinearGradient colors={['#E91E63','#FF6B6B']} style={styles.addGradient}>
+              <LinearGradient colors={theme.accentGradient} style={styles.addGradient}>
                 <Plus color="white" size={24} />
                 <Sparkles color="#FDE047" size={18} />
               </LinearGradient>
@@ -210,11 +219,15 @@ export default function MemoriesScreen() {
           <View style={styles.filtersWrapper}>
             <View style={styles.filterHeader}>
               <View style={styles.filterTitleRow}>
-                <Filter size={18} color="#F43F5E" />
+                <Filter size={18} color={theme.accent} />
                 <Text style={styles.filterTitle}>Filtrele & Sırala</Text>
               </View>
               <TouchableOpacity onPress={() => setOnlyFavorites(!onlyFavorites)} style={[styles.favToggle,onlyFavorites && styles.favToggleActive]}>
-                <Star size={14} color={onlyFavorites ? '#D97706' : '#9CA3AF'} fill={onlyFavorites ? '#D97706' : 'none'} />
+                <Star
+                  size={14}
+                  color={onlyFavorites ? theme.highlight : theme.textMuted}
+                  fill={onlyFavorites ? theme.highlight : 'none'}
+                />
                 <Text style={[styles.favToggleText,onlyFavorites && styles.favToggleTextActive]}>Sadece Favoriler</Text>
               </TouchableOpacity>
             </View>
@@ -234,7 +247,7 @@ export default function MemoriesScreen() {
                     style={[styles.moodFilterBtn,filterMood === key && { borderColor: config.iconColor,backgroundColor: config.badgeBg }]}
                   >
                     <config.icon size={16} color={filterMood === key ? config.iconColor : '#9CA3AF'} />
-                    <Text style={[styles.moodFilterText,filterMood === key && { color: config.iconColor }]}>{config.label}</Text>
+                  <Text style={[styles.moodFilterText,filterMood === key && { color: config.iconColor }]}>{config.label}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -261,7 +274,7 @@ export default function MemoriesScreen() {
 
           {loading && memories.length === 0 ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#F43F5E" />
+                <ActivityIndicator size="large" color={theme.accent} />
             </View>
           ) : memories.length > 0 ? (
             memories.map((memory,index) => {
@@ -275,7 +288,7 @@ export default function MemoriesScreen() {
                   {showMonthMarker && (
                     <View style={styles.monthMarker}>
                       <View style={styles.monthIconBox}>
-                        <CalendarIcon size={12} color="#F43F5E" />
+                        <CalendarIcon size={12} color={theme.accent} />
                       </View>
                       <Text style={styles.monthText}>{monthYear}</Text>
                     </View>
@@ -296,7 +309,7 @@ export default function MemoriesScreen() {
             })
           ) : (
             <View style={styles.emptyState}>
-              <HeartOff size={48} color="#D1D5DB" />
+              <HeartOff size={48} color={theme.emptyIcon} />
               <Text style={styles.emptyTitle}>Henüz anı eklenmemiş</Text>
               <Text style={styles.emptySubtitle}>İlk anınızı ekleyerek hikayenizi yazmaya başlayın!</Text>
             </View>
@@ -309,10 +322,10 @@ export default function MemoriesScreen() {
               style={styles.loadMoreBtn}
             >
               {loadingMore ? (
-                <ActivityIndicator color="#F43F5E" />
+                <ActivityIndicator color={theme.accent} />
               ) : (
                 <>
-                  <ArrowDown size={20} color="#F43F5E" />
+                  <ArrowDown size={20} color={theme.accent} />
                   <Text style={styles.loadMoreText}>Daha Fazla Anı Yükle</Text>
                 </>
               )}
@@ -338,7 +351,7 @@ export default function MemoriesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.background,
     paddingTop: 16,
   },
   scrollContent: {
@@ -348,7 +361,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginRight: 16,
     marginLeft: 16,
-    backgroundColor: 'white',
+    backgroundColor: theme.card,
     borderRadius: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0,height: 4 },
@@ -383,20 +396,20 @@ const styles = StyleSheet.create({
     right: -5,
     width: 24,
     height: 24,
-    backgroundColor: '#F59E0B',
+    backgroundColor: theme.highlight,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: 'white',
+    borderColor: theme.card,
   },
   title: {
     fontSize: 28,
-    color: '#111827',
+    color: theme.textPrimary,
   },
   subtitle: {
     fontSize: 14,
-    color: '#6B7280',
+    color: theme.textSecondary,
   },
   addBtn: {
     borderRadius: 20,
@@ -410,12 +423,12 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flexDirection: 'row',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.cardSoft,
     borderRadius: 20,
     padding: 20,
     marginBottom: 25,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: theme.borderSofter,
   },
   statItem: {
     flex: 1,
@@ -423,16 +436,16 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 24,
-    color: '#111827',
+    color: theme.textPrimary,
   },
   statLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: theme.textSecondary,
     marginTop: 4,
   },
   statDivider: {
     width: 1,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: theme.divider,
   },
   filtersWrapper: {
     gap: 15,
@@ -449,29 +462,29 @@ const styles = StyleSheet.create({
   },
   filterTitle: {
     fontSize: 16,
-    color: '#111827',
+    color: theme.textPrimary,
   },
   favToggle: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: theme.cardSoft,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: theme.borderSoft,
   },
   favToggleActive: {
-    backgroundColor: '#FFFBEB',
-    borderColor: '#FEF3C7',
+    backgroundColor: theme.highlightSoft,
+    borderColor: theme.highlightSoftBorder,
   },
   favToggleText: {
     fontSize: 12,
-    color: '#6B7280',
+    color: theme.textSecondary,
   },
   favToggleTextActive: {
-    color: '#D97706',
+    color: theme.highlight,
   },
   filterControls: {
     gap: 10,
@@ -486,18 +499,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 8,
     borderRadius: 15,
-    backgroundColor: 'white',
+    backgroundColor: theme.card,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: theme.borderSoft,
     marginRight: 10,
   },
   moodFilterBtnActive: {
-    backgroundColor: '#111827',
-    borderColor: '#111827',
+    backgroundColor: theme.textPrimary,
+    borderColor: theme.textPrimary,
   },
   moodFilterText: {
     fontSize: 12,
-    color: '#6B7280',
+    color: theme.textSecondary,
   },
   moodFilterTextActive: {
     color: 'white',
@@ -512,24 +525,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
-    backgroundColor: 'white',
+    backgroundColor: theme.card,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: theme.borderSoft,
     marginRight: 8,
   },
   sortBtnActive: {
-    borderColor: '#F43F5E',
-    backgroundColor: '#FFF1F2',
+    borderColor: theme.accent,
+    backgroundColor: theme.cardSoftAlt,
   },
   sortBtnEmoji: {
     fontSize: 14,
   },
   sortBtnText: {
     fontSize: 12,
-    color: '#6B7280',
+    color: theme.textSecondary,
   },
   sortBtnTextActive: {
-    color: '#E11D48',
+    color: theme.accentStrong,
   },
   timelineSection: {
     marginTop: 20,
@@ -542,8 +555,8 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: 2,
-    backgroundColor: '#F43F5E',
-    opacity: 0.2,
+    backgroundColor: theme.timelineLine,
+    opacity: theme.timelineLineOpacity,
   },
   monthMarker: {
     flexDirection: 'row',
@@ -556,15 +569,15 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'white',
+    backgroundColor: theme.card,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#F43F5E',
+    borderColor: theme.accent,
   },
   monthText: {
     fontSize: 14,
-    color: '#F43F5E',
+    color: theme.accent,
     marginLeft: 12,
     textTransform: 'capitalize',
   },
@@ -577,12 +590,12 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    color: '#6B7280',
+    color: theme.textSecondary,
     marginTop: 16,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#9CA3AF',
+    color: theme.textMuted,
     textAlign: 'center',
     marginTop: 8,
   },
@@ -596,12 +609,12 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     marginTop: 10,
     marginHorizontal: 50,
-    backgroundColor: '#FFF1F2',
+    backgroundColor: theme.cardSoftAlt,
     borderRadius: 12,
   },
   loadMoreText: {
     fontSize: 14,
-    color: '#F43F5E',
+    color: theme.accent,
   },
 
   // Loading - AYNI

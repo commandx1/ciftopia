@@ -1,15 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react'
-import {
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Image,
-  ActivityIndicator,
-  RefreshControl,
-  Dimensions,
-  Platform
-} from 'react-native'
+import { View, StyleSheet, TouchableOpacity, ScrollView, Image, ActivityIndicator, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Text } from '../../components/ui/Text'
 import { useAuth } from '../../context/AuthContext'
@@ -21,21 +11,19 @@ import {
   Images,
   Feather,
   StickyNote,
-  ExternalLink,
   Database,
   ArrowUp,
   Crown,
   Camera,
   Heart,
   ArrowRight,
-  LayoutDashboard
+  LayoutDashboard,
+  Rocket
 } from 'lucide-react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useRouter } from 'expo-router'
-import { format, formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow } from 'date-fns'
 import { tr } from 'date-fns/locale'
-
-const { width } = Dimensions.get('window')
 
 const DAYS = {
   Pazartesi: 'Pzt',
@@ -47,7 +35,15 @@ const DAYS = {
   Pazar: 'Paz'
 }
 
-const WEEK_DAY_ORDER: (keyof typeof DAYS)[] = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar']
+const WEEK_DAY_ORDER: (keyof typeof DAYS)[] = [
+  'Pazartesi',
+  'Salı',
+  'Çarşamba',
+  'Perşembe',
+  'Cuma',
+  'Cumartesi',
+  'Pazar'
+]
 
 // Utility functions
 const formatBytes = (bytes: number, decimals = 2) => {
@@ -134,9 +130,12 @@ export default function DashboardScreen() {
 
   const { stats, coupleInfo, recentActivities, weeklyActivity = [], distribution = [] } = data
   const storagePercentage = Math.min(Math.round((coupleInfo.storageUsed / coupleInfo.storageLimit) * 100), 100)
-  const weeklySorted = (Array.isArray(weeklyActivity) ? weeklyActivity : []).slice().sort(
-    (a: any, b: any) => WEEK_DAY_ORDER.indexOf(a.day as keyof typeof DAYS) - WEEK_DAY_ORDER.indexOf(b.day as keyof typeof DAYS)
-  )
+  const weeklySorted = (Array.isArray(weeklyActivity) ? weeklyActivity : [])
+    .slice()
+    .sort(
+      (a: any, b: any) =>
+        WEEK_DAY_ORDER.indexOf(a.day as keyof typeof DAYS) - WEEK_DAY_ORDER.indexOf(b.day as keyof typeof DAYS)
+    )
   const weeklyMaxCount = Math.max(...weeklySorted.map((a: any) => a.count), 1)
 
   return (
@@ -189,9 +188,7 @@ export default function DashboardScreen() {
                 <View style={styles.welcomeTextBlock}>
                   <Text style={styles.welcomeTitle}>Merhaba {user?.firstName}! 👋</Text>
                   <View style={styles.welcomeBadge}>
-                    <Text style={styles.welcomeBadgeText}>
-                      ✨ Ütopyanız {coupleInfo.daysActive} gündür aktif
-                    </Text>
+                    <Text style={styles.welcomeBadgeText}>✨ Ütopyanız {coupleInfo.daysActive} gündür aktif</Text>
                   </View>
                 </View>
               </View>
@@ -212,6 +209,48 @@ export default function DashboardScreen() {
                     <Text style={styles.statLabel}>{stat.label}</Text>
                   </View>
                 ))}
+              </View>
+            </LinearGradient>
+          </View>
+
+          {/* Space Explorer CTA */}
+          <View style={styles.section}>
+            <LinearGradient
+              colors={['#0F172A', '#1D2340', '#020617']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.spaceCard}
+            >
+              <View style={styles.spaceHeaderRow}>
+                <View style={styles.spaceIconCircle}>
+                  <Rocket size={24} color='#FACC15' />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.spaceTitle}>Uzay Macerası</Text>
+                  <Text style={styles.spaceSubtitle}>
+                    - İlişkinizi kendi oluşturduğunuz uzayda keşfedin.
+                  </Text>
+                  <Text style={styles.spaceSubtitle}>
+                    - Eklediğiniz her içerik bir gök cismi haline gelir.
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.spaceFooterRow}>
+                <View style={styles.spaceBadgeRow}>
+                  <View style={styles.spaceBadge}>
+                    <Text style={styles.spaceBadgeText}>Oyunlaştırılmış deneyim</Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.spaceCtaButton}
+                  activeOpacity={0.85}
+                  onPress={() => router.push('/space-explorer')}
+                >
+                  <Text style={styles.spaceCtaText}>Uzay’a Git</Text>
+                  <ArrowRight size={16} color='#0F172A' />
+                </TouchableOpacity>
               </View>
             </LinearGradient>
           </View>
@@ -332,7 +371,9 @@ export default function DashboardScreen() {
                             style={[styles.chartBarFill, { height: `${barHeightPct}%` }]}
                           />
                         </View>
-                        <Text style={styles.chartLabel} numberOfLines={1}>{DAYS[item.day as keyof typeof DAYS] || item.day}</Text>
+                        <Text style={styles.chartLabel} numberOfLines={1}>
+                          {DAYS[item.day as keyof typeof DAYS] || item.day}
+                        </Text>
                       </View>
                     )
                   })}
@@ -438,7 +479,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF1F2'
   },
   scrollView: {
-    flex: 1,
+    flex: 1
   },
   content: {
     padding: 20
@@ -599,7 +640,7 @@ const styles = StyleSheet.create({
   },
   welcomeBadgeText: {
     fontSize: 14,
-    color: '#BE185D',
+    color: '#BE185D'
   },
   welcomeStatsLabel: {
     fontSize: 13,
@@ -777,6 +818,77 @@ const styles = StyleSheet.create({
   premiumBtnText: {
     color: '#fff',
     fontSize: 12
+  },
+  spaceCard: {
+    borderRadius: 26,
+    padding: 18,
+    flexDirection: 'column',
+    gap: 16,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 24,
+    elevation: 6
+  },
+  spaceHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14
+  },
+  spaceIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: 'rgba(15,23,42,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(248,250,252,0.2)'
+  },
+  spaceTitle: {
+    fontSize: 18,
+    color: '#E5E7EB',
+    marginBottom: 4
+  },
+  spaceSubtitle: {
+    fontSize: 13,
+    color: '#9CA3AF'
+  },
+  spaceFooterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12
+  },
+  spaceBadgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    flex: 1
+  },
+  spaceBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: 'rgba(15,118,110,0.18)'
+  },
+  spaceBadgeText: {
+    fontSize: 11,
+    color: '#A5F3FC'
+  },
+  spaceCtaButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: '#FACC15',
+    gap: 6
+  },
+  spaceCtaText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#0F172A'
   },
   activityCard: {
     backgroundColor: '#fff',

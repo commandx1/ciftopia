@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { View, StyleSheet, Modal, TouchableOpacity, Image, ScrollView, Dimensions } from 'react-native'
+import React, { useEffect } from 'react'
+import { View, StyleSheet, Modal, TouchableOpacity, Image, ScrollView, Dimensions, Platform } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import Animated, {
   useSharedValue,
@@ -35,7 +35,6 @@ import {
   Activity
 } from 'lucide-react-native'
 import { useAuth } from '../context/AuthContext'
-import { dashboardApi } from '../api/dashboard'
 import { Text } from './ui/Text'
 
 const { width, height } = Dimensions.get('window')
@@ -53,7 +52,6 @@ interface MenuItemProps {
 }
 
 const MenuItem = ({
-  route,
   title,
   subtitle,
   icon: Icon,
@@ -147,25 +145,8 @@ interface FullScreenMenuProps {
 }
 
 export default function FullScreenMenu({ visible, onClose }: FullScreenMenuProps) {
-  const { user, signOut } = useAuth()
+  const { signOut } = useAuth()
   const router = useRouter()
-  const [coupleInfo, setCoupleInfo] = useState<{
-    coupleName?: string
-    daysActive?: number
-    partner1?: any
-    partner2?: any
-  } | null>(null)
-
-  useEffect(() => {
-    if (visible && user?.accessToken) {
-      dashboardApi
-        .getStats(user.accessToken)
-        .then(res => setCoupleInfo(res?.coupleInfo || null))
-        .catch(() => setCoupleInfo(null))
-    } else {
-      setCoupleInfo(null)
-    }
-  }, [visible, user?.accessToken])
 
   const navigateAndClose = (route: string) => {
     onClose()
@@ -173,12 +154,6 @@ export default function FullScreenMenu({ visible, onClose }: FullScreenMenuProps
     // This is safer as it handles nested navigators correctly in Expo Router
     router.push(`/(drawer)/${route}` as any)
   }
-
-  const coupleName =
-    coupleInfo?.coupleName ||
-    (user?.coupleId?.partner1 && user?.coupleId?.partner2
-      ? `${user.coupleId.partner1.firstName} & ${user.coupleId.partner2.firstName}`
-      : `${user?.firstName || ''} & Partner`)
 
   return (
     <Modal visible={visible} animationType='slide' transparent onRequestClose={onClose}>
@@ -375,10 +350,10 @@ export default function FullScreenMenu({ visible, onClose }: FullScreenMenuProps
                   <Settings size={22} color='#fff' />
                   <Text style={styles.footerButtonText}>Ayarlar</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.footerButton}>
+                {/* <TouchableOpacity style={styles.footerButton}>
                   <Star size={22} color='#fff' />
                   <Text style={styles.footerButtonText}>Tema</Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
                 <TouchableOpacity style={styles.footerButton} onPress={() => navigateAndClose('store')}>
                   <Heart size={22} color='#fff' />
                   <Text style={styles.footerButtonText}>Mağaza</Text>
@@ -413,7 +388,7 @@ const styles = StyleSheet.create({
   },
   gradient: {
     flex: 1,
-    paddingTop: 10
+    paddingTop: Platform.OS === 'ios' ? 50 : 0
   },
   header: {
     flexDirection: 'row',

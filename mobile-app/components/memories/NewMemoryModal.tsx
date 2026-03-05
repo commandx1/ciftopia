@@ -1,15 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import {
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
-  Platform,
-  Image,
-} from 'react-native';
-import { Text } from '../ui/Text';
-import { TextInput } from '../ui/TextInput';
+import React, { useState, useEffect, useMemo } from 'react'
+import { View, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Platform, Image } from 'react-native'
+import { Text } from '../ui/Text'
+import { TextInput } from '../ui/TextInput'
 import {
   X,
   Heart,
@@ -23,179 +15,188 @@ import {
   Star,
   Sparkles,
   Database,
-  Info,
-} from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import * as ImagePicker from 'expo-image-picker';
-import { format } from 'date-fns';
-import { tr } from 'date-fns/locale';
-import { memoriesApi } from '../../api/memories';
-import { uploadApi } from '../../api/upload';
-import { useAuth } from '../../context/AuthContext';
-import { usePlanLimits } from '../../context/PlanLimitsContext';
-import { useToast } from '../ui/ToastProvider';
-import { useRouter } from 'expo-router';
-import { getEffectivePhotoLimit } from '../../utils/planLimits';
-import { moodConfigs } from './MemoryMoodBadge';
-import { CustomModal } from '../ui/Modal';
-import { PlanUpgradeBlock } from '../ui/PlanUpgradeBlock';
+  Info
+} from 'lucide-react-native'
+import { LinearGradient } from 'expo-linear-gradient'
+import DateTimePicker from '@react-native-community/datetimepicker'
+import * as ImagePicker from 'expo-image-picker'
+import { format } from 'date-fns'
+import { tr } from 'date-fns/locale'
+import { memoriesApi } from '../../api/memories'
+import { uploadApi } from '../../api/upload'
+import { useAuth } from '../../context/AuthContext'
+import { usePlanLimits } from '../../context/PlanLimitsContext'
+import { useToast } from '../ui/ToastProvider'
+import { useRouter } from 'expo-router'
+import { getEffectivePhotoLimit } from '../../utils/planLimits'
+import { moodConfigs } from './MemoryMoodBadge'
+import { CustomModal } from '../ui/Modal'
+import { PlanUpgradeBlock } from '../ui/PlanUpgradeBlock'
+import { romanticRoseTheme } from '../../theme/romanticRose'
+import { nightBlueTheme } from '../../theme/nightBlue'
 
 const formatBytes = (bytes: number) => {
-  if (!bytes || isNaN(bytes) || bytes <= 0) return '0 Bytes';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-};
-
-interface NewMemoryModalProps {
-  visible: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
-  editingMemory?: any;
-  storage?: { used: number; limit: number };
+  if (!bytes || isNaN(bytes) || bytes <= 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
+interface NewMemoryModalProps {
+  visible: boolean
+  onClose: () => void
+  onSuccess: () => void
+  editingMemory?: any
+  storage?: { used: number; limit: number }
+}
+
+const themes = {
+  romanticRose: romanticRoseTheme,
+  nightBlue: nightBlueTheme
+} as const
+
+const theme = themes.romanticRose
+
 export default function NewMemoryModal({ visible, onClose, onSuccess, editingMemory, storage }: NewMemoryModalProps) {
-  const { user } = useAuth();
-  const { limits, storageUsed: ctxStorageUsed, storageLimit: ctxStorageLimit } = usePlanLimits();
-  const { show: showToast } = useToast();
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [title, setTitle] = useState('');
-  const [date, setDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [locationName, setLocationName] = useState('');
-  const [mood, setMood] = useState('romantic');
-  const [content, setContent] = useState('');
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [selectedImages, setSelectedImages] = useState<any[]>([]);
-  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
-  const [existingPhotos, setExistingPhotos] = useState<any[]>([]);
-  const [initialMemorySize, setInitialMemorySize] = useState(0);
+  const { user } = useAuth()
+  const { limits, storageUsed: ctxStorageUsed, storageLimit: ctxStorageLimit } = usePlanLimits()
+  const { show: showToast } = useToast()
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+  const [title, setTitle] = useState('')
+  const [date, setDate] = useState(new Date())
+  const [showDatePicker, setShowDatePicker] = useState(false)
+  const [locationName, setLocationName] = useState('')
+  const [mood, setMood] = useState('romantic')
+  const [content, setContent] = useState('')
+  const [isFavorite, setIsFavorite] = useState(false)
+  const [selectedImages, setSelectedImages] = useState<any[]>([])
+  const [previewUrls, setPreviewUrls] = useState<string[]>([])
+  const [existingPhotos, setExistingPhotos] = useState<any[]>([])
+  const [initialMemorySize, setInitialMemorySize] = useState(0)
 
-  const maxPhotosPerContent = getEffectivePhotoLimit(limits.photosPerContent, 5);
-  const totalPhotos = existingPhotos.length + selectedImages.length;
-  const atPhotoLimit = totalPhotos >= maxPhotosPerContent;
-  const currentStorageUsed = storage?.used ?? ctxStorageUsed;
-  const storageLimit = storage?.limit ?? ctxStorageLimit;
+  const maxPhotosPerContent = getEffectivePhotoLimit(limits.photosPerContent, 5)
+  const totalPhotos = existingPhotos.length + selectedImages.length
+  const atPhotoLimit = totalPhotos >= maxPhotosPerContent
+  const currentStorageUsed = storage?.used ?? ctxStorageUsed
+  const storageLimit = storage?.limit ?? ctxStorageLimit
 
-    const currentMemorySize = useMemo(() => {
-    const existingSize = existingPhotos.reduce((acc, p) => acc + (Number(p.size || 0)), 0);
-    const selectedSize = selectedImages.reduce((acc, f) => acc + (Number(f.fileSize || 0)), 0);
-    return existingSize + selectedSize;
-  }, [existingPhotos, selectedImages]);
+  const currentMemorySize = useMemo(() => {
+    const existingSize = existingPhotos.reduce((acc, p) => acc + Number(p.size || 0), 0)
+    const selectedSize = selectedImages.reduce((acc, f) => acc + Number(f.fileSize || 0), 0)
+    return existingSize + selectedSize
+  }, [existingPhotos, selectedImages])
 
-  const projectedUsage = Math.max(0, currentStorageUsed - initialMemorySize + currentMemorySize);
-  const usagePercentage = storageLimit > 0 ? (Math.min(projectedUsage, storageLimit) / storageLimit) * 100 : 0;
-  const isOverLimit = storageLimit > 0 && projectedUsage > storageLimit;
+  const projectedUsage = Math.max(0, currentStorageUsed - initialMemorySize + currentMemorySize)
+  const usagePercentage = storageLimit > 0 ? (Math.min(projectedUsage, storageLimit) / storageLimit) * 100 : 0
+  const isOverLimit = storageLimit > 0 && projectedUsage > storageLimit
 
   useEffect(() => {
-    if (!visible) return;
+    if (!visible) return
 
     if (editingMemory) {
-      const initialSize = editingMemory.photos?.reduce((acc: number, p: any) => acc + (Number(p.size) || 0), 0) || 0;
-      setInitialMemorySize(initialSize);
+      const initialSize = editingMemory.photos?.reduce((acc: number, p: any) => acc + (Number(p.size) || 0), 0) || 0
+      setInitialMemorySize(initialSize)
 
-      setTitle(editingMemory.title || '');
-      setDate(new Date(editingMemory.date));
-      setLocationName(editingMemory.location?.name || '');
-      setMood(editingMemory.mood || 'romantic');
-      setContent(editingMemory.content || '');
-      setIsFavorite(editingMemory.favorites?.includes(user?._id) || false);
-      setExistingPhotos(editingMemory.rawPhotos || []);
-      setPreviewUrls(editingMemory.photos?.map((p: any) => (typeof p === 'string' ? p : p.url)) || []);
-      setSelectedImages([]);
+      setTitle(editingMemory.title || '')
+      setDate(new Date(editingMemory.date))
+      setLocationName(editingMemory.location?.name || '')
+      setMood(editingMemory.mood || 'romantic')
+      setContent(editingMemory.content || '')
+      setIsFavorite(editingMemory.favorites?.includes(user?._id) || false)
+      setExistingPhotos(editingMemory.rawPhotos || [])
+      setPreviewUrls(editingMemory.photos?.map((p: any) => (typeof p === 'string' ? p : p.url)) || [])
+      setSelectedImages([])
     } else {
-      setInitialMemorySize(0);
-      setTitle('');
-      setDate(new Date());
-      setLocationName('');
-      setMood('romantic');
-      setContent('');
-      setIsFavorite(false);
-      setSelectedImages([]);
-      setPreviewUrls([]);
-      setExistingPhotos([]);
+      setInitialMemorySize(0)
+      setTitle('')
+      setDate(new Date())
+      setLocationName('')
+      setMood('romantic')
+      setContent('')
+      setIsFavorite(false)
+      setSelectedImages([])
+      setPreviewUrls([])
+      setExistingPhotos([])
     }
-  }, [editingMemory, visible]);
+  }, [editingMemory, visible])
 
   const pickImages = async () => {
-    const remainingSlots = maxPhotosPerContent - totalPhotos;
-    if (remainingSlots <= 0) return;
+    const remainingSlots = maxPhotosPerContent - totalPhotos
+    if (remainingSlots <= 0) return
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
       selectionLimit: remainingSlots,
-      quality: 0.8,
-    });
+      quality: 0.8
+    })
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
-      const newImages = result.assets;
-      
-      const newImagesSize = newImages.reduce((acc, img) => acc + (Number(img.fileSize || 0)), 0);
+      const newImages = result.assets
+
+      const newImagesSize = newImages.reduce((acc, img) => acc + Number(img.fileSize || 0), 0)
       if (storageLimit > 0 && projectedUsage + newImagesSize > storageLimit) {
-        showToast({ type: 'error', title: 'Limit Aşıldı', message: 'Depolama alanınız yetersiz.' });
-        return;
+        showToast({ type: 'error', title: 'Limit Aşıldı', message: 'Depolama alanınız yetersiz.' })
+        return
       }
 
-      setSelectedImages(prev => [...prev, ...newImages]);
-      setPreviewUrls(prev => [...prev, ...newImages.map(img => img.uri)]);
+      setSelectedImages(prev => [...prev, ...newImages])
+      setPreviewUrls(prev => [...prev, ...newImages.map(img => img.uri)])
     }
-  };
+  }
 
   const removePhoto = (index: number) => {
-    const totalExisting = existingPhotos.length;
+    const totalExisting = existingPhotos.length
     if (index < totalExisting) {
       setExistingPhotos(prev => {
-        const next = [...prev];
-        next.splice(index, 1);
-        return next;
-      });
+        const next = [...prev]
+        next.splice(index, 1)
+        return next
+      })
     } else {
       setSelectedImages(prev => {
-        const next = [...prev];
-        next.splice(index - totalExisting, 1);
-        return next;
-      });
+        const next = [...prev]
+        next.splice(index - totalExisting, 1)
+        return next
+      })
     }
     setPreviewUrls(prev => {
-      const next = [...prev];
-      next.splice(index, 1);
-      return next;
-    });
-  };
+      const next = [...prev]
+      next.splice(index, 1)
+      return next
+    })
+  }
 
   const handleSubmit = async () => {
     if (!title.trim() || !content.trim()) {
-      showToast({ type: 'error', title: 'Hata', message: 'Lütfen zorunlu alanları doldurun.' });
-      return;
+      showToast({ type: 'error', title: 'Hata', message: 'Lütfen zorunlu alanları doldurun.' })
+      return
     }
 
-    if (isOverLimit) {
-      showToast({ type: 'error', title: 'Limit Aşıldı', message: 'Depolama limitini aşıyorsunuz!' });
-      return;
+    if (isOverLimit && selectedImages.length > 0) {
+      showToast({ type: 'error', title: 'Limit Aşıldı', message: 'Depolama limitini aşıyorsunuz!' })
+      return
     }
 
     try {
-      setLoading(true);
-      let photoMetadatas = [...existingPhotos];
+      setLoading(true)
+      let photoMetadatas = [...existingPhotos]
 
       if (selectedImages.length > 0) {
-        const uploadRes = await uploadApi.uploadPhotos(selectedImages, user?.accessToken);
+        const uploadRes = await uploadApi.uploadPhotos(selectedImages, user?.accessToken)
         const newPhotos = uploadRes.photos.map((p: any) => ({
           url: p.key,
           width: p.width,
           height: p.height,
           size: p.size
-        }));
-        photoMetadatas = [...photoMetadatas, ...newPhotos];
+        }))
+        photoMetadatas = [...photoMetadatas, ...newPhotos]
       }
 
-      const otherFavorites = editingMemory?.favorites?.filter((id: string) => id !== user?._id) || [];
-      const newFavorites = isFavorite && user?._id ? [...otherFavorites, user._id] : otherFavorites;
+      const otherFavorites = editingMemory?.favorites?.filter((id: string) => id !== user?._id) || []
+      const newFavorites = isFavorite && user?._id ? [...otherFavorites, user._id] : otherFavorites
 
       const payload = {
         title: title.trim(),
@@ -204,44 +205,44 @@ export default function NewMemoryModal({ visible, onClose, onSuccess, editingMem
         locationName: locationName.trim(),
         mood,
         photos: photoMetadatas,
-        favorites: newFavorites,
-      };
-
-      if (editingMemory) {
-        await memoriesApi.update(editingMemory._id, payload, user?.accessToken);
-        showToast({ type: 'success', title: 'Başarılı', message: 'Anı güncellendi.' });
-      } else {
-        await memoriesApi.create(payload, user?.accessToken);
-        showToast({ type: 'success', title: 'Başarılı', message: 'Yeni anı eklendi.' });
+        favorites: newFavorites
       }
 
-      onSuccess();
-      onClose();
+      if (editingMemory) {
+        await memoriesApi.update(editingMemory._id, payload, user?.accessToken)
+        showToast({ type: 'success', title: 'Başarılı', message: 'Anı güncellendi.' })
+      } else {
+        await memoriesApi.create(payload, user?.accessToken)
+        showToast({ type: 'success', title: 'Başarılı', message: 'Yeni anı eklendi.' })
+      }
+
+      onSuccess()
+      onClose()
     } catch (error) {
-      console.error(error);
-      showToast({ type: 'error', title: 'Hata', message: 'İşlem başarısız oldu.' });
+      console.error(error)
+      showToast({ type: 'error', title: 'Hata', message: 'İşlem başarısız oldu.' })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <CustomModal
       visible={visible}
       onClose={onClose}
       title={editingMemory ? 'Anıyı Düzenle' : 'Yeni Anı Ekle'}
-      subtitle="Özel anınızı ölümsüzleştirin"
-      headerIcon={<Heart size={32} color="white" fill="white" />}
-      headerColors={['#F43F5E', '#EC4899']}
+      subtitle='Özel anınızı ölümsüzleştirin'
+      headerIcon={<Heart size={32} color='white' fill='white' />}
+      headerColors={theme.accentGradient}
     >
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps='handled'>
         <View style={styles.blobTop} />
         <View style={styles.blobBottom} />
-        
+
         {/* Photo Upload */}
         <View style={styles.inputGroup}>
           <View style={styles.labelRow}>
-            <Images size={20} color="#E91E63" />
+            <Images size={20} color={theme.accent} />
             <Text style={styles.label}>Fotoğraflar</Text>
             <Text style={styles.labelHint}>(En fazla {maxPhotosPerContent} adet)</Text>
           </View>
@@ -251,7 +252,7 @@ export default function NewMemoryModal({ visible, onClose, onSuccess, editingMem
               style={[styles.addPhotoBtn, atPhotoLimit && styles.addPhotoBtnDisabled]}
               activeOpacity={atPhotoLimit ? 1 : 0.7}
             >
-              <CloudUpload size={32} color={atPhotoLimit ? '#9CA3AF' : '#F43F5E'} />
+              <CloudUpload size={32} color={atPhotoLimit ? theme.textMuted : theme.accent} />
               <Text style={[styles.addPhotoText, atPhotoLimit && styles.addPhotoTextDisabled]}>
                 {atPhotoLimit ? 'Limite ulaştınız' : 'Ekle'}
               </Text>
@@ -260,7 +261,7 @@ export default function NewMemoryModal({ visible, onClose, onSuccess, editingMem
               <View key={index} style={styles.photoPreview}>
                 <Image source={{ uri: url }} style={styles.photo} />
                 <TouchableOpacity onPress={() => removePhoto(index)} style={styles.removePhotoBtn}>
-                  <X size={12} color="white" />
+                  <X size={12} color='white' />
                 </TouchableOpacity>
               </View>
             ))}
@@ -268,11 +269,11 @@ export default function NewMemoryModal({ visible, onClose, onSuccess, editingMem
 
           {atPhotoLimit && (
             <PlanUpgradeBlock
-              variant="photos_per_content"
+              variant='photos_per_content'
               limit={maxPhotosPerContent}
               onUpgradePress={() => {
-                onClose();
-                router.push('/store');
+                onClose()
+                router.push('/store')
               }}
             />
           )}
@@ -284,18 +285,20 @@ export default function NewMemoryModal({ visible, onClose, onSuccess, editingMem
                 <View>
                   <Text style={styles.storageTitle}>Depolama Durumu</Text>
                   <View style={styles.storageUsageRow}>
-                    <Text style={styles.storageValue}>
-                      {formatBytes(projectedUsage)}
-                    </Text>
+                    <Text style={styles.storageValue}>{formatBytes(projectedUsage)}</Text>
                     {selectedImages.length > 0 && (
                       <Text style={styles.storageNewText}>
-                        (+{formatBytes(selectedImages.reduce((acc, img) => acc + (Number(img.fileSize || img.size || 0)), 0))} yeni)
+                        (+
+                        {formatBytes(
+                          selectedImages.reduce((acc, img) => acc + Number(img.fileSize || img.size || 0), 0)
+                        )}{' '}
+                        yeni)
                       </Text>
                     )}
                   </View>
                 </View>
                 <View style={styles.databaseIconBox}>
-                  <Database size={24} color="#2563EB" />
+                  <Database size={24} color={theme.accent} />
                 </View>
               </View>
 
@@ -304,7 +307,7 @@ export default function NewMemoryModal({ visible, onClose, onSuccess, editingMem
                   <Text style={styles.progressText}>
                     {formatBytes(projectedUsage)} / {formatBytes(storageLimit)}
                   </Text>
-                  <Text style={[styles.percentageText, isOverLimit ? styles.textRed : styles.textBlue]}>
+                  <Text style={[styles.percentageText, { color: isOverLimit ? theme.accentStrong : theme.accent }]}>
                     %{storageLimit > 0 ? Math.max(0, (projectedUsage / storageLimit) * 100).toFixed(1) : '0.0'}
                   </Text>
                 </View>
@@ -312,8 +315,7 @@ export default function NewMemoryModal({ visible, onClose, onSuccess, editingMem
                   <View
                     style={[
                       styles.progressBarFill,
-                      { width: `${usagePercentage}%` },
-                      isOverLimit ? styles.bgRed : styles.bgBlue,
+                      { width: `${usagePercentage}%`, backgroundColor: isOverLimit ? theme.accentStrong : theme.accent }
                     ]}
                   />
                 </View>
@@ -321,7 +323,7 @@ export default function NewMemoryModal({ visible, onClose, onSuccess, editingMem
 
               {isOverLimit && (
                 <View style={styles.limitWarning}>
-                  <Info size={14} color="#EF4444" />
+                  <Info size={14} color={theme.accentStrong} />
                   <Text style={styles.warningText}>
                     ⚠️ Depolama limitini aşıyorsunuz! Lütfen bazı fotoğrafları çıkarın.
                   </Text>
@@ -335,19 +337,14 @@ export default function NewMemoryModal({ visible, onClose, onSuccess, editingMem
         <View style={styles.row}>
           <View style={[styles.inputGroup, { flex: 1 }]}>
             <View style={styles.labelRow}>
-              <PenLine size={18} color="#E91E63" />
+              <PenLine size={18} color={theme.accent} />
               <Text style={styles.label}>Başlık</Text>
             </View>
-            <TextInput
-              value={title}
-              onChangeText={setTitle}
-              placeholder="Anı başlığı..."
-              style={styles.input}
-            />
+            <TextInput value={title} onChangeText={setTitle} placeholder='Anı başlığı...' style={styles.input} />
           </View>
           <View style={[styles.inputGroup, { flex: 1 }]}>
             <View style={styles.labelRow}>
-              <CalendarIcon size={18} color="#E91E63" />
+              <CalendarIcon size={18} color={theme.accent} />
               <Text style={styles.label}>Tarih</Text>
             </View>
             <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.dateBtn}>
@@ -359,11 +356,11 @@ export default function NewMemoryModal({ visible, onClose, onSuccess, editingMem
         {showDatePicker && (
           <DateTimePicker
             value={date}
-            mode="date"
+            mode='date'
             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
             onChange={(_, selectedDate) => {
-              setShowDatePicker(false);
-              if (selectedDate) setDate(selectedDate);
+              setShowDatePicker(false)
+              if (selectedDate) setDate(selectedDate)
             }}
           />
         )}
@@ -371,13 +368,13 @@ export default function NewMemoryModal({ visible, onClose, onSuccess, editingMem
         {/* Location */}
         <View style={styles.inputGroup}>
           <View style={styles.labelRow}>
-            <MapPin size={18} color="#E91E63" />
+            <MapPin size={18} color={theme.accent} />
             <Text style={styles.label}>Konum (Opsiyonel)</Text>
           </View>
           <TextInput
             value={locationName}
             onChangeText={setLocationName}
-            placeholder="Neredeydiniz?"
+            placeholder='Neredeydiniz?'
             style={styles.input}
           />
         </View>
@@ -385,13 +382,13 @@ export default function NewMemoryModal({ visible, onClose, onSuccess, editingMem
         {/* Mood Selection */}
         <View style={styles.inputGroup}>
           <View style={styles.labelRow}>
-            <Smile size={18} color="#E91E63" />
+            <Smile size={18} color={theme.accent} />
             <Text style={styles.label}>Ruh Hali</Text>
           </View>
           <View style={styles.moodGrid}>
             {Object.entries(moodConfigs).map(([key, config]) => {
-              const Icon = config.icon;
-              const isSelected = mood === key;
+              const Icon = config.icon
+              const isSelected = mood === key
               return (
                 <TouchableOpacity
                   key={key}
@@ -401,10 +398,14 @@ export default function NewMemoryModal({ visible, onClose, onSuccess, editingMem
                     isSelected && { borderColor: config.iconColor, backgroundColor: config.badgeBg }
                   ]}
                 >
-                  <Icon size={24} color={isSelected ? config.iconColor : '#9CA3AF'} fill={isSelected && key === 'romantic' ? config.iconColor : 'none'} />
+                  <Icon
+                    size={24}
+                    color={isSelected ? config.iconColor : '#9CA3AF'}
+                    fill={isSelected && key === 'romantic' ? config.iconColor : 'none'}
+                  />
                   <Text style={[styles.moodLabel, isSelected && { color: config.iconColor }]}>{config.label}</Text>
                 </TouchableOpacity>
-              );
+              )
             })}
           </View>
         </View>
@@ -412,13 +413,13 @@ export default function NewMemoryModal({ visible, onClose, onSuccess, editingMem
         {/* Content */}
         <View style={styles.inputGroup}>
           <View style={styles.labelRow}>
-            <AlignLeft size={18} color="#E91E63" />
+            <AlignLeft size={18} color={theme.accent} />
             <Text style={styles.label}>Anınızı Anlatın</Text>
           </View>
           <TextInput
             value={content}
             onChangeText={setContent}
-            placeholder="O gün neler oldu? Neler hissettiniz?.."
+            placeholder='O gün neler oldu? Neler hissettiniz?..'
             multiline
             numberOfLines={5}
             style={[styles.input, styles.textArea]}
@@ -426,12 +427,13 @@ export default function NewMemoryModal({ visible, onClose, onSuccess, editingMem
         </View>
 
         {/* Favorite Toggle */}
-        <TouchableOpacity
-          onPress={() => setIsFavorite(!isFavorite)}
-          style={styles.favoriteRow}
-        >
+        <TouchableOpacity onPress={() => setIsFavorite(!isFavorite)} style={styles.favoriteRow}>
           <View style={styles.favoriteLeft}>
-            <Star size={20} color={isFavorite ? '#D97706' : '#9CA3AF'} fill={isFavorite ? '#D97706' : 'none'} />
+            <Star
+              size={20}
+              color={isFavorite ? theme.highlight : theme.textMuted}
+              fill={isFavorite ? theme.highlight : 'none'}
+            />
             <Text style={styles.favoriteText}>Favorilere Ekle</Text>
           </View>
           <View style={[styles.switch, isFavorite && styles.switchActive]}>
@@ -446,18 +448,18 @@ export default function NewMemoryModal({ visible, onClose, onSuccess, editingMem
           </TouchableOpacity>
           <TouchableOpacity onPress={handleSubmit} disabled={loading} style={styles.submitBtn}>
             <LinearGradient
-              colors={['#F43F5E', '#EC4899', '#D946EF']}
+              colors={theme.gradientButton}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.submitGradient}
             >
               {loading ? (
-                <ActivityIndicator size="small" color="white" />
+                <ActivityIndicator size='small' color='white' />
               ) : (
                 <>
-                  <Heart size={20} color="white" fill="white" />
+                  <Heart size={20} color='white' fill='white' />
                   <Text style={styles.submitBtnText}>{editingMemory ? 'Güncelle' : 'Kaydet'}</Text>
-                  <Sparkles size={16} color="#FDE047" />
+                  <Sparkles size={16} color='#FDE047' />
                 </>
               )}
             </LinearGradient>
@@ -466,58 +468,58 @@ export default function NewMemoryModal({ visible, onClose, onSuccess, editingMem
         <View style={{ height: 40 }} />
       </ScrollView>
     </CustomModal>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
   content: {
-    padding: 25,
+    padding: 25
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 20
   },
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 10,
+    marginBottom: 10
   },
   label: {
     fontSize: 16,
-    color: '#374151',
+    color: theme.textPrimary
   },
   labelHint: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: theme.textMuted
   },
   photoGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 10
   },
   addPhotoBtn: {
     width: 65,
     height: 65,
     borderRadius: 15,
     borderWidth: 2,
-    borderColor: '#FFE4E6',
+    borderColor: theme.cardSoftAlt,
     borderStyle: 'dashed',
-    backgroundColor: '#FFF1F2',
+    backgroundColor: theme.cardSoftAlt,
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'center'
   },
   addPhotoBtnDisabled: {
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F3F4F6',
-    opacity: 0.9,
+    borderColor: theme.borderSoft,
+    backgroundColor: theme.cardSoft,
+    opacity: 0.9
   },
   addPhotoText: {
     fontSize: 10,
-    color: '#F43F5E',
-    marginTop: 2,
+    color: theme.accent,
+    marginTop: 2
   },
   addPhotoTextDisabled: {
-    color: '#9CA3AF',
+    color: theme.textMuted
   },
   photoPreview: {
     width: 65,
@@ -525,12 +527,12 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F3F4F6',
+    borderColor: theme.borderSoft,
+    backgroundColor: theme.cardSoft
   },
   photo: {
     width: '100%',
-    height: '100%',
+    height: '100%'
   },
   removePhotoBtn: {
     position: 'absolute',
@@ -541,11 +543,11 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'center'
   },
   row: {
     flexDirection: 'row',
-    gap: 15,
+    gap: 15
   },
   input: {
     backgroundColor: '#F9FAFB',
@@ -554,11 +556,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
     fontSize: 16,
-    color: '#111827',
+    color: '#111827'
   },
   textArea: {
     minHeight: 120,
-    textAlignVertical: 'top',
+    textAlignVertical: 'top'
   },
   dateBtn: {
     backgroundColor: '#F9FAFB',
@@ -566,16 +568,16 @@ const styles = StyleSheet.create({
     padding: 15,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    justifyContent: 'center',
+    justifyContent: 'center'
   },
   dateText: {
     fontSize: 14,
-    color: '#111827',
+    color: '#111827'
   },
   moodGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 10
   },
   moodBtn: {
     width: '22%',
@@ -585,88 +587,88 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#F3F4F6',
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'center'
   },
   moodLabel: {
     fontSize: 10,
-    color: '#6B7280',
+    color: theme.textSecondary,
     marginTop: 4,
-    textTransform: 'uppercase',
+    textTransform: 'uppercase'
   },
   favoriteRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#FAF5FF',
+    backgroundColor: theme.cardSoft,
     padding: 15,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#F3E8FF',
-    marginBottom: 25,
+    borderColor: theme.borderSoft,
+    marginBottom: 25
   },
   favoriteLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 10
   },
   favoriteText: {
     fontSize: 16,
-    color: '#7C3AED',
+    color: theme.textSecondary
   },
   switch: {
     width: 48,
     height: 26,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: theme.borderSoft,
     borderRadius: 13,
-    padding: 3,
+    padding: 3
   },
   switchActive: {
-    backgroundColor: '#F43F5E',
+    backgroundColor: theme.accent
   },
   switchDot: {
     width: 20,
     height: 20,
     backgroundColor: 'white',
-    borderRadius: 10,
+    borderRadius: 10
   },
   switchDotActive: {
-    transform: [{ translateX: 22 }],
+    transform: [{ translateX: 22 }]
   },
   footerBtns: {
     flexDirection: 'row',
-    gap: 15,
+    gap: 15
   },
   cancelBtn: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.cardSoft,
     paddingVertical: 18,
     borderRadius: 20,
-    alignItems: 'center',
+    alignItems: 'center'
   },
   cancelBtnText: {
     fontSize: 16,
-    color: '#4B5563',
+    color: theme.textSecondary
   },
   submitBtn: {
     flex: 2,
     borderRadius: 20,
     overflow: 'hidden',
-    shadowColor: '#F43F5E',
+    shadowColor: theme.accent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
-    elevation: 5,
+    elevation: 5
   },
   submitGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 18,
-    gap: 10,
+    gap: 10
   },
   submitBtnText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 16
   },
   storageCard: {
     backgroundColor: '#EFF6FF',
@@ -674,31 +676,31 @@ const styles = StyleSheet.create({
     padding: 15,
     marginTop: 15,
     borderWidth: 1,
-    borderColor: '#DBEAFE',
+    borderColor: '#DBEAFE'
   },
   storageHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 12
   },
   storageTitle: {
     fontSize: 14,
     color: '#1E40AF',
-    marginBottom: 2,
+    marginBottom: 2
   },
   storageUsageRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    gap: 6,
+    gap: 6
   },
   storageValue: {
     fontSize: 18,
-    color: '#111827',
+    color: theme.textPrimary
   },
   storageNewText: {
     fontSize: 12,
-    color: '#3B82F6',
+    color: '#3B82F6'
   },
   databaseIconBox: {
     width: 40,
@@ -706,32 +708,32 @@ const styles = StyleSheet.create({
     backgroundColor: '#DBEAFE',
     borderRadius: 12,
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'center'
   },
   progressBarWrapper: {
-    gap: 6,
+    gap: 6
   },
   progressBarHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'center'
   },
   progressText: {
     fontSize: 11,
-    color: '#6B7280',
+    color: theme.textSecondary
   },
   percentageText: {
-    fontSize: 11,
+    fontSize: 11
   },
   progressBarBg: {
     height: 8,
     backgroundColor: '#DBEAFE',
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: 'hidden'
   },
   progressBarFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 4
   },
   limitWarning: {
     flexDirection: 'row',
@@ -740,27 +742,23 @@ const styles = StyleSheet.create({
     marginTop: 10,
     backgroundColor: '#FEF2F2',
     padding: 8,
-    borderRadius: 10,
+    borderRadius: 10
   },
   warningText: {
     fontSize: 11,
-    color: '#EF4444',
-    flex: 1,
+    color: theme.accentStrong,
+    flex: 1
   },
-  textRed: { color: '#EF4444' },
-  textBlue: { color: '#2563EB' },
-  bgRed: { backgroundColor: '#EF4444' },
-  bgBlue: { backgroundColor: '#2563EB' },
   blobTop: {
     position: 'absolute',
     top: -50,
     right: -50,
     width: 200,
     height: 200,
-    backgroundColor: '#FFE4E6',
+    backgroundColor: theme.cardSoftAlt,
     borderRadius: 100,
     opacity: 0.5,
-    zIndex: -1,
+    zIndex: -1
   },
   blobBottom: {
     position: 'absolute',
@@ -768,10 +766,9 @@ const styles = StyleSheet.create({
     left: -50,
     width: 200,
     height: 200,
-    backgroundColor: '#F3E8FF',
+    backgroundColor: theme.cardSoft,
     borderRadius: 100,
     opacity: 0.5,
-    zIndex: -1,
-  },
-});
-
+    zIndex: -1
+  }
+})
