@@ -7,6 +7,7 @@ import { QuizSession, QuizSessionSchema } from '../../schemas/quiz-session.schem
 import { Quiz, QuizSchema } from '../../schemas/quiz.schema';
 import { QuizResult, QuizResultSchema } from '../../schemas/quiz-result.schema';
 import { Couple, CoupleSchema } from '../../schemas/couple.schema';
+import { PlanLimitsModule } from '../plan-limits/plan-limits.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { Couple, CoupleSchema } from '../../schemas/couple.schema';
       { name: QuizResult.name, schema: QuizResultSchema },
       { name: Couple.name, schema: CoupleSchema },
     ]),
+    PlanLimitsModule,
   ],
   controllers: [QuizController],
   providers: [QuizService, QuizGateway],

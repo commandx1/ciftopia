@@ -39,6 +39,13 @@ export class QuizController {
     return this.quizService.getActiveSession(coupleId);
   }
 
+  @Get('today-stats')
+  async getTodayStats(@Req() req: any) {
+    const coupleId = req.user.coupleId?._id || req.user.coupleId;
+    if (!coupleId) return { used: 0, limit: 2 };
+    return this.quizService.getTodayStats(coupleId.toString());
+  }
+
   @Post('session/cancel')
   async cancelSession(@Body('sessionId') sessionId: string) {
     return this.quizService.cancelSession(sessionId);

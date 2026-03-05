@@ -2,6 +2,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, UpdateQuery } from 'mongoose';
@@ -18,6 +19,7 @@ import {
 } from '../../schemas/quiz-result.schema';
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
 import { NotificationService } from '../notification/notification.service';
+import { PlanLimitsService } from '../plan-limits/plan-limits.service';
 
 @Injectable()
 export class QuizService {
@@ -34,6 +36,7 @@ export class QuizService {
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
     private configService: ConfigService,
     private notificationService: NotificationService,
+    private planLimitsService: PlanLimitsService,
   ) {
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
     this.openai = new OpenAI({ apiKey: apiKey || '' });
@@ -47,6 +50,22 @@ export class QuizService {
       .findById(coupleId)
       .populate('partner1 partner2');
     if (!couple) throw new NotFoundException('Couple not found');
+
+    const planCode = (couple as any).planCode || 'free';
+    const limits = await this.planLimitsService.getLimits(planCode);
+    const dailyLimit = limits.dailyQuiz ?? 2;
+    if (typeof dailyLimit === 'number' && dailyLimit >= 0) {
+      const { startOfToday, endOfToday } = this.getTodayRange();
+      const todayCount = await this.quizResultModel.countDocuments({
+        coupleId: new Types.ObjectId(coupleId),
+        createdAt: { $gte: startOfToday, $lte: endOfToday },
+      });
+      if (todayCount >= dailyLimit) {
+        throw new ForbiddenException(
+          'Günlük quiz limitine ulaştınız. Yarın tekrar deneyebilir veya Premium ile sınırsız quiz çözebilirsiniz.',
+        );
+      }
+    }
 
     // 1. Check for existing active session
     const activeSession = await this.quizSessionModel
@@ -102,6 +121,27 @@ export class QuizService {
     });
 
     return session.populate('quizId');
+  }
+
+  private getTodayRange(): { startOfToday: Date; endOfToday: Date } {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const endOfToday = new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000 - 1);
+    return { startOfToday, endOfToday };
+  }
+
+  async getTodayStats(coupleId: string): Promise<{ used: number; limit: number }> {
+    const couple = await this.coupleModel.findById(coupleId).lean();
+    const planCode = (couple as any)?.planCode || 'free';
+    const limits = await this.planLimitsService.getLimits(planCode);
+    const dailyLimit = limits.dailyQuiz ?? 2;
+    const limit = typeof dailyLimit === 'number' && dailyLimit >= 0 ? dailyLimit : 999;
+    const { startOfToday, endOfToday } = this.getTodayRange();
+    const used = await this.quizResultModel.countDocuments({
+      coupleId: new Types.ObjectId(coupleId),
+      createdAt: { $gte: startOfToday, $lte: endOfToday },
+    });
+    return { used, limit };
   }
 
   private async generateAIQuestions(category: string) {
