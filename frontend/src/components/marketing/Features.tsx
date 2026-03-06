@@ -17,12 +17,12 @@ interface FeatureCardProps {
   icon: React.ReactNode
   title: string
   description: string
-  color: string
+  color?: string
   iconBg: string
   isLarge?: boolean
 }
 
-const FeatureCard = ({ icon, title, description, color, iconBg, isLarge }: FeatureCardProps) => (
+const FeatureCard = ({ icon, title, description, iconBg, isLarge }: FeatureCardProps) => (
   <div
     className={cn(
       'bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-sm hover:shadow-xl transition-all hover:-translate-y-2 group border border-gray-100 dark:border-slate-800',
