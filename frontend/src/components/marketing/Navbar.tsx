@@ -23,18 +23,12 @@ export const Navbar = () => {
             >
               Nasıl Çalışır
             </Link>
-            <Link
+            {/* <Link
               href='/#testimonials'
               className='text-gray-700 hover:text-rose-primary transition-colors font-medium dark:text-gray-300 dark:hover:text-rose-400'
             >
               Yorumlar
-            </Link>
-            <Link
-              href='/privacy'
-              className='text-gray-700 hover:text-rose-primary transition-colors font-medium dark:text-gray-300 dark:hover:text-rose-400'
-            >
-              Gizlilik
-            </Link>
+            </Link> */}
           </div>
 
           {/* <div className='flex items-center space-x-4'>
