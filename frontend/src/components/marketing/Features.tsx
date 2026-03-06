@@ -9,10 +9,7 @@ import {
   CalendarHeart,
   Music,
   MessageCircleQuestion,
-  MapPin,
   Mail,
-  Gift,
-  ArrowRight
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 

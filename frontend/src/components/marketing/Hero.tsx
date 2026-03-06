@@ -1,5 +1,5 @@
 import React from 'react'
-import { ArrowRight, Play, Star, Heart, Camera } from 'lucide-react'
+import { ArrowRight, Play, Heart, Camera } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import Image from 'next/image'

@@ -23,7 +23,6 @@ export async function middleware(request: NextRequest) {
   // Protokolü belirle (Local'de http, prod'da https)
   const protocol = request.headers.get('x-forwarded-proto') || (host.includes('localhost') || host.includes('.local') ? 'http' : 'https')
   const baseAbsoluteUrl = `${protocol}://${host}`
-  const mainDomainUrl = process.env.NEXT_PUBLIC_URL || `${protocol}://${mainDomain}`
 
   // ═══════════════════════════════════════════════════════
   // ANA DOMAIN (ciftopia.com) - Marketing (kayıt sadece mobile-app)
