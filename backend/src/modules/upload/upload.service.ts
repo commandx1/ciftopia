@@ -138,6 +138,26 @@ export class UploadService {
     }
   }
 
+  /**
+   * Buffer'ı S3'e yükler (örn. Suno/Mureka'dan indirilen şarkı).
+   * Key döndürür.
+   */
+  async uploadBuffer(
+    key: string,
+    buffer: Buffer,
+    contentType: string,
+  ): Promise<string> {
+    await this.s3Client.send(
+      new PutObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+        Body: buffer,
+        ContentType: contentType,
+      }),
+    );
+    return key;
+  }
+
   async deleteFile(key: string): Promise<void> {
     try {
       if (key.startsWith('http')) return; // Don't try to delete external URLs
