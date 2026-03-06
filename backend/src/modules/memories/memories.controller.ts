@@ -14,7 +14,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { MemoriesService } from './memories.service';
-import { CreateMemoryDto } from './dto/memories.dto';
+import { CreateMemoryDto, GenerateNovelDto } from './dto/memories.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CoupleOwnerGuard } from '../auth/guards/couple-owner.guard';
 import { Request, Response } from 'express';
@@ -30,6 +30,13 @@ interface AuthRequest extends Request {
 @Controller('memories')
 export class MemoriesController {
   constructor(private readonly memoriesService: MemoriesService) {}
+
+  @Get('for-story')
+  @UseGuards(JwtAuthGuard)
+  async getMemoriesForStory(@Req() req: AuthRequest) {
+    const coupleId = req.user.coupleId?._id || req.user.coupleId;
+    return this.memoriesService.findForStoryList(coupleId.toString());
+  }
 
   @Get()
   @UseGuards(JwtAuthGuard)
@@ -86,6 +93,18 @@ export class MemoriesController {
   @HttpCode(HttpStatus.ACCEPTED)
   async generateSong(@Req() req: AuthRequest, @Param('id') id: string) {
     return this.memoriesService.generateSong(req.user._id, id);
+  }
+
+  @Get('story/:id')
+  @UseGuards(JwtAuthGuard)
+  async getStory(@Req() req: AuthRequest, @Param('id') id: string) {
+    return this.memoriesService.getStory(req.user._id, id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('generate-novel')
+  async generateNovel(@Req() req: AuthRequest, @Body() dto: GenerateNovelDto) {
+    return this.memoriesService.generateNovel(req.user._id, dto.memoryIds);
   }
 
   @UseGuards(JwtAuthGuard)

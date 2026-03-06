@@ -10,8 +10,10 @@ import axios from 'axios';
 import * as path from 'path';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
+import { GoogleGenAI } from '@google/genai';
 import { Memory, MemoryDocument } from '../../schemas/memory.schema';
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
+import { Story, StoryDocument } from '../../schemas/story.schema';
 import { CreateMemoryDto } from './dto/memories.dto';
 import { UploadService } from '../upload/upload.service';
 import { ActivityService } from '../activity/activity.service';
@@ -31,10 +33,13 @@ interface QueryParams {
 @Injectable()
 export class MemoriesService {
   private openai: OpenAI;
+  private gemini: GoogleGenAI | null = null;
+  private readonly geminiModel: string;
 
   constructor(
     @InjectModel(Memory.name) private memoryModel: Model<MemoryDocument>,
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
+    @InjectModel(Story.name) private storyModel: Model<StoryDocument>,
     private uploadService: UploadService,
     private activityService: ActivityService,
     private notificationService: NotificationService,
@@ -43,6 +48,14 @@ export class MemoriesService {
   ) {
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
     this.openai = new OpenAI({ apiKey: apiKey || '' });
+    const geminiKey = this.configService.get<string>('GEMINI_API_KEY');
+    if (geminiKey) {
+      this.gemini = new GoogleGenAI({ apiKey: geminiKey });
+      this.geminiModel =
+        this.configService.get<string>('GEMINI_MODEL') || 'gemini-2.0-flash';
+    } else {
+      this.geminiModel = 'gemini-2.0-flash';
+    }
   }
 
   private async transformPhotos(memories: MemoryDocument | MemoryDocument[]) {
@@ -54,7 +67,7 @@ export class MemoriesService {
         const memoryObj = memory.toObject ? memory.toObject() : memory;
 
         // Keep raw photo keys/objects for editing
-        (memoryObj as any).rawPhotos = memoryObj.photos || [];
+        memoryObj.rawPhotos = memoryObj.photos || [];
 
         // Transform memory photos to pre-signed URLs
         if (memoryObj.photos && memoryObj.photos.length > 0) {
@@ -83,11 +96,10 @@ export class MemoriesService {
         }
 
         // Üretilen şarkı varsa presigned URL ekle
-        if ((memoryObj as any).generatedSongKey) {
-          (memoryObj as any).generatedSongUrl =
-            await this.uploadService.getPresignedUrl(
-              (memoryObj as any).generatedSongKey,
-            );
+        if (memoryObj.generatedSongKey) {
+          memoryObj.generatedSongUrl = await this.uploadService.getPresignedUrl(
+            memoryObj.generatedSongKey,
+          );
         }
 
         return memoryObj;
@@ -165,6 +177,46 @@ export class MemoriesService {
     };
   }
 
+  /** Çifte ait anıları content olmadan listeler (hikaye seçimi için). */
+  async findForStoryList(coupleId: string) {
+    const memories = await this.memoryModel
+      .find({ coupleId: new Types.ObjectId(coupleId) })
+      .sort({ date: 1 })
+      .select('-content')
+      .populate('authorId', 'firstName lastName')
+      .exec();
+
+    const transformed = await this.transformPhotos(memories);
+    return {
+      memories: Array.isArray(transformed) ? transformed : [transformed],
+    };
+  }
+
+  /** Tek bir hikayeyi döndürür (çifte ait olmalı). audioUrl presigned olarak eklenir. */
+  async getStory(userId: string, storyId: string) {
+    const couple = await this.coupleModel.findOne({
+      $or: [
+        { partner1: new Types.ObjectId(userId) },
+        { partner2: new Types.ObjectId(userId) },
+      ],
+    });
+    if (!couple) throw new NotFoundException('Çift hesabı bulunamadı.');
+    const story = await this.storyModel.findOne({
+      _id: new Types.ObjectId(storyId),
+      coupleId: couple._id,
+    });
+    if (!story) throw new NotFoundException('Hikâye bulunamadı.');
+    const audioUrl = story.audioKey
+      ? await this.uploadService.getPresignedUrl(story.audioKey)
+      : undefined;
+    return {
+      _id: story._id.toString(),
+      content: story.content,
+      date: story.date,
+      audioUrl,
+    };
+  }
+
   async create(userId: string, createMemoryDto: CreateMemoryDto) {
     const couple = await this.coupleModel.findOne({
       $or: [
@@ -219,7 +271,7 @@ export class MemoriesService {
     const updatedCouple = await this.coupleModel.findById(couple._id);
 
     return {
-      ...((await this.transformPhotos(populated)) as any),
+      ...(await this.transformPhotos(populated)),
       storageUsed: updatedCouple?.storageUsed,
     };
   }
@@ -326,7 +378,7 @@ export class MemoriesService {
     const updatedCouple = await this.coupleModel.findById(memory.coupleId);
 
     return {
-      ...((await this.transformPhotos(populated)) as any),
+      ...(await this.transformPhotos(populated)),
       storageUsed: updatedCouple?.storageUsed,
     };
   }
@@ -535,9 +587,246 @@ export class MemoriesService {
 
   private readonly SUNO_BASE = 'https://api.sunoapi.org';
 
+  /** Gemini ile hikaye metni üretir (GEMINI_API_KEY varsa kullanılır). */
+  private async generateNovelWithGemini(
+    prompt: string,
+  ): Promise<{ story: string; promptTokens: number; completionTokens: number }> {
+    if (!this.gemini) throw new Error('Gemini client not configured');
+    const response = await this.gemini.models.generateContent({
+      model: this.geminiModel,
+      contents: prompt,
+      config: {
+        maxOutputTokens: 4000,
+        temperature: 0.9,
+      },
+    });
+    const text = response.text?.trim();
+    if (!text) throw new Error('Gemini returned empty content');
+    const usage = (response as { usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number } })
+      .usageMetadata;
+    return {
+      story: text,
+      promptTokens: usage?.promptTokenCount ?? 0,
+      completionTokens: usage?.candidatesTokenCount ?? 0,
+    };
+  }
+
+  /** OpenAI ile hikaye metni üretir. */
+  private async generateNovelWithOpenAI(
+    prompt: string,
+  ): Promise<{ story: string; promptTokens: number; completionTokens: number }> {
+    const response = await this.openai.chat.completions.create({
+      model: 'gpt-4.1',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 4000,
+      temperature: 0.9,
+    });
+    const story = response.choices[0]?.message?.content?.trim();
+    if (!story) throw new Error('OpenAI returned empty content');
+    return {
+      story,
+      promptTokens: response.usage?.prompt_tokens ?? 0,
+      completionTokens: response.usage?.completion_tokens ?? 0,
+    };
+  }
+
+  async generateNovel(
+    userId: string,
+    memoryIds: string[],
+  ): Promise<{ story: string; storyId: string }> {
+    const couple = await this.coupleModel
+      .findOne({
+        $or: [
+          { partner1: new Types.ObjectId(userId) },
+          { partner2: new Types.ObjectId(userId) },
+        ],
+      })
+      .populate('partner1 partner2');
+
+    if (!couple) {
+      throw new NotFoundException('Çift hesabı bulunamadı.');
+    }
+
+    const coupleIdStr = couple._id.toString();
+    this.appGateway.emitToCouple(coupleIdStr, 'novel:started', {});
+
+    const partner1 = couple.partner1 as unknown as User | undefined;
+    const partner2 = couple.partner2 as unknown as User | undefined;
+    const partner1Name = partner1 ? partner1.firstName.trim() : 'Biri';
+    const partner2Name = partner2 ? partner2.firstName.trim() : 'Biri';
+
+    const memoryFilter =
+      memoryIds?.length > 0
+        ? {
+            _id: { $in: memoryIds.map((id) => new Types.ObjectId(id)) },
+            coupleId: couple._id,
+          }
+        : { coupleId: couple._id };
+
+    this.appGateway.emitToCouple(coupleIdStr, 'novel:step', { step: 1 });
+
+    const memories = await this.memoryModel
+      .find(memoryFilter)
+      .sort({ date: 1 })
+      .select('title content date mood authorId')
+      .populate('authorId', 'firstName lastName')
+      .exec();
+
+    if (!memories.length) {
+      this.appGateway.emitToCouple(coupleIdStr, 'novel:error', {
+        message: 'Hikâyeye dönüştürülecek en az bir anı bulunmalı.',
+      });
+      throw new BadRequestException(
+        'Hikâyeye dönüştürülecek en az bir anı bulunmalı.',
+      );
+    }
+
+    const blocks = memories.map((m) => {
+      const author = m.authorId as unknown as User | undefined;
+      const authorName = author ? author.firstName.trim() : undefined;
+      const dateStr = m.date
+        ? new Date(m.date).toLocaleDateString('tr-TR', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })
+        : '';
+
+      return [
+        dateStr ? `Tarih: ${dateStr}` : '',
+        authorName ? `Yazan: ${authorName}` : '',
+        `Metin: ${m.content}`,
+      ]
+        .filter(Boolean)
+        .join('\n');
+    });
+
+    const joined = blocks.join('\n\n---\n\n');
+    /* const maxChars = 8000;
+    const baseText =
+      joined.length > maxChars ? joined.slice(0, maxChars) : joined; */
+
+    const prompt =
+      `Aşağıdaki günlük/anı kayıtlarını temel alarak ${partner1Name} ve ${partner2Name} hakkında 5 bölümlük bir aşk hikâyesi yaz.
+
+Kurallar:
+- Ana karakter isimleri olarak mümkün olduğunca sadece "${partner1Name}" ve "${partner2Name}" kullan. Yeni ana karakter isimleri uydurma.
+- Her blokta belirtilen "Yazan" bilgisini dikkate al; sahneleri kimin bakış açısından ağırlıklı yazacağını buna göre seç.
+- Hikâyenin planını, karakter listesini ve çatışmasını kendi içinde düşünebilirsin; ancak ÇIKTIDA bunları yazma.
+- Çıktıda SADECE hikâyenin kendisi olsun; 5 bölümden oluşsun.
+- Çıktıyı **markdown** formatında üret ve şu yapıyı kullan:
+  - Her bölüm için ` +
+      '```' +
+      `## Bölüm N: Bölüm Başlığı` +
+      '```' +
+      ` şeklinde bir başlık yaz (N 1'den 5'e kadar).
+  - Bölüm başlıklarından önce veya sonra "Plan", "Karakterler", "Çatışma" gibi ekstra başlıklar ekleme.
+- Dil Türkçe olsun.
+- Toplam uzunluk en az 1500 kelime olsun.
+
+Anılar (her blok bir anıyı temsil eder):
+
+${joined}`;
+
+    try {
+      this.appGateway.emitToCouple(coupleIdStr, 'novel:step', { step: 2 });
+
+      let result: { story: string; promptTokens: number; completionTokens: number };
+      if (this.gemini) {
+        try {
+          result = await this.generateNovelWithGemini(prompt);
+        } catch (geminiErr) {
+          result = await this.generateNovelWithOpenAI(prompt);
+        }
+      } else {
+        result = await this.generateNovelWithOpenAI(prompt);
+      }
+      const { story, promptTokens, completionTokens } = result;
+
+      if (!story) {
+        this.appGateway.emitToCouple(coupleIdStr, 'novel:error', {
+          message: 'Hikâye oluşturulurken beklenmeyen bir hata oluştu.',
+        });
+        throw new BadRequestException(
+          'Hikâye oluşturulurken beklenmeyen bir hata oluştu.',
+        );
+      }
+
+      this.appGateway.emitToCouple(coupleIdStr, 'novel:step', { step: 3 });
+      const created = await this.storyModel.create({
+        coupleId: couple._id,
+        content: story,
+        date: new Date(),
+        textPromptTokens: promptTokens || undefined,
+        textCompletionTokens: completionTokens || undefined,
+      });
+      const storyId = created._id.toString();
+      await this.generateStoryTtsInBackground(storyId, story, coupleIdStr);
+
+      this.appGateway.emitToCouple(coupleIdStr, 'novel:step', { step: 4 });
+      this.appGateway.emitToCouple(coupleIdStr, 'novel:done', { story, storyId });
+
+      return { story, storyId };
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Hikâye oluşturulamadı.';
+      this.appGateway.emitToCouple(coupleIdStr, 'novel:error', { message });
+      throw new BadRequestException(message);
+    }
+  }
+
+  /** TTS için metin: markdown temizlenir, en fazla 4096 karakter (OpenAI limit). */
+  private stripForTts(text: string): string {
+    const stripped = text
+      .replace(/#{1,6}\s*/g, '')
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/\*([^*]+)\*/g, '$1')
+      .replace(/\n{2,}/g, '\n\n')
+      .trim();
+    return stripped.slice(0, 4096);
+  }
+
+  /** Hikaye metnini gpt-4o-mini-tts ile seslendirir, S3'e yükler, story'yi günceller ve socket ile bildirir. */
+  private async generateStoryTtsInBackground(
+    storyId: string,
+    content: string,
+    coupleIdStr: string,
+  ): Promise<void> {
+    const textForTts = this.stripForTts(content);
+    if (!textForTts) return;
+    try {
+      const response = await this.openai.audio.speech.create({
+        model: 'gpt-4o-mini-tts',
+        voice: 'coral',
+        input: textForTts,
+        instructions: 'Türkçe, sakin ve samimi bir tonla oku. Masal anlatır gibi.',
+      });
+      const buffer = Buffer.from(await response.arrayBuffer());
+      const key = `stories/${storyId}.mp3`;
+      await this.uploadService.uploadBuffer(key, buffer, 'audio/mpeg');
+      await this.storyModel.findByIdAndUpdate(storyId, {
+        audioKey: key,
+        ttsInputCharacters: textForTts.length,
+      });
+      const audioUrl = await this.uploadService.getPresignedUrl(key);
+      this.appGateway.emitToCouple(coupleIdStr, 'novel:audio-ready', {
+        storyId,
+        audioUrl,
+      });
+    } catch {
+      // TTS hatası sessizce yok sayılır; hikaye metni zaten mevcut
+    }
+  }
+
   /** Anı içeriğinden GPT-4o-mini ile şarkı sözü için en fazla 200 karakterlik prompt üretir. */
-  private async buildLyricsPromptWithGpt(memory: MemoryDocument): Promise<string> {
-    const content = `Başlık: ${memory.title}\n\nİçerik: ${(memory.content || '').trim()}`.slice(0, 2000);
+  private async buildLyricsPromptWithGpt(
+    memory: MemoryDocument,
+  ): Promise<string> {
+    const content =
+      `Başlık: ${memory.title}\n\nİçerik: ${(memory.content || '').trim()}`.slice(
+        0,
+        2000,
+      );
     try {
       const response = await this.openai.chat.completions.create({
         model: 'gpt-4o-mini',
@@ -558,11 +847,17 @@ export class MemoriesService {
     } catch {
       // Hata durumunda fallback
     }
-    return `${memory.title}. ${(memory.content || '').trim()}`.slice(0, 200) || memory.title;
+    return (
+      `${memory.title}. ${(memory.content || '').trim()}`.slice(0, 200) ||
+      memory.title
+    );
   }
 
   /** 202 döner; şarkı üretimi arka planda yapılır, ilerleme socket ile gönderilir. */
-  async generateSong(userId: string, memoryId: string): Promise<{ started: boolean; memoryId: string }> {
+  async generateSong(
+    userId: string,
+    memoryId: string,
+  ): Promise<{ started: boolean; memoryId: string }> {
     const memory = await this.memoryModel.findById(memoryId);
     if (!memory) {
       throw new NotFoundException('Anı bulunamadı.');
@@ -584,7 +879,12 @@ export class MemoriesService {
       throw new BadRequestException('Müzik üretimi yapılandırılmamış.');
     }
 
-    this.generateSongInBackground(userId, memoryId, couple._id.toString(), apiKey).catch(() => {});
+    this.generateSongInBackground(
+      userId,
+      memoryId,
+      couple._id.toString(),
+      apiKey,
+    ).catch(() => {});
     return { started: true, memoryId };
   }
 
@@ -600,7 +900,11 @@ export class MemoriesService {
     };
 
     const emit = (stage: string, payload?: Record<string, unknown>) => {
-      this.appGateway.emitToCouple(coupleId, 'song:progress', { memoryId, stage, ...payload });
+      this.appGateway.emitToCouple(coupleId, 'song:progress', {
+        memoryId,
+        stage,
+        ...payload,
+      });
     };
 
     try {
@@ -611,7 +915,11 @@ export class MemoriesService {
 
       const lyricsPrompt = await this.buildLyricsPromptWithGpt(memory);
 
-      const lyricsRes = await axios.post<{ code?: number; msg?: string; data?: { taskId?: string } }>(
+      const lyricsRes = await axios.post<{
+        code?: number;
+        msg?: string;
+        data?: { taskId?: string };
+      }>(
         `${this.SUNO_BASE}/api/v1/lyrics`,
         {
           prompt: lyricsPrompt,
@@ -620,7 +928,9 @@ export class MemoriesService {
         { headers, timeout: 15000 },
       );
       if (lyricsRes.data?.code !== 200 || !lyricsRes.data?.data?.taskId) {
-        throw new Error(lyricsRes.data?.msg ?? 'Şarkı sözleri görevi oluşturulamadı.');
+        throw new Error(
+          lyricsRes.data?.msg ?? 'Şarkı sözleri görevi oluşturulamadı.',
+        );
       }
       const lyricsTaskId = lyricsRes.data.data.taskId;
 
@@ -641,9 +951,15 @@ export class MemoriesService {
           timeout: 10000,
         });
         const status = recordRes.data?.data?.status;
-        if (status === 'SUCCESS' && recordRes.data?.data?.response?.data?.length) {
-          const first = recordRes.data.data.response.data.find((d) => d.status === 'complete');
-          lyricsText = first?.text ?? recordRes.data.data.response.data[0]?.text ?? '';
+        if (
+          status === 'SUCCESS' &&
+          recordRes.data?.data?.response?.data?.length
+        ) {
+          const first = recordRes.data.data.response.data.find(
+            (d) => d.status === 'complete',
+          );
+          lyricsText =
+            first?.text ?? recordRes.data.data.response.data[0]?.text ?? '';
           if (lyricsText) break;
         }
         if (
@@ -664,7 +980,11 @@ export class MemoriesService {
 
       emit('melody');
 
-      const genRes = await axios.post<{ code?: number; msg?: string; data?: { taskId?: string } }>(
+      const genRes = await axios.post<{
+        code?: number;
+        msg?: string;
+        data?: { taskId?: string };
+      }>(
         `${this.SUNO_BASE}/api/v1/generate`,
         {
           customMode: true,
@@ -703,9 +1023,13 @@ export class MemoriesService {
         const sunoData = songRecordRes.data?.data?.response?.sunoData;
         if (status === 'SUCCESS' && sunoData?.length) {
           const first = sunoData[0];
-          audioUrl = first?.audioUrl ?? (first as { audio_url?: string })?.audio_url ?? null;
+          audioUrl =
+            first?.audioUrl ??
+            (first as { audio_url?: string })?.audio_url ??
+            null;
           if (audioUrl) {
-            songDurationSeconds = typeof first?.duration === 'number' ? first.duration : undefined;
+            songDurationSeconds =
+              typeof first?.duration === 'number' ? first.duration : undefined;
             break;
           }
         }
@@ -732,7 +1056,10 @@ export class MemoriesService {
       const key = `songs/${memoryId}-${Date.now()}.mp3`;
       await this.uploadService.uploadBuffer(key, buffer, 'audio/mpeg');
 
-      const updatePayload: { generatedSongKey: string; generatedSongDurationSeconds?: number } = {
+      const updatePayload: {
+        generatedSongKey: string;
+        generatedSongDurationSeconds?: number;
+      } = {
         generatedSongKey: key,
       };
       if (typeof songDurationSeconds === 'number') {
@@ -756,7 +1083,8 @@ export class MemoriesService {
     } catch (err) {
       this.appGateway.emitToCouple(coupleId, 'song:error', {
         memoryId,
-        message: err instanceof Error ? err.message : 'Şarkı üretimi başarısız oldu.',
+        message:
+          err instanceof Error ? err.message : 'Şarkı üretimi başarısız oldu.',
       });
     }
   }

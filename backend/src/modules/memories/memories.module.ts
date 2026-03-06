@@ -4,6 +4,7 @@ import { MemoriesController } from './memories.controller';
 import { MemoriesService } from './memories.service';
 import { Memory, MemorySchema } from '../../schemas/memory.schema';
 import { Couple, CoupleSchema } from '../../schemas/couple.schema';
+import { Story, StorySchema } from '../../schemas/story.schema';
 import { UploadModule } from '../upload/upload.module';
 import { ActivityModule } from '../activity/activity.module';
 import { NotificationModule } from '../notification/notification.module';
@@ -14,6 +15,7 @@ import { EventsModule } from '../events/events.module';
     MongooseModule.forFeature([
       { name: Memory.name, schema: MemorySchema },
       { name: Couple.name, schema: CoupleSchema },
+      { name: Story.name, schema: StorySchema },
     ]),
     UploadModule,
     ActivityModule,
