@@ -7,6 +7,7 @@ import { Couple, CoupleSchema } from '../../schemas/couple.schema';
 import { UploadModule } from '../upload/upload.module';
 import { ActivityModule } from '../activity/activity.module';
 import { NotificationModule } from '../notification/notification.module';
+import { EventsModule } from '../events/events.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { NotificationModule } from '../notification/notification.module';
     UploadModule,
     ActivityModule,
     NotificationModule,
+    EventsModule,
   ],
   controllers: [MemoriesController],
   providers: [MemoriesService],

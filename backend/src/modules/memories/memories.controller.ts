@@ -10,6 +10,8 @@ import {
   UseGuards,
   Req,
   Res,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { MemoriesService } from './memories.service';
 import { CreateMemoryDto } from './dto/memories.dto';
@@ -77,6 +79,13 @@ export class MemoriesController {
   @Post(':id/toggle-favorite')
   async toggleFavorite(@Req() req: AuthRequest, @Param('id') id: string) {
     return this.memoriesService.toggleFavorite(req.user._id, id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/generate-song')
+  @HttpCode(HttpStatus.ACCEPTED)
+  async generateSong(@Req() req: AuthRequest, @Param('id') id: string) {
+    return this.memoriesService.generateSong(req.user._id, id);
   }
 
   @UseGuards(JwtAuthGuard)

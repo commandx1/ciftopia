@@ -16,6 +16,9 @@ export interface Memory {
     name: string;
   };
   favorites: string[];
+  generatedSongUrl?: string;
+  generatedSongDurationSeconds?: number;
+  generatedLyrics?: string;
   authorId: {
     _id: string;
     firstName: string;
@@ -76,6 +79,15 @@ export const memoriesApi = {
     const response = await client.post(`/memories/${id}/toggle-favorite`, {}, {
       headers: { Authorization: `Bearer ${token}` },
     });
+    return response.data;
+  },
+
+  generateSong: async (id: string, token?: string) => {
+    const response = await client.post<{ started: boolean; memoryId: string }>(
+      `/memories/${id}/generate-song`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
     return response.data;
   },
 };

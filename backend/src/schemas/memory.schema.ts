@@ -58,6 +58,18 @@ export class Memory {
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
   favorites: Types.ObjectId[];
+
+  /** Anıdan üretilen şarkı S3 key (müzik üret butonu ile doldurulur) */
+  @Prop({ type: String, required: false })
+  generatedSongKey?: string;
+
+  /** Üretilen şarkının süresi (saniye); Suno record-info response'tan alınır. */
+  @Prop({ type: Number, required: false })
+  generatedSongDurationSeconds?: number;
+
+  /** Suno ile üretilen şarkı sözleri (memories collection'a kaydedilir) */
+  @Prop({ type: String, required: false })
+  generatedLyrics?: string;
 }
 
 export const MemorySchema = SchemaFactory.createForClass(Memory);

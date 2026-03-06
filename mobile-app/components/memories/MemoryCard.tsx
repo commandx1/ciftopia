@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Image, ScrollView, Dimensions, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Image, ScrollView, Dimensions, NativeSyntheticEvent, NativeScrollEvent, ActivityIndicator } from 'react-native';
 import { Text } from '../ui/Text';
-import { Calendar, MapPin, Edit2, Trash2, Images } from 'lucide-react-native';
+import { Calendar, MapPin, Edit2, Trash2, Images, Music, Play } from 'lucide-react-native';
 import { MemoryMoodBadge, moodConfigs } from './MemoryMoodBadge';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -25,12 +25,18 @@ interface MemoryCardProps {
   onToggleFavorite: (memory: any) => void;
   isUserFavorite: boolean;
   isTogglingFavorite: boolean;
+  onGenerateSong?: (memoryId: string) => Promise<void>;
+  isGeneratingSong?: boolean;
+  onPlaySong?: (memory: any) => void;
 }
 
 export default function MemoryCard({
   memory,
   onEdit,
   onDelete,
+  onGenerateSong,
+  isGeneratingSong,
+  onPlaySong,
 }: MemoryCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -132,6 +138,27 @@ export default function MemoryCard({
           <View style={styles.footer}>
             <MemoryMoodBadge mood={memory.mood} />
             <View style={styles.actions}>
+              {memory.generatedSongUrl && (
+                <TouchableOpacity
+                  onPress={() => onPlaySong?.(memory)}
+                  style={styles.actionBtn}
+                >
+                  <Play size={14} color={theme.accent} />
+                </TouchableOpacity>
+              )}
+              {onGenerateSong && (
+                <TouchableOpacity
+                  onPress={() => onGenerateSong(memory._id)}
+                  disabled={!!isGeneratingSong}
+                  style={styles.actionBtn}
+                >
+                  {isGeneratingSong ? (
+                    <ActivityIndicator size="small" color={theme.accent} />
+                  ) : (
+                    <Music size={14} color={theme.accent} />
+                  )}
+                </TouchableOpacity>
+              )}
               <TouchableOpacity onPress={() => onEdit(memory)} style={styles.actionBtn}>
                 <Edit2 size={14} color="#3B82F6" />
               </TouchableOpacity>

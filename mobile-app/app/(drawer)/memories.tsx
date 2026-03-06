@@ -11,8 +11,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Text } from '../../components/ui/Text'
 import { useAuth } from '../../context/AuthContext'
+import { useAppSocket } from '../../context/AppSocketContext'
 import { memoriesApi,Memory } from '../../api/memories'
 import { useToast } from '../../components/ui/ToastProvider'
+import { GenerateSongModal } from '../../components/memories/GenerateSongModal'
+import { SongPlayerModal } from '../../components/memories/SongPlayerModal'
+import type { SongStep } from '../../components/memories/GenerateSongModal'
 import {
   Clock,
   Heart,
@@ -60,6 +64,11 @@ export default function MemoriesScreen() {
   const [isModalOpen,setIsModalOpen] = useState(false)
   const [editingMemory,setEditingMemory] = useState<Memory | null>(null)
   const [togglingFavorite,setTogglingFavorite] = useState<string | null>(null)
+  const [generatingSongId,setGeneratingSongId] = useState<string | null>(null)
+  const [songModalMemoryId,setSongModalMemoryId] = useState<string | null>(null)
+  const [songProgressStage,setSongProgressStage] = useState<SongStep>('analyzing')
+  const [playerMemory,setPlayerMemory] = useState<Memory | null>(null)
+  const { socket } = useAppSocket()
 
   // Filters
   const [sortBy,setSortBy] = useState('newest')
@@ -107,6 +116,68 @@ export default function MemoriesScreen() {
     setRefreshing(true)
     fetchMemories(false)
   }
+
+  const handleGenerateSong = async (memoryId: string) => {
+    if (!user?.accessToken) return
+    try {
+      setGeneratingSongId(memoryId)
+      const data = await memoriesApi.generateSong(memoryId, user.accessToken)
+      if (data.started) {
+        setSongModalMemoryId(memoryId)
+        setSongProgressStage('analyzing')
+      }
+    } catch (err) {
+      showToast({
+        type: 'error',
+        title: 'Hata',
+        message: (err as any)?.response?.data?.message || 'Şarkı üretimi başlatılamadı.',
+      })
+    } finally {
+      setGeneratingSongId(null)
+    }
+  }
+
+  useEffect(() => {
+    if (!socket || !songModalMemoryId) return
+    const onProgress = (payload: { memoryId: string; stage: string }) => {
+      if (payload.memoryId === songModalMemoryId && ['analyzing','lyrics','melody'].includes(payload.stage)) {
+        setSongProgressStage(payload.stage as SongStep)
+      }
+    }
+    const onComplete = (payload: {
+      memoryId: string
+      generatedSongUrl?: string
+      generatedSongDurationSeconds?: number
+    }) => {
+      if (payload.memoryId !== songModalMemoryId) return
+      setMemories(prev =>
+        prev.map(m =>
+          m._id === payload.memoryId
+            ? {
+                ...m,
+                generatedSongUrl: payload.generatedSongUrl,
+                generatedSongDurationSeconds: payload.generatedSongDurationSeconds,
+              }
+            : m,
+        ),
+      )
+      setSongModalMemoryId(null)
+      showToast({ type: 'success', title: 'Şarkı hazır', message: 'Anınızın müziği oluşturuldu.' })
+    }
+    const onError = (payload: { memoryId: string; message?: string }) => {
+      if (payload.memoryId !== songModalMemoryId) return
+      setSongModalMemoryId(null)
+      showToast({ type: 'error', title: 'Hata', message: payload.message || 'Şarkı üretilemedi.' })
+    }
+    socket.on('song:progress', onProgress)
+    socket.on('song:complete', onComplete)
+    socket.on('song:error', onError)
+    return () => {
+      socket.off('song:progress', onProgress)
+      socket.off('song:complete', onComplete)
+      socket.off('song:error', onError)
+    }
+  }, [socket, songModalMemoryId, showToast])
 
   const handleToggleFavorite = async (memory: Memory) => {
     if (togglingFavorite) return
@@ -303,6 +374,9 @@ export default function MemoriesScreen() {
                     onToggleFavorite={handleToggleFavorite}
                     isUserFavorite={memory.favorites.includes(user?._id || '')}
                     isTogglingFavorite={togglingFavorite === memory._id}
+                    onGenerateSong={handleGenerateSong}
+                    isGeneratingSong={generatingSongId === memory._id}
+                    onPlaySong={setPlayerMemory}
                   />
                 </React.Fragment>
               )
@@ -343,6 +417,14 @@ export default function MemoriesScreen() {
         onSuccess={() => fetchMemories(false)}
         editingMemory={editingMemory}
         storage={storage}
+      />
+
+      <GenerateSongModal visible={!!songModalMemoryId} currentStep={songProgressStage} />
+
+      <SongPlayerModal
+        visible={!!playerMemory}
+        memory={playerMemory}
+        onClose={() => setPlayerMemory(null)}
       />
     </SafeAreaView>
   )
