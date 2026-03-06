@@ -67,7 +67,10 @@ import {
   Zap,
   TrendingUp,
   Target,
-  Flag
+  Flag,
+  ArrowLeft,
+  ChevronUp,
+  ChevronLeft
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -2202,6 +2205,191 @@ export default function HowItWorksPage() {
                         </div>
                       </div>
                     </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Uzay Keşfi — space-explorer.tsx ile birebir telefon mockup */}
+      <section id='module-space' className='py-32 bg-gradient-to-br from-indigo-50 via-slate-50 to-[#020010]/5'>
+        <div className='max-w-[1200px] mx-auto px-6'>
+          <div className='grid grid-cols-1 lg:grid-cols-2 gap-24 items-center'>
+            <div className='order-2'>
+              <h2 className='text-5xl md:text-6xl font-bold text-gray-900 mb-6'>
+                Uzay
+                <br />
+                Keşfi
+              </h2>
+              <p className='text-xl text-gray-600 mb-8 leading-relaxed'>
+                Anılarınız, şiirleriniz ve tüm içerikleriniz uzayda yıldız, gezegen ve kuyruklu yıldız olarak canlanır.
+                Joystick ile hareket edin, nesnelere dokunun; ilişkinizin evrenini birlikte keşfedin.
+              </p>
+              <div className='space-y-6'>
+                {[
+                  {
+                    icon: Rocket,
+                    title: '3D Uzay Ortamı',
+                    desc: 'Şiirler yıldız, anılar gezegen, yapılacaklar listesi kuyruklu yıldız olarak uzayda süzülür'
+                  },
+                  {
+                    icon: MousePointer2,
+                    title: 'Joystick ile Hareket',
+                    desc: 'Sol joystick hareket, sağ joystick bakış; dokunarak nesneleri seçip ilgili sayfaya gidin'
+                  },
+                  {
+                    icon: Sparkles,
+                    title: 'İçerik Özeti Görünümü',
+                    desc: 'Her nesne seviye ve açıklama ile gösterilir; tek dokunuşla o modüle atlayın'
+                  }
+                ].map((item, i) => (
+                  <div key={i} className='flex items-start space-x-4'>
+                    <div className='w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0'>
+                      <item.icon className='text-amber-600 w-6 h-6' />
+                    </div>
+                    <div>
+                      <h4 className='font-bold text-gray-900 mb-1'>{item.title}</h4>
+                      <p className='text-gray-600'>{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Mobil Uzay Keşfi — space-explorer.tsx shell birebir */}
+            <div className='order-1 flex justify-center'>
+              <div className='w-[280px] rounded-[2.75rem] border-[14px] border-gray-800 shadow-2xl overflow-hidden bg-[#020010]'>
+                <div className='relative h-[520px] overflow-hidden'>
+                  {/* Arka plan: koyu uzay + yıldız noktaları */}
+                  <div className='absolute inset-0 bg-[#020010]' />
+                  <div className='absolute inset-0'>
+                    {[...Array(24)].map((_, i) => (
+                      <div
+                        key={i}
+                        className='absolute rounded-full bg-white opacity-80'
+                        style={{
+                          width: i % 3 === 0 ? 2 : 1,
+                          height: i % 3 === 0 ? 2 : 1,
+                          left: `${8 + (i * 13) % 84}%`,
+                          top: `${10 + (i * 17) % 78}%`
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Uzay nesneleri — S3 level_15 (star, planet_a, planet_b, planet_c, comet, ufo) */}
+                  <div className='absolute inset-0 z-[5] pointer-events-none'>
+                    <Image
+                      src='https://ciftopia-space-items.s3.eu-central-1.amazonaws.com/star/level_15.png'
+                      alt=''
+                      width={28}
+                      height={28}
+                      className='absolute object-contain opacity-90'
+                      style={{ left: '12%', top: '22%' }}
+                    />
+                    <Image
+                      src='https://ciftopia-space-items.s3.eu-central-1.amazonaws.com/planet_a/level_15.png'
+                      alt=''
+                      width={40}
+                      height={40}
+                      className='absolute object-contain opacity-95'
+                      style={{ left: '6%', top: '48%' }}
+                    />
+                    <Image
+                      src='https://ciftopia-space-items.s3.eu-central-1.amazonaws.com/planet_b/level_15.png'
+                      alt=''
+                      width={44}
+                      height={44}
+                      className='absolute object-contain opacity-95'
+                      style={{ right: '8%', top: '38%' }}
+                    />
+                    <Image
+                      src='https://ciftopia-space-items.s3.eu-central-1.amazonaws.com/planet_c/level_15.png'
+                      alt=''
+                      width={36}
+                      height={36}
+                      className='absolute object-contain opacity-95'
+                      style={{ right: '18%', top: '18%' }}
+                    />
+                    <Image
+                      src='https://ciftopia-space-items.s3.eu-central-1.amazonaws.com/comet/level_15.png'
+                      alt=''
+                      width={32}
+                      height={32}
+                      className='absolute object-contain opacity-95'
+                      style={{ left: '22%', top: '62%' }}
+                    />
+                    <Image
+                      src='https://ciftopia-space-items.s3.eu-central-1.amazonaws.com/ufo/level_15.png'
+                      alt=''
+                      width={34}
+                      height={34}
+                      className='absolute object-contain opacity-95'
+                      style={{ left: '52%', top: '28%' }}
+                    />
+                  </div>
+
+                  {/* Header — space-explorer styles.header */}
+                  <div className='absolute top-4 left-0 right-0 flex items-center justify-between px-3 z-10'>
+                    <div className='w-8 h-8 rounded-full bg-white/10 flex items-center justify-center'>
+                      <ArrowLeft className='w-4 h-4 text-amber-200' />
+                    </div>
+                    <span
+                      className='text-amber-200 font-bold text-sm tracking-[0.2em]'
+                      style={{ textShadow: '0 0 12px rgba(251,191,36,0.3)' }}
+                    >
+                      UZAY KEŞFİ
+                    </span>
+                    <div className='w-8' />
+                  </div>
+
+                  {/* Crosshair — ortada */}
+                  <div className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 z-[8]'>
+                    <div className='absolute top-[9px] left-0 w-5 h-px bg-amber-400/40' />
+                    <div className='absolute top-0 left-[9px] w-px h-5 bg-amber-400/40' />
+                    <div className='absolute top-[7px] left-[7px] w-1 h-1 rounded-full bg-amber-400/60' />
+                  </div>
+
+                  {/* Sol Joystick (Hareket) — JoystickOverlay moveBase + moveKnob */}
+                  <div className='absolute bottom-12 left-2 z-10'>
+                    <div
+                      className='w-16 h-16 rounded-full flex items-center justify-center border border-amber-400/20'
+                      style={{ backgroundColor: 'rgba(251,191,36,0.08)' }}
+                    >
+                      <div
+                        className='w-9 h-9 rounded-full border border-amber-400/40'
+                        style={{ backgroundColor: 'rgba(251,191,36,0.25)' }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Sağ Joystick (Bakış) — lookBase + arrows + lookKnob */}
+                  <div className='absolute bottom-12 right-2 z-10'>
+                    <div
+                      className='w-16 h-16 rounded-full flex items-center justify-center border border-amber-400/15 relative'
+                      style={{ backgroundColor: 'rgba(251,191,36,0.05)' }}
+                    >
+                      <ChevronUp className='absolute top-0.5 w-4 h-4 text-amber-400/30' />
+                      <ChevronDown className='absolute bottom-0.5 w-4 h-4 text-amber-400/30' />
+                      <ChevronLeft className='absolute left-0.5 w-4 h-4 text-amber-400/30' />
+                      <ChevronRight className='absolute right-0.5 w-4 h-4 text-amber-400/30' />
+                      <div
+                        className='w-8 h-8 rounded-full border-2 border-amber-400/40 absolute'
+                        style={{ backgroundColor: 'rgba(251,191,36,0.2)', boxShadow: '0 0 8px rgba(251,191,36,0.3)' }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Alt bilgi — infoBar */}
+                  <div className='absolute bottom-2 left-0 right-0 flex justify-center z-10'>
+                    <span
+                      className='text-[9px] text-amber-400/60 tracking-wide px-3 py-1.5 rounded-xl border border-amber-400/15'
+                      style={{ backgroundColor: 'rgba(2,0,16,0.75)' }}
+                    >
+                      Sol Joystick: Hareket | Sağ Joystick: Bakış
+                    </span>
                   </div>
                 </div>
               </div>

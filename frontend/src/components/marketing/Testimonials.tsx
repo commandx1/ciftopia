@@ -64,7 +64,7 @@ export const Testimonials = () => {
     {
       name: "Elif & Burak",
       avatar: "https://i.pravatar.cc/150?u=elif",
-      text: "Düğün hazırlıklarımızda bile kullandık. Bucket list&apos;imizi oluşturduk ve balayı planlarımızı buradan yaptık. Harika bir platform!",
+      text: "Düğün hazırlıklarımızda bile kullandık. Yapılacaklar listemizi oluşturduk ve balayı planlarımızı buradan yaptık. Harika bir platform!",
       duration: "6 aydır kullanıyor",
       rating: 5
     }
