@@ -3,6 +3,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Stack } from 'expo-router';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { PlanLimitsProvider } from '../context/PlanLimitsContext';
+import { AppSocketProvider } from '../context/AppSocketContext';
 import { ToastProvider } from '../components/ui/ToastProvider';
 import { useEffect } from 'react';
 import { useRouter, useSegments } from 'expo-router';
@@ -85,11 +86,13 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AuthProvider>
-        <PlanLimitsProvider>
-          <ToastProvider>
-            <RootLayoutNav />
-          </ToastProvider>
-        </PlanLimitsProvider>
+        <AppSocketProvider>
+          <PlanLimitsProvider>
+            <ToastProvider>
+              <RootLayoutNav />
+            </ToastProvider>
+          </PlanLimitsProvider>
+        </AppSocketProvider>
       </AuthProvider>
     </GestureHandlerRootView>
   );

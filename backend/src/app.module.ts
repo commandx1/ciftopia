@@ -23,6 +23,7 @@ import { MoodModule } from './modules/mood/mood.module';
 import { QuizModule } from './modules/quiz/quiz.module';
 import { StoreModule } from './modules/store/store.module';
 import { PlanLimitsModule } from './modules/plan-limits/plan-limits.module';
+import { EventsModule } from './modules/events/events.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { PlanLimitsModule } from './modules/plan-limits/plan-limits.module';
     QuizModule,
     StoreModule,
     PlanLimitsModule,
+    EventsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
