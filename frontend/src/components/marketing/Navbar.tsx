@@ -37,13 +37,13 @@ export const Navbar = () => {
             </Link>
           </div>
 
-          <div className='flex items-center space-x-4'>
-            <Link href='/register'>
+          {/* <div className='flex items-center space-x-4'>
+            <Link href='#'>
               <Button className='bg-gradient-to-r from-rose-primary to-coral-warm text-white rounded-full font-semibold hover:shadow-lg transition-all border-none'>
                 Hemen Başla
               </Button>
             </Link>
-          </div>
+          </div> */}
         </div>
       </nav>
     </header>

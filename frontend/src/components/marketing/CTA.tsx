@@ -20,7 +20,8 @@ export const CTA = () => {
         </p>
         
         <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
-          <Link href="/register">
+          {/* Kayıt sadece mobile-app üzerinden */}
+          <Link href="#">
             <Button size="lg" className="bg-white text-rose-500 px-12 py-8 rounded-full font-bold text-xl hover:shadow-2xl transition-all border-none hover:bg-rose-50">
               Hemen Başlayın
               <ArrowRight className="ml-3" />

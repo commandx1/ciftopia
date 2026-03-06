@@ -68,7 +68,7 @@ export default function PricingPage() {
                 Giriş Yap
               </Link>
               <Link
-                href='/register'
+                href='#' /* kayıt sadece mobile-app */
                 className='bg-gradient-to-r from-rose-primary to-coral-warm text-white px-6 py-2.5 rounded-full font-semibold hover:shadow-lg transition-all'
               >
                 Hemen Başla
@@ -182,7 +182,7 @@ export default function PricingPage() {
                 </ul>
 
                 <Link
-                  href='/register'
+                  href='#' /* kayıt sadece mobile-app */
                   className='block w-full bg-white border-2 border-gray-300 text-center text-gray-700 py-4 rounded-full font-bold text-lg hover:bg-gray-50 hover:border-gray-400 transition-all'
                 >
                   Başlayın
@@ -254,7 +254,7 @@ export default function PricingPage() {
                 </ul>
 
                 <Link
-                  href='/register'
+                  href='#' /* kayıt sadece mobile-app */
                   className='block w-full bg-white text-center text-rose-500 py-4 rounded-full font-bold text-lg hover:shadow-2xl hover:scale-105 transition-all'
                 >
                   Başlayın
@@ -320,7 +320,7 @@ export default function PricingPage() {
                 </ul>
 
                 <Link
-                  href='/register'
+                  href='#' /* kayıt sadece mobile-app */
                   className='block w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-center text-white py-4 rounded-full font-bold text-lg hover:shadow-2xl hover:from-purple-600 hover:to-indigo-600 transition-all'
                 >
                   Başlayın
@@ -642,7 +642,7 @@ export default function PricingPage() {
 
           <div className='flex flex-col sm:flex-row gap-6 justify-center mb-12'>
             <Link
-              href='/register'
+              href='#' /* kayıt sadece mobile-app */
               className='bg-white text-rose-500 px-12 py-5 rounded-full font-bold text-xl hover:shadow-2xl transition-all inline-flex items-center justify-center group'
             >
               Ücretsiz Deneyin

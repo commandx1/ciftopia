@@ -21,7 +21,7 @@ export const Hero = () => {
           <div className='space-y-8 animate-in fade-in slide-in-from-left duration-700'>
             <div className='inline-block'>
               <span className='bg-rose-100 text-rose-primary px-4 py-2 rounded-full text-sm font-semibold dark:bg-rose-900/30 dark:text-rose-400'>
-                💕 500+ Çift Bize Güveniyor
+                💕 Çiftler Bize Güveniyor
               </span>
             </div>
 
@@ -37,7 +37,9 @@ export const Hero = () => {
             </p>
 
             <div className='flex flex-col sm:flex-row gap-4 pt-4'>
-              <Link href='/register'>
+              {/* Kayıt sadece mobile-app üzerinden - /register yönlendirmesi kapatıldı */}
+              {/* <Link href='/register'> */}
+              <Link href='#'>
                 <Button
                   size='lg'
                   className='bg-gradient-to-r from-rose-primary to-coral-warm text-white px-8 py-7 rounded-full font-bold text-lg hover:shadow-2xl transition-all group w-full sm:w-auto border-none'
@@ -56,14 +58,14 @@ export const Hero = () => {
               </Button>
             </div>
 
-            <div className='flex items-center space-x-2 pt-4'>
+            {/* <div className='flex items-center space-x-2 pt-4'>
               <div className='flex text-yellow-400'>
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} size={20} fill='currentColor' />
                 ))}
               </div>
               <span className='text-gray-600 dark:text-gray-400 font-medium ml-2'>4.9/5 (247 değerlendirme)</span>
-            </div>
+            </div> */}
           </div>
 
           <div className='relative hidden lg:block animate-in fade-in slide-in-from-right duration-1000'>
@@ -76,8 +78,8 @@ export const Hero = () => {
                 <Heart className='text-white fill-current' />
               </div>
               <div>
-                <p className='font-bold text-2xl text-gray-800 dark:text-white'>1,247</p>
-                <p className='text-sm text-gray-500 dark:text-gray-400 font-medium'>Paylaşılan Anı</p>
+                {/* <p className='font-bold text-2xl text-gray-800 dark:text-white'>1,247</p> */}
+                <p className='text-sm text-gray-500 dark:text-gray-400 font-medium'>Anı</p>
               </div>
             </div>
 
@@ -89,7 +91,7 @@ export const Hero = () => {
                 <Camera className='text-white' />
               </div>
               <div>
-                <p className='font-bold text-2xl text-gray-800 dark:text-white'>8,432</p>
+                {/* <p className='font-bold text-2xl text-gray-800 dark:text-white'>8,432</p> */}
                 <p className='text-sm text-gray-500 dark:text-gray-400 font-medium'>Fotoğraf</p>
               </div>
             </div>

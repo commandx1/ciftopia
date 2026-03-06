@@ -17,7 +17,8 @@ export async function middleware(request: NextRequest) {
 
   const token = request.cookies.get('accessToken')?.value
   const isLoginPage = url.pathname === '/login'
-  const isRegisterPage = url.pathname === '/register'
+  // Kayıt sadece mobile-app üzerinden
+  // const isRegisterPage = url.pathname === '/register'
 
   // Protokolü belirle (Local'de http, prod'da https)
   const protocol = request.headers.get('x-forwarded-proto') || (host.includes('localhost') || host.includes('.local') ? 'http' : 'https')
@@ -25,7 +26,7 @@ export async function middleware(request: NextRequest) {
   const mainDomainUrl = process.env.NEXT_PUBLIC_URL || `${protocol}://${mainDomain}`
 
   // ═══════════════════════════════════════════════════════
-  // ANA DOMAIN (ciftopia.com) - Marketing + Register
+  // ANA DOMAIN (ciftopia.com) - Marketing (kayıt sadece mobile-app)
   // ═══════════════════════════════════════════════════════
   if (!subdomain || subdomain === 'www') {
     return NextResponse.next()
@@ -35,10 +36,10 @@ export async function middleware(request: NextRequest) {
   // COUPLE SUBDOMAIN (sinem-serhat.ciftopia.com)
   // ═══════════════════════════════════════════════════════
 
-  // 0. Register sayfası - her zaman ana domain'e yönlendir
-  if (isRegisterPage) {
-    return NextResponse.redirect(new URL('/register', mainDomainUrl))
-  }
+  // 0. Register sayfası - kayıt sadece mobile-app üzerinden (yönlendirme kapatıldı)
+  // if (isRegisterPage) {
+  //   return NextResponse.redirect(new URL('/register', mainDomainUrl))
+  // }
 
   // 1. Login sayfası - her zaman erişilebilir
   if (isLoginPage) {

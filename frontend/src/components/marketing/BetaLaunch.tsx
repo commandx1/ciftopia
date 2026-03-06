@@ -64,8 +64,9 @@ export default function BetaLaunch({ initialStatus }: BetaLaunchProps) {
               <LiveProgress initialStatus={initialStatus} />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 relative z-10">
+                {/* Kayıt sadece mobile-app üzerinden */}
                 <Link
-                  href={initialStatus.available ? "/register" : "#"}
+                  href={initialStatus.available ? "#" : "#"}
                   className={`flex items-center justify-center gap-3 py-5 rounded-2xl font-black uppercase tracking-widest text-sm transition-all shadow-xl ${
                     initialStatus.available 
                     ? "bg-gray-900 text-white hover:bg-black hover:scale-[1.02] active:scale-95 shadow-gray-200"
@@ -190,8 +191,9 @@ export default function BetaLaunch({ initialStatus }: BetaLaunchProps) {
             Henüz yolun başındayız ve sizinle birlikte büyümek istiyoruz. <br />
             Ücretsiz kontenjan dolmadan yerinizi alın.
           </p>
+          {/* Kayıt sadece mobile-app üzerinden */}
           <Link
-            href={initialStatus.available ? "/register" : "#"}
+            href={initialStatus.available ? "#" : "#"}
             className={`inline-flex items-center gap-4 px-12 py-6 rounded-full font-black uppercase tracking-widest text-lg transition-all shadow-2xl ${
               initialStatus.available 
               ? "bg-gradient-to-r from-rose-primary to-coral-warm text-white hover:shadow-rose-200 hover:scale-[1.05] active:scale-95"

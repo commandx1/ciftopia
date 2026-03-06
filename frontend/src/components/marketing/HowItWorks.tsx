@@ -58,8 +58,8 @@ export const HowItWorks = () => {
             <Step 
               number={1}
               icon={<UserPlus size={32} />}
-              title="Kaydolun ve Subdomain Seçin"
-              description="Email ve şifrenizle kayıt olun. Özel subdomain'inizi seçin (örn: ahmet-ayse.ciftopia.com)"
+              title="Kaydolun"
+              description="Email ve şifrenizle kayıt olun."
               time="2 dakika"
               bgColor="bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950/10 dark:to-pink-950/10"
               iconColor="text-rose-primary"
@@ -70,7 +70,7 @@ export const HowItWorks = () => {
               number={2}
               icon={<HeartHandshake size={32} />}
               title="Partnerinizi Ekleyin"
-              description="Sevgilinizin bilgilerini girin. Size özel giriş bilgileri oluşturulur ve site aktif olur."
+              description="Partnerinizin bilgilerini girin. Size özel giriş bilgileri oluşturulur ve site aktif olur."
               time="1 dakika"
               bgColor="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/10 dark:to-indigo-950/10"
               iconColor="text-purple-500"
@@ -92,7 +92,8 @@ export const HowItWorks = () => {
         </div>
         
         <div className="text-center mt-20 animate-in fade-in slide-in-from-bottom duration-700">
-          <Link href="/register">
+          {/* Kayıt sadece mobile-app üzerinden */}
+          <Link href="#">
             <Button size="lg" className="bg-gradient-to-r from-rose-primary to-coral-warm text-white px-12 py-8 rounded-full font-bold text-xl hover:shadow-2xl transition-all border-none">
               Şimdi Başla - Ücretsiz Dene
               <ArrowRight className="ml-3" />
