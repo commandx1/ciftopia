@@ -1440,7 +1440,6 @@ const styles = StyleSheet.create({
   },
   premiumCtaTitle: {
     fontSize: 15,
-    fontWeight: '700',
     color: '#92400E',
     marginBottom: 2
   },

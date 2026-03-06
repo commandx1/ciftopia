@@ -887,7 +887,6 @@ const styles = StyleSheet.create({
   },
   spaceCtaText: {
     fontSize: 13,
-    fontWeight: '600',
     color: '#0F172A'
   },
   activityCard: {

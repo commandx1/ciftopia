@@ -204,7 +204,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     color: '#fef3c7',
-    fontWeight: '700',
     textAlign: 'center',
     marginBottom: 12,
     letterSpacing: 1,
@@ -228,7 +227,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#020010',
     fontSize: 14,
-    fontWeight: '800',
     letterSpacing: 1,
   },
   highlightCircle: {
