@@ -15,7 +15,6 @@ import {
   UpdateBucketListItemDto,
 } from './dto/bucket-list.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CoupleOwnerGuard } from '../auth/guards/couple-owner.guard';
 import { Request } from 'express';
 
 interface AuthRequest extends Request {
