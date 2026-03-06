@@ -1,5 +1,19 @@
 import client from './client';
 
+export interface MemoryForStory {
+  _id: string;
+  title: string;
+  date: string;
+  mood: 'romantic' | 'fun' | 'emotional' | 'adventure' | 'special';
+  photos: Array<{
+    url: string;
+    width?: number;
+    height?: number;
+    size?: number;
+  }>;
+  authorId?: { _id: string; firstName: string; lastName: string };
+}
+
 export interface Memory {
   _id: string;
   title: string;
@@ -54,6 +68,14 @@ export const memoriesApi = {
     return response.data;
   },
 
+  getMemoriesForStory: async (token?: string) => {
+    const response = await client.get<{ memories: MemoryForStory[] }>(
+      '/memories/for-story',
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    return response.data;
+  },
+
   create: async (data: any, token?: string) => {
     const response = await client.post('/memories', data, {
       headers: { Authorization: `Bearer ${token}` },
@@ -88,6 +110,27 @@ export const memoriesApi = {
       {},
       { headers: { Authorization: `Bearer ${token}` } },
     );
+    return response.data;
+  },
+
+  generateNovel: async (memoryIds: string[], token?: string) => {
+    const response = await client.post<{ story: string; storyId: string }>(
+      '/memories/generate-novel',
+      { memoryIds },
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    return response.data;
+  },
+
+  getStory: async (storyId: string, token?: string) => {
+    const response = await client.get<{
+      _id: string;
+      content: string;
+      date: string;
+      audioUrl?: string;
+    }>(`/memories/story/${storyId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     return response.data;
   },
 };

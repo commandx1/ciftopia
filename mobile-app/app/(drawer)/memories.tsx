@@ -1,4 +1,4 @@
-import React,{ useEffect,useState,useCallback } from 'react'
+import React, { useEffect, useState, useCallback, useRef } from 'react'
 import {
   View,
   StyleSheet,
@@ -7,27 +7,21 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
+  Modal,
+  DimensionValue
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Text } from '../../components/ui/Text'
 import { useAuth } from '../../context/AuthContext'
 import { useAppSocket } from '../../context/AppSocketContext'
-import { memoriesApi,Memory } from '../../api/memories'
+import { memoriesApi, Memory, MemoryForStory } from '../../api/memories'
 import { useToast } from '../../components/ui/ToastProvider'
 import { GenerateSongModal } from '../../components/memories/GenerateSongModal'
 import { SongPlayerModal } from '../../components/memories/SongPlayerModal'
+import { CreateStoryModal } from '../../components/memories/CreateStoryModal'
+import { GenerateNovelModal } from '../../components/memories/GenerateNovelModal'
 import type { SongStep } from '../../components/memories/GenerateSongModal'
-import {
-  Clock,
-  Heart,
-  Plus,
-  Filter,
-  Sparkles,
-  Star,
-  ArrowDown,
-  HeartOff,
-  CalendarIcon,
-} from 'lucide-react-native'
+import { Clock, Heart, Plus, Filter, Sparkles, Star, ArrowDown, HeartOff, CalendarIcon, Play, Pause } from 'lucide-react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import MemoryCard from '../../components/memories/MemoryCard'
 import NewMemoryModal from '../../components/memories/NewMemoryModal'
@@ -36,16 +30,18 @@ import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import { romanticRoseTheme } from '../../theme/romanticRose'
 import { nightBlueTheme } from '../../theme/nightBlue'
+import Markdown from 'react-native-markdown-display'
+import { Audio } from 'expo-av'
 
 const SORT_OPTIONS = [
-  { id: 'newest',label: 'En yeni',emoji: '🆕' },
-  { id: 'oldest',label: 'En eski',emoji: '🕰️' },
-  { id: 'alphabetical',label: 'Alfabetik',emoji: '🔤' },
+  { id: 'newest', label: 'En yeni', emoji: '🆕' },
+  { id: 'oldest', label: 'En eski', emoji: '🕰️' },
+  { id: 'alphabetical', label: 'Alfabetik', emoji: '🔤' }
 ]
 
 const themes = {
   romanticRose: romanticRoseTheme,
-  nightBlue: nightBlueTheme,
+  nightBlue: nightBlueTheme
 } as const
 
 const theme = themes.romanticRose
@@ -53,69 +49,231 @@ const theme = themes.romanticRose
 export default function MemoriesScreen() {
   const { user } = useAuth()
   const { show: showToast } = useToast()
-  const [loading,setLoading] = useState(true)
-  const [loadingMore,setLoadingMore] = useState(false)
-  const [refreshing,setRefreshing] = useState(false)
-  const [memories,setMemories] = useState<Memory[]>([])
-  const [stats,setStats] = useState({ total: 0,thisMonth: 0,favorites: 0 })
-  const [storage,setStorage] = useState({ used: 0,limit: 0 })
-  const [hasMore,setHasMore] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [memories, setMemories] = useState<Memory[]>([])
+  const [stats, setStats] = useState({ total: 0, thisMonth: 0, favorites: 0 })
+  const [storage, setStorage] = useState({ used: 0, limit: 0 })
+  const [hasMore, setHasMore] = useState(false)
 
-  const [isModalOpen,setIsModalOpen] = useState(false)
-  const [editingMemory,setEditingMemory] = useState<Memory | null>(null)
-  const [togglingFavorite,setTogglingFavorite] = useState<string | null>(null)
-  const [generatingSongId,setGeneratingSongId] = useState<string | null>(null)
-  const [songModalMemoryId,setSongModalMemoryId] = useState<string | null>(null)
-  const [songProgressStage,setSongProgressStage] = useState<SongStep>('analyzing')
-  const [playerMemory,setPlayerMemory] = useState<Memory | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingMemory, setEditingMemory] = useState<Memory | null>(null)
+  const [togglingFavorite, setTogglingFavorite] = useState<string | null>(null)
+  const [generatingSongId, setGeneratingSongId] = useState<string | null>(null)
+  const [songModalMemoryId, setSongModalMemoryId] = useState<string | null>(null)
+  const [songProgressStage, setSongProgressStage] = useState<SongStep>('analyzing')
+  const [playerMemory, setPlayerMemory] = useState<Memory | null>(null)
+  const [novelText, setNovelText] = useState<string | null>(null)
+  const [storyId, setStoryId] = useState<string | null>(null)
+  const [storyAudioUrl, setStoryAudioUrl] = useState<string | null>(null)
+  const [isStoryPlaying, setIsStoryPlaying] = useState(false)
+  const [storyAudioLoading, setStoryAudioLoading] = useState(false)
+  const storySoundRef = useRef<Audio.Sound | null>(null)
+  const storyIdRef = useRef<string | null>(null)
   const { socket } = useAppSocket()
+  storyIdRef.current = storyId
+
+  const [storyModalVisible, setStoryModalVisible] = useState(false)
+  const [storyMemoryList, setStoryMemoryList] = useState<MemoryForStory[]>([])
+  const [storyListLoading, setStoryListLoading] = useState(false)
+  const [selectedStoryIds, setSelectedStoryIds] = useState<string[]>([])
+  const [novelProgressVisible, setNovelProgressVisible] = useState(false)
+  const [novelStep, setNovelStep] = useState(1)
+  const [novelCreating, setNovelCreating] = useState(false)
 
   // Filters
-  const [sortBy,setSortBy] = useState('newest')
-  const [filterMood,setFilterMood] = useState('all')
-  const [onlyFavorites,setOnlyFavorites] = useState(false)
+  const [sortBy, setSortBy] = useState('newest')
+  const [filterMood, setFilterMood] = useState('all')
+  const [onlyFavorites, setOnlyFavorites] = useState(false)
 
-  const fetchMemories = useCallback(async (isLoadMore = false) => {
-    try {
-      if (isLoadMore) setLoadingMore(true)
-      else setLoading(true)
+  const fetchMemories = useCallback(
+    async (isLoadMore = false) => {
+      try {
+        if (isLoadMore) setLoadingMore(true)
+        else setLoading(true)
 
-      const skip = isLoadMore ? memories.length : 0
-      const res = await memoriesApi.getMemories({
-        mood: filterMood === 'all' ? undefined : filterMood,
-        sortBy,
-        onlyFavorites,
-        limit: 5,
-        skip,
-      },user?.accessToken)
+        const skip = isLoadMore ? memories.length : 0
+        const res = await memoriesApi.getMemories(
+          {
+            mood: filterMood === 'all' ? undefined : filterMood,
+            sortBy,
+            onlyFavorites,
+            limit: 5,
+            skip
+          },
+          user?.accessToken
+        )
 
-      if (isLoadMore) {
-        setMemories(prev => [...prev,...res.memories])
-      } else {
-        setMemories(res.memories)
+        if (isLoadMore) {
+          setMemories(prev => [...prev, ...res.memories])
+        } else {
+          setMemories(res.memories)
+        }
+
+        setStats(res.stats)
+        setStorage({ used: res.storageUsed, limit: res.storageLimit })
+        setHasMore(res.hasMore)
+      } catch (err) {
+        console.error(err)
+        showToast({ type: 'error', title: 'Hata', message: 'Anılar yüklenirken bir hata oluştu.' })
+      } finally {
+        setLoading(false)
+        setLoadingMore(false)
+        setRefreshing(false)
       }
-
-      setStats(res.stats)
-      setStorage({ used: res.storageUsed,limit: res.storageLimit })
-      setHasMore(res.hasMore)
-    } catch (err) {
-      console.error(err)
-      showToast({ type: 'error',title: 'Hata',message: 'Anılar yüklenirken bir hata oluştu.' })
-    } finally {
-      setLoading(false)
-      setLoadingMore(false)
-      setRefreshing(false)
-    }
-  },[user,sortBy,filterMood,onlyFavorites,memories.length])
+    },
+    [user, sortBy, filterMood, onlyFavorites, memories.length]
+  )
 
   useEffect(() => {
     fetchMemories()
-  },[sortBy,filterMood,onlyFavorites])
+  }, [sortBy, filterMood, onlyFavorites])
 
   const onRefresh = () => {
     setRefreshing(true)
     fetchMemories(false)
   }
+
+  useEffect(() => {
+    if (!storyModalVisible || !user?.accessToken) return
+    let cancelled = false
+    setStoryListLoading(true)
+    memoriesApi.getMemoriesForStory(user.accessToken).then((res) => {
+      if (!cancelled) {
+        setStoryMemoryList(res.memories || [])
+      }
+    }).catch(() => {
+      if (!cancelled) showToast({ type: 'error', title: 'Hata', message: 'Anı listesi yüklenemedi.' })
+    }).finally(() => {
+      if (!cancelled) setStoryListLoading(false)
+    })
+    return () => { cancelled = true }
+  }, [storyModalVisible, user?.accessToken, showToast])
+
+  const handleToggleStoryId = (id: string) => {
+    setSelectedStoryIds((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id)
+      if (prev.length >= 8) return prev
+      return [...prev, id]
+    })
+  }
+
+  const handleCreateStory = async () => {
+    if (!user?.accessToken || selectedStoryIds.length < 2 || selectedStoryIds.length > 8) return
+    setStoryModalVisible(false)
+    setNovelProgressVisible(true)
+    setNovelStep(1)
+    setNovelCreating(true)
+    try {
+      await memoriesApi.generateNovel(selectedStoryIds, user.accessToken)
+    } catch (err) {
+      setNovelProgressVisible(false)
+      setNovelCreating(false)
+      showToast({
+        type: 'error',
+        title: 'Hata',
+        message: (err as any)?.response?.data?.message || 'Hikâye oluşturulurken bir hata oluştu.'
+      })
+    } finally {
+      setNovelCreating(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!socket) return
+    const onStep = (payload: { step?: number }) => {
+      if (typeof payload.step === 'number') setNovelStep(payload.step)
+    }
+    const onDone = (payload: { story?: string; storyId?: string }) => {
+      if (payload.story) setNovelText(payload.story)
+      if (payload.storyId) setStoryId(payload.storyId)
+      setNovelProgressVisible(false)
+      showToast({ type: 'success', title: 'Hikâye hazır', message: 'Anılarınızdan hikâye oluşturuldu.' })
+    }
+    const onAudioReady = (payload: { storyId?: string; audioUrl?: string }) => {
+      if (payload.storyId && payload.audioUrl && payload.storyId === storyIdRef.current) setStoryAudioUrl(payload.audioUrl)
+    }
+    const onError = (payload: { message?: string }) => {
+      setNovelProgressVisible(false)
+      showToast({ type: 'error', title: 'Hata', message: payload.message || 'Hikâye oluşturulamadı.' })
+    }
+    socket.on('novel:step', onStep)
+    socket.on('novel:done', onDone)
+    socket.on('novel:audio-ready', onAudioReady)
+    socket.on('novel:error', onError)
+    return () => {
+      socket.off('novel:step', onStep)
+      socket.off('novel:done', onDone)
+      socket.off('novel:audio-ready', onAudioReady)
+      socket.off('novel:error', onError)
+    }
+  }, [socket, showToast])
+
+  const resolveStoryAudioUrl = useCallback(async (): Promise<string | null> => {
+    if (storyAudioUrl) return storyAudioUrl
+    if (!storyId || !user?.accessToken) return null
+    try {
+      const res = await memoriesApi.getStory(storyId, user.accessToken)
+      if (res.audioUrl) {
+        setStoryAudioUrl(res.audioUrl)
+        return res.audioUrl
+      }
+    } catch (_) {}
+    return null
+  }, [storyId, storyAudioUrl, user?.accessToken])
+
+  const handleStoryPlayPause = useCallback(async () => {
+    if (!storyId) return
+    try {
+      if (isStoryPlaying && storySoundRef.current) {
+        await storySoundRef.current.pauseAsync()
+        setIsStoryPlaying(false)
+        return
+      }
+      const url = await resolveStoryAudioUrl()
+      if (!url) {
+        showToast({ type: 'info', title: 'Ses hazırlanıyor', message: 'Hikâye seslendirmesi birazdan hazır olacak.' })
+        return
+      }
+      setStoryAudioLoading(true)
+      if (storySoundRef.current) {
+        await storySoundRef.current.unloadAsync()
+        storySoundRef.current = null
+      }
+      await Audio.setAudioModeAsync({
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: false,
+        playThroughEarpieceAndroid: false,
+      })
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: url },
+        { shouldPlay: true },
+      )
+      storySoundRef.current = sound
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && (status as { didJustFinishAndNotJustLooped?: boolean }).didJustFinishAndNotJustLooped) {
+          setIsStoryPlaying(false)
+        }
+      })
+      setIsStoryPlaying(true)
+    } catch (_) {
+      showToast({ type: 'error', title: 'Hata', message: 'Ses oynatılamadı.' })
+    } finally {
+      setStoryAudioLoading(false)
+    }
+  }, [storyId, isStoryPlaying, resolveStoryAudioUrl, showToast])
+
+  const closeNovelModal = useCallback(() => {
+    if (storySoundRef.current) {
+      storySoundRef.current.unloadAsync().catch(() => {})
+      storySoundRef.current = null
+    }
+    setNovelText(null)
+    setStoryId(null)
+    setStoryAudioUrl(null)
+    setIsStoryPlaying(false)
+  }, [])
 
   const handleGenerateSong = async (memoryId: string) => {
     if (!user?.accessToken) return
@@ -130,7 +288,7 @@ export default function MemoriesScreen() {
       showToast({
         type: 'error',
         title: 'Hata',
-        message: (err as any)?.response?.data?.message || 'Şarkı üretimi başlatılamadı.',
+        message: (err as any)?.response?.data?.message || 'Şarkı üretimi başlatılamadı.'
       })
     } finally {
       setGeneratingSongId(null)
@@ -140,7 +298,7 @@ export default function MemoriesScreen() {
   useEffect(() => {
     if (!socket || !songModalMemoryId) return
     const onProgress = (payload: { memoryId: string; stage: string }) => {
-      if (payload.memoryId === songModalMemoryId && ['analyzing','lyrics','melody'].includes(payload.stage)) {
+      if (payload.memoryId === songModalMemoryId && ['analyzing', 'lyrics', 'melody'].includes(payload.stage)) {
         setSongProgressStage(payload.stage as SongStep)
       }
     }
@@ -156,10 +314,10 @@ export default function MemoriesScreen() {
             ? {
                 ...m,
                 generatedSongUrl: payload.generatedSongUrl,
-                generatedSongDurationSeconds: payload.generatedSongDurationSeconds,
+                generatedSongDurationSeconds: payload.generatedSongDurationSeconds
               }
-            : m,
-        ),
+            : m
+        )
       )
       setSongModalMemoryId(null)
       showToast({ type: 'success', title: 'Şarkı hazır', message: 'Anınızın müziği oluşturuldu.' })
@@ -183,53 +341,49 @@ export default function MemoriesScreen() {
     if (togglingFavorite) return
     try {
       setTogglingFavorite(memory._id)
-      await memoriesApi.toggleFavorite(memory._id,user?.accessToken)
+      await memoriesApi.toggleFavorite(memory._id, user?.accessToken)
 
       const isCurrentlyFavorite = memory.favorites.includes(user?._id || '')
       const newFavorites = isCurrentlyFavorite
         ? memory.favorites.filter(id => id !== user?._id)
-        : [...memory.favorites,user?._id || '']
+        : [...memory.favorites, user?._id || '']
 
-      setMemories(prev => prev.map(m => m._id === memory._id ? { ...m,favorites: newFavorites } : m))
+      setMemories(prev => prev.map(m => (m._id === memory._id ? { ...m, favorites: newFavorites } : m)))
       setStats(prev => ({
         ...prev,
-        favorites: isCurrentlyFavorite ? prev.favorites - 1 : prev.favorites + 1,
+        favorites: isCurrentlyFavorite ? prev.favorites - 1 : prev.favorites + 1
       }))
 
       showToast({
         type: 'success',
         title: isCurrentlyFavorite ? 'Favorilerden Çıkarıldı' : 'Favorilere Eklendi',
-        message: isCurrentlyFavorite ? 'Anı favorilerden çıkarıldı.' : 'Anı favorilerine eklendi ❤️',
+        message: isCurrentlyFavorite ? 'Anı favorilerden çıkarıldı.' : 'Anı favorilerine eklendi ❤️'
       })
     } catch (err) {
-      showToast({ type: 'error',title: 'Hata',message: 'Favori durumu güncellenemedi.' })
+      showToast({ type: 'error', title: 'Hata', message: 'Favori durumu güncellenemedi.' })
     } finally {
       setTogglingFavorite(null)
     }
   }
 
   const handleDelete = (id: string) => {
-    Alert.alert(
-      'Anıyı Sil?',
-      'Bu anıyı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
-      [
-        { text: 'Vazgeç',style: 'cancel' },
-        {
-          text: 'Sil',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await memoriesApi.delete(id,user?.accessToken)
-              setMemories(memories.filter(m => m._id !== id))
-              setStats(prev => ({ ...prev,total: prev.total - 1 }))
-              showToast({ type: 'success',title: 'Başarılı',message: 'Anı silindi.' })
-            } catch (err) {
-              showToast({ type: 'error',title: 'Hata',message: 'Anı silinemedi.' })
-            }
-          },
-        },
-      ]
-    )
+    Alert.alert('Anıyı Sil?', 'Bu anıyı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.', [
+      { text: 'Vazgeç', style: 'cancel' },
+      {
+        text: 'Sil',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await memoriesApi.delete(id, user?.accessToken)
+            setMemories(memories.filter(m => m._id !== id))
+            setStats(prev => ({ ...prev, total: prev.total - 1 }))
+            showToast({ type: 'success', title: 'Başarılı', message: 'Anı silindi.' })
+          } catch (err) {
+            showToast({ type: 'error', title: 'Hata', message: 'Anı silinemedi.' })
+          }
+        }
+      }
+    ])
   }
 
   return (
@@ -239,15 +393,26 @@ export default function MemoriesScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        <TouchableOpacity
+          onPress={() => setStoryModalVisible(true)}
+          style={{ opacity: novelProgressVisible ? 0.8 : 1 }}
+          disabled={novelProgressVisible}
+        >
+          <LinearGradient colors={theme.accentGradient} style={styles.generateNovelBtnGradient}>
+            <Text style={styles.generateNovelBtnText}>
+              HİKAYENİ OLUŞTUR
+            </Text>
+          </LinearGradient>
+        </TouchableOpacity>
         <View style={styles.headerSection}>
           <View style={styles.headerMain}>
             <View style={styles.headerLeft}>
               <View style={styles.iconContainer}>
                 <LinearGradient colors={theme.accentGradient} style={styles.iconGradient}>
-                  <Clock color="white" size={32} />
+                  <Clock color='white' size={32} />
                 </LinearGradient>
                 <View style={styles.heartBadge}>
-                  <Heart color="white" size={12} fill="white" />
+                  <Heart color='white' size={12} fill='white' />
                 </View>
               </View>
               <View>
@@ -264,8 +429,8 @@ export default function MemoriesScreen() {
               style={styles.addBtn}
             >
               <LinearGradient colors={theme.accentGradient} style={styles.addGradient}>
-                <Plus color="white" size={24} />
-                <Sparkles color="#FDE047" size={18} />
+                <Plus color='white' size={24} />
+                <Sparkles color='#FDE047' size={18} />
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -293,13 +458,18 @@ export default function MemoriesScreen() {
                 <Filter size={18} color={theme.accent} />
                 <Text style={styles.filterTitle}>Filtrele & Sırala</Text>
               </View>
-              <TouchableOpacity onPress={() => setOnlyFavorites(!onlyFavorites)} style={[styles.favToggle,onlyFavorites && styles.favToggleActive]}>
+              <TouchableOpacity
+                onPress={() => setOnlyFavorites(!onlyFavorites)}
+                style={[styles.favToggle, onlyFavorites && styles.favToggleActive]}
+              >
                 <Star
                   size={14}
                   color={onlyFavorites ? theme.highlight : theme.textMuted}
                   fill={onlyFavorites ? theme.highlight : 'none'}
                 />
-                <Text style={[styles.favToggleText,onlyFavorites && styles.favToggleTextActive]}>Sadece Favoriler</Text>
+                <Text style={[styles.favToggleText, onlyFavorites && styles.favToggleTextActive]}>
+                  Sadece Favoriler
+                </Text>
               </TouchableOpacity>
             </View>
 
@@ -307,18 +477,23 @@ export default function MemoriesScreen() {
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.moodFilterScroll}>
                 <TouchableOpacity
                   onPress={() => setFilterMood('all')}
-                  style={[styles.moodFilterBtn,filterMood === 'all' && styles.moodFilterBtnActive]}
+                  style={[styles.moodFilterBtn, filterMood === 'all' && styles.moodFilterBtnActive]}
                 >
-                  <Text style={[styles.moodFilterText,filterMood === 'all' && styles.moodFilterTextActive]}>Tümü</Text>
+                  <Text style={[styles.moodFilterText, filterMood === 'all' && styles.moodFilterTextActive]}>Tümü</Text>
                 </TouchableOpacity>
-                {Object.entries(moodConfigs).map(([key,config]) => (
+                {Object.entries(moodConfigs).map(([key, config]) => (
                   <TouchableOpacity
                     key={key}
                     onPress={() => setFilterMood(key)}
-                    style={[styles.moodFilterBtn,filterMood === key && { borderColor: config.iconColor,backgroundColor: config.badgeBg }]}
+                    style={[
+                      styles.moodFilterBtn,
+                      filterMood === key && { borderColor: config.iconColor, backgroundColor: config.badgeBg }
+                    ]}
                   >
                     <config.icon size={16} color={filterMood === key ? config.iconColor : '#9CA3AF'} />
-                  <Text style={[styles.moodFilterText,filterMood === key && { color: config.iconColor }]}>{config.label}</Text>
+                    <Text style={[styles.moodFilterText, filterMood === key && { color: config.iconColor }]}>
+                      {config.label}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -328,10 +503,10 @@ export default function MemoriesScreen() {
                   <TouchableOpacity
                     key={opt.id}
                     onPress={() => setSortBy(opt.id)}
-                    style={[styles.sortBtn,sortBy === opt.id && styles.sortBtnActive]}
+                    style={[styles.sortBtn, sortBy === opt.id && styles.sortBtnActive]}
                   >
                     <Text style={styles.sortBtnEmoji}>{opt.emoji}</Text>
-                    <Text style={[styles.sortBtnText,sortBy === opt.id && styles.sortBtnTextActive]}>{opt.label}</Text>
+                    <Text style={[styles.sortBtnText, sortBy === opt.id && styles.sortBtnTextActive]}>{opt.label}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -345,14 +520,15 @@ export default function MemoriesScreen() {
 
           {loading && memories.length === 0 ? (
             <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={theme.accent} />
+              <ActivityIndicator size='large' color={theme.accent} />
             </View>
           ) : memories.length > 0 ? (
-            memories.map((memory,index) => {
+            memories.map((memory, index) => {
               const dateObj = new Date(memory.date)
-              const monthYear = format(dateObj,'MMMM yyyy',{ locale: tr })
+              const monthYear = format(dateObj, 'MMMM yyyy', { locale: tr })
               const prevMemory = index > 0 ? memories[index - 1] : null
-              const showMonthMarker = !prevMemory || format(new Date(prevMemory.date),'MMMM yyyy',{ locale: tr }) !== monthYear
+              const showMonthMarker =
+                !prevMemory || format(new Date(prevMemory.date), 'MMMM yyyy', { locale: tr }) !== monthYear
 
               return (
                 <React.Fragment key={memory._id}>
@@ -390,11 +566,7 @@ export default function MemoriesScreen() {
           )}
 
           {hasMore && (
-            <TouchableOpacity
-              onPress={() => fetchMemories(true)}
-              disabled={loadingMore}
-              style={styles.loadMoreBtn}
-            >
+            <TouchableOpacity onPress={() => fetchMemories(true)} disabled={loadingMore} style={styles.loadMoreBtn}>
               {loadingMore ? (
                 <ActivityIndicator color={theme.accent} />
               ) : (
@@ -421,23 +593,129 @@ export default function MemoriesScreen() {
 
       <GenerateSongModal visible={!!songModalMemoryId} currentStep={songProgressStage} />
 
-      <SongPlayerModal
-        visible={!!playerMemory}
-        memory={playerMemory}
-        onClose={() => setPlayerMemory(null)}
+      <CreateStoryModal
+        visible={storyModalVisible}
+        onClose={() => {
+          setStoryModalVisible(false)
+          setSelectedStoryIds([])
+        }}
+        memories={storyMemoryList}
+        loadingList={storyListLoading}
+        selectedIds={selectedStoryIds}
+        onToggle={handleToggleStoryId}
+        onCreateStory={handleCreateStory}
+        creating={novelCreating}
       />
+
+      <GenerateNovelModal visible={novelProgressVisible} currentStep={novelStep} />
+
+      <SongPlayerModal visible={!!playerMemory} memory={playerMemory} onClose={() => setPlayerMemory(null)} />
+
+      <Modal visible={!!novelText} animationType='slide'>
+        <SafeAreaView style={styles.novelModalContainer}>
+          <View style={styles.novelHeader}>
+            <View style={styles.novelHeaderLeft}>
+              {storyId ? (
+                <TouchableOpacity
+                  onPress={handleStoryPlayPause}
+                  disabled={storyAudioLoading}
+                  style={styles.novelPlayBtn}
+                >
+                  {storyAudioLoading ? (
+                    <ActivityIndicator size={20} color={theme.accent} />
+                  ) : isStoryPlaying ? (
+                    <Pause size={22} color={theme.accent} />
+                  ) : (
+                    <Play size={22} color={theme.accent} />
+                  )}
+                </TouchableOpacity>
+              ) : null}
+              <Text style={styles.novelTitle}>Anılarımızın Hikâyesi</Text>
+            </View>
+            <TouchableOpacity onPress={closeNovelModal} style={styles.novelCloseBtn}>
+              <Text style={styles.novelCloseText}>Kapat</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={styles.novelScroll} contentContainerStyle={styles.novelScrollContent}>
+            <Markdown style={novelMarkdownStyles}>{novelText ?? ''}</Markdown>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   )
+}
+
+const novelMarkdownStyles = {
+  body: { color: theme.textSecondary, fontSize: 14, lineHeight: 22, fontFamily: 'IndieFlower' },
+  heading1: { color: theme.textPrimary, fontSize: 22, marginTop: 16, marginBottom: 8 },
+  heading2: { color: theme.textPrimary, fontSize: 18, marginTop: 14, marginBottom: 6 },
+  heading3: { color: theme.textPrimary, fontSize: 16, marginTop: 12, marginBottom: 4 },
+  paragraph: { marginBottom: 10, color: theme.textSecondary, fontSize: 14, lineHeight: 22 },
+  strong: { color: theme.textPrimary },
+  em: { fontSize: 10 }
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.background,
-    paddingTop: 16,
+    paddingTop: 16
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 40
+  },
+  novelModalContainer: {
+    flex: 1,
+    backgroundColor: theme.background
+  },
+  novelHeader: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: theme.card,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.borderSofter
+  },
+  novelHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1
+  },
+  novelPlayBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme.cardSoft,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  novelTitle: {
+    fontSize: 18,
+    color: theme.textPrimary
+  },
+  novelCloseBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: theme.cardSoft
+  },
+  novelCloseText: {
+    fontSize: 12,
+    color: theme.textSecondary
+  },
+  novelScroll: {
+    flex: 1
+  },
+  novelScrollContent: {
+    padding: 20
+  },
+  novelText: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: theme.textSecondary
   },
   headerSection: {
     padding: 20,
@@ -446,31 +724,44 @@ const styles = StyleSheet.create({
     backgroundColor: theme.card,
     borderRadius: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0,height: 4 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
-    elevation: 3,
+    elevation: 3
   },
   headerMain: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 25,
+    marginBottom: 25
+  },
+  generateNovelBtnGradient: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    width: 'fit-content' as DimensionValue,
+    marginBottom: 16,
+    marginLeft: 'auto',
+    marginRight: 16
+  },
+  generateNovelBtnText: {
+    fontSize: 11,
+    color: 'white'
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 15,
+    gap: 15
   },
   iconContainer: {
-    position: 'relative',
+    position: 'relative'
   },
   iconGradient: {
     width: 60,
     height: 60,
     borderRadius: 22,
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'center'
   },
   heartBadge: {
     position: 'absolute',
@@ -483,25 +774,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: theme.card,
+    borderColor: theme.card
   },
   title: {
     fontSize: 28,
-    color: theme.textPrimary,
+    color: theme.textPrimary
   },
   subtitle: {
     fontSize: 14,
-    color: theme.textSecondary,
+    color: theme.textSecondary
   },
   addBtn: {
     borderRadius: 20,
-    overflow: 'hidden',
+    overflow: 'hidden'
   },
   addGradient: {
     padding: 15,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 8
   },
   statsContainer: {
     flexDirection: 'row',
@@ -510,41 +801,41 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 25,
     borderWidth: 1,
-    borderColor: theme.borderSofter,
+    borderColor: theme.borderSofter
   },
   statItem: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: 'center'
   },
   statValue: {
     fontSize: 24,
-    color: theme.textPrimary,
+    color: theme.textPrimary
   },
   statLabel: {
     fontSize: 12,
     color: theme.textSecondary,
-    marginTop: 4,
+    marginTop: 4
   },
   statDivider: {
     width: 1,
-    backgroundColor: theme.divider,
+    backgroundColor: theme.divider
   },
   filtersWrapper: {
-    gap: 15,
+    gap: 15
   },
   filterHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'center'
   },
   filterTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 8
   },
   filterTitle: {
     fontSize: 16,
-    color: theme.textPrimary,
+    color: theme.textPrimary
   },
   favToggle: {
     flexDirection: 'row',
@@ -555,24 +846,24 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: theme.borderSoft,
+    borderColor: theme.borderSoft
   },
   favToggleActive: {
     backgroundColor: theme.highlightSoft,
-    borderColor: theme.highlightSoftBorder,
+    borderColor: theme.highlightSoftBorder
   },
   favToggleText: {
     fontSize: 12,
-    color: theme.textSecondary,
+    color: theme.textSecondary
   },
   favToggleTextActive: {
-    color: theme.highlight,
+    color: theme.highlight
   },
   filterControls: {
-    gap: 10,
+    gap: 10
   },
   moodFilterScroll: {
-    paddingBottom: 5,
+    paddingBottom: 5
   },
   moodFilterBtn: {
     flexDirection: 'row',
@@ -584,21 +875,21 @@ const styles = StyleSheet.create({
     backgroundColor: theme.card,
     borderWidth: 1,
     borderColor: theme.borderSoft,
-    marginRight: 10,
+    marginRight: 10
   },
   moodFilterBtnActive: {
     backgroundColor: theme.textPrimary,
-    borderColor: theme.textPrimary,
+    borderColor: theme.textPrimary
   },
   moodFilterText: {
     fontSize: 12,
-    color: theme.textSecondary,
+    color: theme.textSecondary
   },
   moodFilterTextActive: {
-    color: 'white',
+    color: 'white'
   },
   sortFilterScroll: {
-    paddingBottom: 5,
+    paddingBottom: 5
   },
   sortBtn: {
     flexDirection: 'row',
@@ -610,26 +901,26 @@ const styles = StyleSheet.create({
     backgroundColor: theme.card,
     borderWidth: 1,
     borderColor: theme.borderSoft,
-    marginRight: 8,
+    marginRight: 8
   },
   sortBtnActive: {
     borderColor: theme.accent,
-    backgroundColor: theme.cardSoftAlt,
+    backgroundColor: theme.cardSoftAlt
   },
   sortBtnEmoji: {
-    fontSize: 14,
+    fontSize: 14
   },
   sortBtnText: {
     fontSize: 12,
-    color: theme.textSecondary,
+    color: theme.textSecondary
   },
   sortBtnTextActive: {
-    color: theme.accentStrong,
+    color: theme.accentStrong
   },
   timelineSection: {
     marginTop: 20,
     position: 'relative',
-    minHeight: 400,
+    minHeight: 400
   },
   timelineLine: {
     position: 'absolute',
@@ -638,14 +929,14 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: 2,
     backgroundColor: theme.timelineLine,
-    opacity: theme.timelineLineOpacity,
+    opacity: theme.timelineLineOpacity
   },
   monthMarker: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingLeft: 16, // İkonun merkezini 30px'e getirmek için (30 - 28/2 = 16)
     marginVertical: 15,
-    zIndex: 20,
+    zIndex: 20
   },
   monthIconBox: {
     width: 28,
@@ -655,31 +946,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: theme.accent,
+    borderColor: theme.accent
   },
   monthText: {
     fontSize: 14,
     color: theme.accent,
     marginLeft: 12,
-    textTransform: 'capitalize',
+    textTransform: 'capitalize'
   },
 
   // Empty State - AYNI
   emptyState: {
     alignItems: 'center',
     paddingVertical: 60,
-    paddingHorizontal: 40,
+    paddingHorizontal: 40
   },
   emptyTitle: {
     fontSize: 18,
     color: theme.textSecondary,
-    marginTop: 16,
+    marginTop: 16
   },
   emptySubtitle: {
     fontSize: 14,
     color: theme.textMuted,
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: 8
   },
 
   // Load More - AYNI
@@ -692,16 +983,16 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginHorizontal: 50,
     backgroundColor: theme.cardSoftAlt,
-    borderRadius: 12,
+    borderRadius: 12
   },
   loadMoreText: {
     fontSize: 14,
-    color: theme.accent,
+    color: theme.accent
   },
 
   // Loading - AYNI
   loadingContainer: {
     paddingVertical: 60,
-    alignItems: 'center',
-  },
+    alignItems: 'center'
+  }
 })

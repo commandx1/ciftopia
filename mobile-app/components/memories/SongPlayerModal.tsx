@@ -314,7 +314,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: '700',
     color: theme.textPrimary,
     marginBottom: 4,
   },
@@ -332,7 +331,6 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 12,
-    fontWeight: '600',
   },
   badgeTime: {
     paddingHorizontal: 12,
@@ -342,7 +340,6 @@ const styles = StyleSheet.create({
   },
   badgeTimeText: {
     fontSize: 12,
-    fontWeight: '600',
     color: theme.textSecondary,
   },
   lyricsSection: {
@@ -352,7 +349,6 @@ const styles = StyleSheet.create({
   },
   lyricsTitle: {
     fontSize: 14,
-    fontWeight: '700',
     color: theme.textPrimary,
     marginBottom: 12,
   },
@@ -361,12 +357,10 @@ const styles = StyleSheet.create({
     color: theme.textSecondary,
     lineHeight: 20,
     marginBottom: 6,
-    fontStyle: 'italic',
   },
   lyricsPlaceholder: {
     fontSize: 13,
     color: theme.textMuted,
-    fontStyle: 'italic',
   },
   controls: {
     padding: 20,

@@ -266,7 +266,7 @@ export const CreateCapsuleModal = ({ isOpen, onClose, onAdd }: CreateCapsuleModa
                       onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                       placeholder='Geleceğe ne söylemek istersiniz? En içten duygularınızı buraya dökün...'
                       className='w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-amber-500 focus:bg-white outline-none transition-all font-medium text-gray-900 resize-none shadow-inner leading-relaxed'
-                      style={{ fontFamily: 'var(--font-indie-flower), cursive', fontSize: '1.25rem' }}
+                      style={{ fontSize: '1.25rem' }}
                     />
                   </div>
                   <div className='flex justify-between px-1'>

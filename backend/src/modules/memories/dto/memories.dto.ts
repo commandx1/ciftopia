@@ -5,6 +5,8 @@ import {
   IsOptional,
   IsEnum,
   IsArray,
+  ArrayMinSize,
+  ArrayMaxSize,
 } from 'class-validator';
 
 export class PhotoMetadata {
@@ -49,4 +51,12 @@ export class CreateMemoryDto {
   @IsOptional()
   @IsArray()
   favorites?: string[];
+}
+
+export class GenerateNovelDto {
+  @IsArray()
+  @ArrayMinSize(2, { message: 'En az 2 anı seçmelisiniz.' })
+  @ArrayMaxSize(8, { message: 'En fazla 8 anı seçebilirsiniz.' })
+  @IsString({ each: true })
+  memoryIds: string[];
 }

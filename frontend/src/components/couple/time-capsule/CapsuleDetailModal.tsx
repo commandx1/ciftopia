@@ -55,18 +55,20 @@ export const CapsuleDetailModal = ({ capsule, isOpen, onClose, onUpdate }: Capsu
           >
             {/* Header */}
             <div className='bg-gradient-to-r from-green-500 to-emerald-500 p-8 text-white text-center relative shrink-0'>
-              <button 
+              <button
                 onClick={onClose}
                 className='absolute top-6 right-6 w-10 h-10 bg-black/20 text-white rounded-full flex items-center justify-center hover:bg-white/30 transition-all z-10'
               >
                 <X className='text-white' size={24} />
               </button>
-              
+
               <div className='w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg'>
                 <ImageIcon className='text-white' size={40} />
               </div>
               <h2 className='text-3xl font-bold mb-2'>{capsule.title}</h2>
-              <p className='text-green-100 font-medium'>Açıldı: {format(new Date(capsule.unlockDate), 'd MMMM yyyy', { locale: tr })}</p>
+              <p className='text-green-100 font-medium'>
+                Açıldı: {format(new Date(capsule.unlockDate), 'd MMMM yyyy', { locale: tr })}
+              </p>
             </div>
 
             {/* Content */}
@@ -85,23 +87,22 @@ export const CapsuleDetailModal = ({ capsule, isOpen, onClose, onUpdate }: Capsu
                     />
                   </div>
                   <div>
-                    <p className='font-bold text-gray-900 text-lg'>{capsule.authorId.firstName} {capsule.authorId.lastName}</p>
+                    <p className='font-bold text-gray-900 text-lg'>
+                      {capsule.authorId.firstName} {capsule.authorId.lastName}
+                    </p>
                     <p className='text-xs font-black text-gray-400 uppercase tracking-widest'>Gönderen</p>
                   </div>
                 </div>
                 <div className='text-right'>
                   <p className='text-xs font-black text-gray-400 uppercase tracking-widest mb-1'>Yazıldı</p>
-                  <p className='font-bold text-gray-900'>{format(new Date(capsule.createdAt), 'd MMMM yyyy', { locale: tr })}</p>
+                  <p className='font-bold text-gray-900'>
+                    {format(new Date(capsule.createdAt), 'd MMMM yyyy', { locale: tr })}
+                  </p>
                 </div>
               </div>
 
               <div className='prose max-w-none mb-12'>
-                <p 
-                  className='text-2xl leading-relaxed text-gray-800 italic'
-                  style={{ fontFamily: 'var(--font-indie-flower), cursive' }}
-                >
-                  {capsule.content}
-                </p>
+                <p className='text-2xl leading-relaxed text-gray-800 italic'>{capsule.content}</p>
               </div>
 
               {capsule.photos && capsule.photos.length > 0 && (
@@ -112,7 +113,10 @@ export const CapsuleDetailModal = ({ capsule, isOpen, onClose, onUpdate }: Capsu
                   </h3>
                   <div className='grid grid-cols-1 sm:grid-cols-2 gap-6'>
                     {capsule.photos.map((photo, index) => (
-                      <div key={index} className='relative h-64 rounded-3xl overflow-hidden shadow-lg border-4 border-white transform transition-transform hover:scale-[1.02]'>
+                      <div
+                        key={index}
+                        className='relative h-64 rounded-3xl overflow-hidden shadow-lg border-4 border-white transform transition-transform hover:scale-[1.02]'
+                      >
                         <Image src={photo.url} alt={`Photo ${index + 1}`} fill className='object-cover' />
                       </div>
                     ))}
@@ -126,10 +130,7 @@ export const CapsuleDetailModal = ({ capsule, isOpen, onClose, onUpdate }: Capsu
                     <Video size={18} className='text-amber-500' />
                     Eklenen Video
                   </h3>
-                  <VideoPlayer 
-                    src={capsule.video.url} 
-                    className='aspect-video'
-                  />
+                  <VideoPlayer src={capsule.video.url} className='aspect-video' />
                 </div>
               )}
 
@@ -172,14 +173,14 @@ export const CapsuleDetailModal = ({ capsule, isOpen, onClose, onUpdate }: Capsu
                 <h3 className='font-black text-gray-900 mb-4 flex items-center gap-2'>
                   <span>💭</span> O günden bugüne...
                 </h3>
-                <textarea 
-                  className='w-full bg-white rounded-2xl p-6 border-2 border-purple-100 focus:border-purple-400 focus:outline-none resize-none transition-all shadow-sm' 
-                  rows={4} 
+                <textarea
+                  className='w-full bg-white rounded-2xl p-6 border-2 border-purple-100 focus:border-purple-400 focus:outline-none resize-none transition-all shadow-sm'
+                  rows={4}
                   value={reflection}
-                  onChange={(e) => setReflection(e.target.value)}
+                  onChange={e => setReflection(e.target.value)}
                   placeholder='Bu mektubu okuduktan sonra neler hissettiniz? Bugün neler farklı?'
                 />
-                <button 
+                <button
                   onClick={handleSubmitReflection}
                   disabled={!reflection.trim() || isSubmitting}
                   className='mt-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-4 rounded-full font-black uppercase tracking-widest text-sm hover:shadow-xl transition-all flex items-center gap-2 shadow-lg shadow-purple-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed'
