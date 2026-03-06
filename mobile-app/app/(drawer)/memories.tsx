@@ -591,7 +591,11 @@ export default function MemoriesScreen() {
         storage={storage}
       />
 
-      <GenerateSongModal visible={!!songModalMemoryId} currentStep={songProgressStage} />
+      <GenerateSongModal
+        visible={!!songModalMemoryId}
+        currentStep={songProgressStage}
+        onClose={() => setSongModalMemoryId(null)}
+      />
 
       <CreateStoryModal
         visible={storyModalVisible}
@@ -607,7 +611,11 @@ export default function MemoriesScreen() {
         creating={novelCreating}
       />
 
-      <GenerateNovelModal visible={novelProgressVisible} currentStep={novelStep} />
+      <GenerateNovelModal
+        visible={novelProgressVisible}
+        currentStep={novelStep}
+        onClose={() => setNovelProgressVisible(false)}
+      />
 
       <SongPlayerModal visible={!!playerMemory} memory={playerMemory} onClose={() => setPlayerMemory(null)} />
 

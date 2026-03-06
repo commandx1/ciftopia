@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Modal, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Modal, ActivityIndicator, Pressable } from 'react-native';
 import { Text } from '../ui/Text';
 import { Check } from 'lucide-react-native';
 import { romanticRoseTheme } from '../../theme/romanticRose';
@@ -17,17 +17,23 @@ const STEPS: { step: number; label: string; sublabel: string }[] = [
 interface GenerateNovelModalProps {
   visible: boolean;
   currentStep: number;
+  onClose?: () => void;
 }
 
-export function GenerateNovelModal({ visible, currentStep }: GenerateNovelModalProps) {
+export function GenerateNovelModal({ visible, currentStep, onClose }: GenerateNovelModalProps) {
   const safeStep = Math.min(4, Math.max(1, currentStep));
   const currentIndex = STEPS.findIndex((s) => s.step === safeStep);
   const activeIndex = currentIndex >= 0 ? currentIndex : 0;
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View style={styles.overlay}>
-        <View style={styles.card}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <Pressable style={styles.overlay} onPress={onClose}>
+        <Pressable style={styles.card} onPress={(e) => e.stopPropagation()}>
           <LinearGradient
             colors={['#6366F1', '#8B5CF6', '#EC4899']}
             style={styles.header}
@@ -85,9 +91,20 @@ export function GenerateNovelModal({ visible, currentStep }: GenerateNovelModalP
                 </View>
               );
             })}
+
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>
+                İşlem tamamlandığında her iki partnere bildirim gidecektir. İsterseniz bu pencereyi kapatabilirsiniz.
+              </Text>
+              {onClose && (
+                <Pressable style={styles.closeButton} onPress={onClose}>
+                  <Text style={styles.closeButtonText}>Kapat</Text>
+                </Pressable>
+              )}
+            </View>
           </View>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }
@@ -191,6 +208,29 @@ const styles = StyleSheet.create({
   },
   stepSublabelPending: {
     color: '#9CA3AF',
+  },
+  footer: {
+    marginTop: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: theme.cardSoft,
+  },
+  footerText: {
+    fontSize: 12,
+    color: theme.textSecondary,
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  closeButton: {
+    alignSelf: 'flex-start',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: theme.cardSoft,
+    borderRadius: 12,
+  },
+  closeButtonText: {
+    fontSize: 15,
+    color: theme.textPrimary,
   },
   tip: {
     marginTop: 16,

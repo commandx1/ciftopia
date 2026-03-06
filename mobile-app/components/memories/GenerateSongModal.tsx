@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Modal, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Modal, ActivityIndicator, Pressable } from 'react-native';
 import { Text } from '../ui/Text';
 import { Check } from 'lucide-react-native';
 import { romanticRoseTheme } from '../../theme/romanticRose';
@@ -18,16 +18,22 @@ const STEPS: { key: SongStep; label: string }[] = [
 interface GenerateSongModalProps {
   visible: boolean;
   currentStep: SongStep;
+  onClose?: () => void;
 }
 
-export function GenerateSongModal({ visible, currentStep }: GenerateSongModalProps) {
+export function GenerateSongModal({ visible, currentStep, onClose }: GenerateSongModalProps) {
   const stepIndex = STEPS.findIndex((s) => s.key === currentStep);
   const currentIndex = stepIndex >= 0 ? stepIndex : 0;
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View style={styles.overlay}>
-        <View style={styles.card}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <Pressable style={styles.overlay} onPress={onClose}>
+        <Pressable style={styles.card} onPress={(e) => e.stopPropagation()}>
           <LinearGradient
             colors={['#8B5CF6', '#EC4899', theme.accent]}
             style={styles.header}
@@ -82,9 +88,20 @@ export function GenerateSongModal({ visible, currentStep }: GenerateSongModalPro
                 Yapay zeka, anınızdaki duyguları ve detayları analiz ederek size özel bir şarkı oluşturuyor.
               </Text>
             </View>
+
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>
+                İşlem tamamlandığında her iki partnere bildirim gidecektir. İsterseniz bu pencereyi kapatabilirsiniz.
+              </Text>
+              {onClose && (
+                <Pressable style={styles.closeButton} onPress={onClose}>
+                  <Text style={styles.closeButtonText}>Kapat</Text>
+                </Pressable>
+              )}
+            </View>
           </View>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }
@@ -193,5 +210,28 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: theme.textSecondary,
     lineHeight: 18,
+  },
+  footer: {
+    marginTop: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: theme.cardSoft,
+  },
+  footerText: {
+    fontSize: 12,
+    color: theme.textSecondary,
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  closeButton: {
+    alignSelf: 'flex-start',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: theme.cardSoft,
+    borderRadius: 12,
+  },
+  closeButtonText: {
+    fontSize: 15,
+    color: theme.textPrimary,
   },
 });

@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, SortOrder } from 'mongoose';
@@ -765,6 +766,14 @@ ${joined}`;
 
       this.appGateway.emitToCouple(coupleIdStr, 'novel:step', { step: 4 });
       this.appGateway.emitToCouple(coupleIdStr, 'novel:done', { story, storyId });
+      await this.notificationService.sendToCouple(
+        coupleIdStr,
+        'Hikâyeniz hazır!',
+        'Anılarınızdan hikâye oluşturuldu.',
+        {
+          screen: 'memories',
+        },
+      );
 
       return { story, storyId };
     } catch (err) {
@@ -968,6 +977,11 @@ ${joined}`;
           status === 'SENSITIVE_WORD_ERROR' ||
           status === 'CALLBACK_EXCEPTION'
         ) {
+          Logger.error('Şarkı sözleri üretilemedi.', {
+            status,
+            lyricsTaskId,
+            lyricsRes: lyricsRes.data,
+          });
           throw new BadRequestException('Şarkı sözleri üretilemedi.');
         }
       }
@@ -1080,6 +1094,15 @@ ${joined}`;
         generatedSongKey: key,
         generatedSongDurationSeconds: songDurationSeconds,
       });
+      await this.notificationService.sendToCouple(
+        coupleId,
+        'Şarkınız hazır!',
+        'Anınızın şarkısı oluşturuldu.',
+        {
+          screen: 'memories',
+          memoryId,
+        },
+      );
     } catch (err) {
       this.appGateway.emitToCouple(coupleId, 'song:error', {
         memoryId,
