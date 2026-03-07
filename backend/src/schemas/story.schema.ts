@@ -29,6 +29,10 @@ export class Story {
   /** TTS'e gönderilen karakter sayısı (TTS token değil, karakter bazlı fiyatlandırılır). */
   @Prop({ type: Number })
   ttsInputCharacters?: number;
+
+  /** Bu hikâyeyi oluşturmak için kullanılan anıların id'leri. */
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'Memory' }], default: [] })
+  memoryIds?: Types.ObjectId[];
 }
 
 export const StorySchema = SchemaFactory.createForClass(Story);

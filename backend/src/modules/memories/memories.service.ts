@@ -193,6 +193,49 @@ export class MemoriesService {
     };
   }
 
+  /** Çiftin hikaye listesini tarihe göre (yeniden eskiye) döndürür. usedMemories ile anı başlıklarını döner. */
+  async findStoriesByCoupleId(coupleId: string) {
+    const list = await this.storyModel
+      .find({ coupleId: new Types.ObjectId(coupleId) })
+      .sort({ date: -1 })
+      .select('_id content date memoryIds')
+      .lean()
+      .exec();
+    const memoryIdsFlat = list.flatMap((s) => (s as any).memoryIds ?? []);
+    const uniqueIds = [...new Set(memoryIdsFlat.map((id: any) => id?.toString()).filter(Boolean))];
+    const memoryMap = new Map<string, string>();
+    if (uniqueIds.length > 0) {
+      const memories = await this.memoryModel
+        .find({ _id: { $in: uniqueIds.map((id) => new Types.ObjectId(id)) } })
+        .select('_id title')
+        .lean();
+      memories.forEach((m: any) => memoryMap.set(m._id.toString(), m.title || 'Anı'));
+    }
+    return list.map((s) => {
+      const plain = (s as any).content.replace(/#{1,6}\s*/g, '').replace(/\*\*([^*]+)\*\*/g, '$1').trim();
+      const excerpt = plain.length > 180 ? plain.slice(0, 180) + '...' : plain;
+      const wordCount = plain.split(/\s+/).filter(Boolean).length;
+      const readMinutes = Math.max(1, Math.ceil(wordCount / 200));
+      const ids: Types.ObjectId[] = (s as any).memoryIds ?? [];
+      const usedMemories = ids
+        .map((id) => {
+          const idStr = id?.toString?.();
+          return idStr
+            ? { _id: idStr, title: memoryMap.get(idStr) || 'Anı' }
+            : null;
+        })
+        .filter(Boolean) as { _id: string; title: string }[];
+      return {
+        _id: (s as any)._id.toString(),
+        excerpt,
+        date: (s as any).date,
+        wordCount,
+        readMinutes,
+        usedMemories,
+      };
+    });
+  }
+
   /** Tek bir hikayeyi döndürür (çifte ait olmalı). audioUrl presigned olarak eklenir. */
   async getStory(userId: string, storyId: string) {
     const couple = await this.coupleModel.findOne({
@@ -210,11 +253,23 @@ export class MemoriesService {
     const audioUrl = story.audioKey
       ? await this.uploadService.getPresignedUrl(story.audioKey)
       : undefined;
+    let usedMemories: { _id: string; title: string }[] = [];
+    if (story.memoryIds?.length) {
+      const memories = await this.memoryModel
+        .find({ _id: { $in: story.memoryIds } })
+        .select('_id title')
+        .lean();
+      usedMemories = memories.map((m: any) => ({
+        _id: m._id.toString(),
+        title: m.title || 'Anı',
+      }));
+    }
     return {
       _id: story._id.toString(),
       content: story.content,
       date: story.date,
       audioUrl,
+      usedMemories,
     };
   }
 
@@ -596,10 +651,6 @@ export class MemoriesService {
     const response = await this.gemini.models.generateContent({
       model: this.geminiModel,
       contents: prompt,
-      config: {
-        maxOutputTokens: 4000,
-        temperature: 0.9,
-      },
     });
     const text = response.text?.trim();
     if (!text) throw new Error('Gemini returned empty content');
@@ -619,8 +670,6 @@ export class MemoriesService {
     const response = await this.openai.chat.completions.create({
       model: 'gpt-4.1',
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 4000,
-      temperature: 0.9,
     });
     const story = response.choices[0]?.message?.content?.trim();
     if (!story) throw new Error('OpenAI returned empty content');
@@ -708,13 +757,14 @@ export class MemoriesService {
       joined.length > maxChars ? joined.slice(0, maxChars) : joined; */
 
     const prompt =
-      `Aşağıdaki günlük/anı kayıtlarını temel alarak ${partner1Name} ve ${partner2Name} hakkında 5 bölümlük bir aşk hikâyesi yaz.
+      `Aşağıdaki günlük/anı kayıtlarını temel alarak ${partner1Name} ve ${partner2Name} hakkında 5 bölümlük bir aşk MASALI yaz. Metin masal ve anlatı havasında olsun; düz, kuru bir hikâye anlatımından kaçın.
 
 Kurallar:
 - Ana karakter isimleri olarak mümkün olduğunca sadece "${partner1Name}" ve "${partner2Name}" kullan. Yeni ana karakter isimleri uydurma.
 - Her blokta belirtilen "Yazan" bilgisini dikkate al; sahneleri kimin bakış açısından ağırlıklı yazacağını buna göre seç.
 - Hikâyenin planını, karakter listesini ve çatışmasını kendi içinde düşünebilirsin; ancak ÇIKTIDA bunları yazma.
-- Çıktıda SADECE hikâyenin kendisi olsun; 5 bölümden oluşsun.
+- Çıktıda SADECE masalın kendisi olsun; 5 bölümden oluşsun.
+- Üslup: Masal ve destan havasında yaz. Betimlemeler zengin, imgeler ve mecazlar kullan; dil şiirsel ve duygusal olsun, "dümdüz" kronolojik anlatıdan kaçın. İstersen "Bir varmış bir yokmuş" veya benzeri masal girişi kullanabilirsin; atmosfer ve duygu ön planda olsun.
 - Çıktıyı **markdown** formatında üret ve şu yapıyı kullan:
   - Her bölüm için ` +
       '```' +
@@ -723,7 +773,7 @@ Kurallar:
       ` şeklinde bir başlık yaz (N 1'den 5'e kadar).
   - Bölüm başlıklarından önce veya sonra "Plan", "Karakterler", "Çatışma" gibi ekstra başlıklar ekleme.
 - Dil Türkçe olsun.
-- Toplam uzunluk en az 1500 kelime olsun.
+- Toplam uzunluk en fazla 4096 karakter olsun.
 
 Anılar (her blok bir anıyı temsil eder):
 
@@ -760,6 +810,7 @@ ${joined}`;
         date: new Date(),
         textPromptTokens: promptTokens || undefined,
         textCompletionTokens: completionTokens || undefined,
+        memoryIds: (memoryIds ?? []).map((id) => new Types.ObjectId(id)),
       });
       const storyId = created._id.toString();
       await this.generateStoryTtsInBackground(storyId, story, coupleIdStr);
@@ -806,9 +857,12 @@ ${joined}`;
     try {
       const response = await this.openai.audio.speech.create({
         model: 'gpt-4o-mini-tts',
-        voice: 'coral',
+        voice: 'sage',
         input: textForTts,
-        instructions: 'Türkçe, sakin ve samimi bir tonla oku. Masal anlatır gibi.',
+        instructions: `Yumuşak ve sıcak bir tonla Türkçe konuş. 
+Bir çocuk masalı anlatır gibi yavaş ve anlaşılır oku. 
+Cümle sonlarında kısa duraklamalar yap. 
+Heyecanlı yerlerde tonu biraz yükselt, sakin yerlerde tekrar yumuşat.`,
       });
       const buffer = Buffer.from(await response.arrayBuffer());
       const key = `stories/${storyId}.mp3`;

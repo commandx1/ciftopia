@@ -53,6 +53,20 @@ export interface MemoriesResponse {
   hasMore: boolean;
 }
 
+export interface StoryUsedMemory {
+  _id: string;
+  title: string;
+}
+
+export interface StoryListItem {
+  _id: string;
+  excerpt: string;
+  date: string;
+  wordCount: number;
+  readMinutes: number;
+  usedMemories?: StoryUsedMemory[];
+}
+
 export const memoriesApi = {
   getMemories: async (params: {
     mood?: string;
@@ -122,12 +136,21 @@ export const memoriesApi = {
     return response.data;
   },
 
+  getStories: async (token?: string) => {
+    const response = await client.get<StoryListItem[]>(
+      '/memories/stories',
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    return response.data;
+  },
+
   getStory: async (storyId: string, token?: string) => {
     const response = await client.get<{
       _id: string;
       content: string;
       date: string;
       audioUrl?: string;
+      usedMemories?: StoryUsedMemory[];
     }>(`/memories/story/${storyId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });

@@ -95,6 +95,13 @@ export class MemoriesController {
     return this.memoriesService.generateSong(req.user._id, id);
   }
 
+  @Get('stories')
+  @UseGuards(JwtAuthGuard)
+  async getStories(@Req() req: AuthRequest) {
+    const coupleId = req.user.coupleId?._id || req.user.coupleId;
+    return this.memoriesService.findStoriesByCoupleId(coupleId.toString());
+  }
+
   @Get('story/:id')
   @UseGuards(JwtAuthGuard)
   async getStory(@Req() req: AuthRequest, @Param('id') id: string) {

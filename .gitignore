@@ -8,6 +8,8 @@ dist/
 *.md
 *.qmd
 
+mobile-app/android
+
 # Firebase service account keys
 mobile-app/*service-account*.json
 mobile-app/ciftopia-*.json

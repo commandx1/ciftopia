@@ -91,7 +91,7 @@ export function GenerateSongModal({ visible, currentStep, onClose }: GenerateSon
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>
-                İşlem tamamlandığında her iki partnere bildirim gidecektir. İsterseniz bu pencereyi kapatabilirsiniz.
+                İşlem tamamlandığında bildirim alacaksınız. İsterseniz bu pencereyi kapatabilirsiniz.
               </Text>
               {onClose && (
                 <Pressable style={styles.closeButton} onPress={onClose}>

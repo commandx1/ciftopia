@@ -28,6 +28,7 @@ import NewMemoryModal from '../../components/memories/NewMemoryModal'
 import { moodConfigs } from '../../components/memories/MemoryMoodBadge'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
+import { useRouter } from 'expo-router'
 import { romanticRoseTheme } from '../../theme/romanticRose'
 import { nightBlueTheme } from '../../theme/nightBlue'
 import Markdown from 'react-native-markdown-display'
@@ -47,6 +48,7 @@ const themes = {
 const theme = themes.romanticRose
 
 export default function MemoriesScreen() {
+  const router = useRouter()
   const { user } = useAuth()
   const { show: showToast } = useToast()
   const [loading, setLoading] = useState(true)
@@ -393,17 +395,25 @@ export default function MemoriesScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <TouchableOpacity
-          onPress={() => setStoryModalVisible(true)}
-          style={{ opacity: novelProgressVisible ? 0.8 : 1 }}
-          disabled={novelProgressVisible}
-        >
-          <LinearGradient colors={theme.accentGradient} style={styles.generateNovelBtnGradient}>
-            <Text style={styles.generateNovelBtnText}>
-              HİKAYENİ OLUŞTUR
-            </Text>
-          </LinearGradient>
-        </TouchableOpacity>
+        <View style={styles.storyRow}>
+          <TouchableOpacity
+            onPress={() => router.push('/stories')}
+            style={styles.storiesLinkBtn}
+          >
+            <Text style={styles.storiesLinkText}>Hikayelerimiz</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setStoryModalVisible(true)}
+            style={{ opacity: novelProgressVisible ? 0.8 : 1 }}
+            disabled={novelProgressVisible}
+          >
+            <LinearGradient colors={theme.accentGradient} style={styles.generateNovelBtnGradient}>
+              <Text style={styles.generateNovelBtnText}>
+                HİKAYENİ OLUŞTUR
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
         <View style={styles.headerSection}>
           <View style={styles.headerMain}>
             <View style={styles.headerLeft}>
@@ -743,14 +753,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 25
   },
+  storyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    paddingHorizontal: 16
+  },
+  storiesLinkBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 16
+  },
+  storiesLinkText: {
+    fontSize: 15,
+    color: theme.accent,
+    fontWeight: '600'
+  },
   generateNovelBtnGradient: {
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 999,
-    width: 'fit-content' as DimensionValue,
-    marginBottom: 16,
-    marginLeft: 'auto',
-    marginRight: 16
+    width: 'fit-content' as DimensionValue
   },
   generateNovelBtnText: {
     fontSize: 11,
