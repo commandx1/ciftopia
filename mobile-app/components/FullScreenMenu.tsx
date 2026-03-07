@@ -358,9 +358,9 @@ export default function FullScreenMenu({ visible, onClose }: FullScreenMenuProps
                   <Heart size={22} color='#fff' />
                   <Text style={styles.footerButtonText}>Mağaza</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.footerButton}>
-                  <Sparkles size={22} color='#fff' />
-                  <Text style={styles.footerButtonText}>Yardım</Text>
+                <TouchableOpacity style={styles.footerButton} onPress={() => navigateAndClose('space-explorer')}>
+                  <Rocket size={22} color='#fff' />
+                  <Text style={styles.footerButtonText}>Uzay Keşfi</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.footerButton}
