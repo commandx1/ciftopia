@@ -41,6 +41,17 @@ import {
   DailyQuestion,
   DailyQuestionDocument,
 } from '../../schemas/daily-question.schema';
+import { Story, StoryDocument } from '../../schemas/story.schema';
+import {
+  QuizSession,
+  QuizSessionDocument,
+} from '../../schemas/quiz-session.schema';
+import {
+  QuizResult,
+  QuizResultDocument,
+} from '../../schemas/quiz-result.schema';
+import { Feedback } from '../../schemas/feedback.schema';
+import { Mood, MoodDocument } from '../../schemas/mood.schema';
 import { CreateCoupleDto } from './dto/onboarding.dto';
 import { UploadService } from '../upload/upload.service';
 import { ActivityService } from '../activity/activity.service';
@@ -69,6 +80,13 @@ export class OnboardingService {
     private coupleQuestionStatsModel: Model<CoupleQuestionStatsDocument>,
     @InjectModel(DailyQuestion.name)
     private dailyQuestionModel: Model<DailyQuestionDocument>,
+    @InjectModel(Story.name) private storyModel: Model<StoryDocument>,
+    @InjectModel(QuizSession.name)
+    private quizSessionModel: Model<QuizSessionDocument>,
+    @InjectModel(QuizResult.name)
+    private quizResultModel: Model<QuizResultDocument>,
+    @InjectModel(Feedback.name) private feedbackModel: Model<Feedback>,
+    @InjectModel(Mood.name) private moodModel: Model<MoodDocument>,
     private uploadService: UploadService,
     private activityService: ActivityService,
   ) {}
@@ -196,67 +214,61 @@ export class OnboardingService {
 
     const photoKeys: string[] = [];
 
-    // 1. Memories
+    const pushKey = (key: string | undefined) => {
+      if (key && !key.startsWith('http')) photoKeys.push(key);
+    };
+
+    // 1. Memories (foto + anıdan üretilen şarkı mp3)
     const memories = await this.memoryModel.find({ coupleId });
     memories.forEach((m) => {
       if (m.photos) {
-        m.photos.forEach((p) => {
-          if (p.url && !p.url.startsWith('http')) photoKeys.push(p.url);
-        });
+        m.photos.forEach((p) => pushKey(p.url));
       }
+      pushKey(m.generatedSongKey);
     });
 
     // 2. Gallery Photos
     const galleryPhotos = await this.galleryPhotoModel.find({ coupleId });
-    galleryPhotos.forEach((gp) => {
-      if (gp.photo?.url && !gp.photo.url.startsWith('http'))
-        photoKeys.push(gp.photo.url);
-    });
+    galleryPhotos.forEach((gp) => pushKey(gp.photo?.url));
 
     // 3. Albums (Cover photos)
     const albums = await this.albumModel.find({ coupleId });
-    albums.forEach((a) => {
-      if (a.coverPhoto?.url && !a.coverPhoto.url.startsWith('http'))
-        photoKeys.push(a.coverPhoto.url);
-    });
+    albums.forEach((a) => pushKey(a.coverPhoto?.url));
 
-    // 4. Time Capsules
+    // 4. Time Capsules (foto + video; url veya key)
     const capsules = await this.timeCapsuleModel.find({ coupleId });
     capsules.forEach((c) => {
       if (c.photos) {
         c.photos.forEach((p) => {
-          if (p.url && !p.url.startsWith('http')) photoKeys.push(p.url);
+          pushKey(p.key ?? p.url);
         });
       }
-      if (c.video?.url && !c.video.url.startsWith('http'))
-        photoKeys.push(c.video.url);
+      if (c.video) {
+        pushKey(c.video.key ?? c.video.url);
+      }
     });
 
     // 5. Bucket List
     const bucketList = await this.bucketListModel.find({ coupleId });
     bucketList.forEach((bl) => {
       if (bl.photos) {
-        bl.photos.forEach((p) => {
-          if (p.url && !p.url.startsWith('http')) photoKeys.push(p.url);
-        });
+        bl.photos.forEach((p) => pushKey(p.url));
       }
     });
 
     // 6. User Avatars
     const partners = await this.userModel.find({ coupleId });
-    partners.forEach((p) => {
-      if (p.avatar?.url && !p.avatar.url.startsWith('http'))
-        photoKeys.push(p.avatar.url);
-    });
+    partners.forEach((p) => pushKey(p.avatar?.url));
 
     // 7. Important Dates
     const importantDates = await this.importantDateModel.find({ coupleId });
-    importantDates.forEach((id) => {
-      if (id.photo?.url && !id.photo.url.startsWith('http'))
-        photoKeys.push(id.photo.url);
-    });
+    importantDates.forEach((id) => pushKey(id.photo?.url));
 
-    // 8. Delete all files from S3
+    // 8. Stories (TTS ses dosyaları)
+    const stories = await this.storyModel.find({ coupleId });
+    stories.forEach((s) => pushKey(s.audioKey));
+
+    // 9. S3: tüm dosyaları sil (foto, video, mp3, ses)
     const uniqueKeys = [...new Set(photoKeys)];
     if (uniqueKeys.length > 0) {
       await Promise.all(
@@ -264,7 +276,7 @@ export class OnboardingService {
       );
     }
 
-    // 9. Delete all records from all collections
+    // 10. Tüm DB kayıtlarını sil
     await Promise.all([
       this.memoryModel.deleteMany({ coupleId }),
       this.galleryPhotoModel.deleteMany({ coupleId }),
@@ -278,6 +290,11 @@ export class OnboardingService {
       this.questionAnswerModel.deleteMany({ coupleId }),
       this.coupleQuestionStatsModel.deleteMany({ coupleId }),
       this.dailyQuestionModel.deleteMany({ coupleId }),
+      this.storyModel.deleteMany({ coupleId }),
+      this.quizResultModel.deleteMany({ coupleId }),
+      this.quizSessionModel.deleteMany({ coupleId }),
+      this.feedbackModel.deleteMany({ coupleId }),
+      this.moodModel.deleteMany({ coupleId }),
       this.userModel.deleteMany({ coupleId }),
       this.coupleModel.findByIdAndDelete(coupleId),
     ]);
