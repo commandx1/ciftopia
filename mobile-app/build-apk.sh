@@ -7,6 +7,10 @@ cd "$SCRIPT_DIR"
 echo "📦 1/2 — Android prebuild (expo prebuild)..."
 npx expo prebuild --platform android --clean
 
+# prebuild --clean android'u sıfırladığı için local.properties yeniden yazılır
+SDK_DIR="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
+echo "sdk.dir=$SDK_DIR" > android/local.properties
+
 echo ""
 echo "🔨 2/2 — Release APK derleniyor (gradlew assembleRelease)..."
 cd android
