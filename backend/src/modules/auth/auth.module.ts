@@ -19,9 +19,7 @@ import { MailModule } from '../mail/mail.module';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
-        signOptions: {
-          expiresIn: '7d',
-        },
+        signOptions: {}, // Süre sınırı yok (exp claim eklenmez)
       }),
     }),
     MongooseModule.forFeature([
