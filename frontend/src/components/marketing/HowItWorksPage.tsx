@@ -639,7 +639,7 @@ export default function HowItWorksPage() {
                   </div>
 
                   {/* Panel 2: Sorular (Playing) */}
-                  <div className='w-[350px] min-w-[350px] flex-shrink-0 snap-start snap-always'>
+                  <div className='w-full flex-shrink-0 snap-start snap-always'>
                     <div className='px-4 py-3 h-[660px] overflow-y-auto bg-[#FDF2F8]'>
                       <div className='flex items-center justify-between mb-3'>
                         <span className='w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center' />
@@ -733,9 +733,9 @@ export default function HowItWorksPage() {
                   </div>
 
                   {/* Panel 3: Sonuç — quiz.tsx resultsScreen ile birebir */}
-                  <div className='w-[280px] min-w-[280px] flex-shrink-0 snap-start snap-always'>
+                  <div className='w-full flex-shrink-0 snap-start snap-always'>
                     <div
-                      className='px-3 pt-6 pb-6 h-[560px] overflow-y-auto'
+                      className='px-3 pt-6 pb-6 h-[660px] overflow-y-auto'
                       style={{
                         background: 'linear-gradient(180deg, #FFF0F5 0%, #F3E5F5 40%, #E1BEE7 70%, #F8BBD0 100%)'
                       }}
