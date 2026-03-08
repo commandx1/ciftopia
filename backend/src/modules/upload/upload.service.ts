@@ -117,15 +117,17 @@ export class UploadService {
         Key: key,
       });
 
-      // Link expires in 1 hour (3600 seconds)
+      // AWS max: 7 gün (604800 saniye). 30 gün desteklenmiyor.
+      const PRESIGNED_EXPIRES_SEC = 604800; // 7 gün
       const url = await getSignedUrl(this.s3Client, command, {
-        expiresIn: 3600,
+        expiresIn: PRESIGNED_EXPIRES_SEC,
       });
 
-      // Cache for 55 minutes (55 * 60 * 1000 ms)
+      // Cache: URL süresinden 55 dk kısa (yenilemeden önce tazelenir)
+      const cacheMs = PRESIGNED_EXPIRES_SEC * 1000 - 55 * 60 * 1000;
       this.urlCache.set(key, {
         url,
-        expiresAt: now + 55 * 60 * 1000,
+        expiresAt: now + cacheMs,
       });
 
       return url;
