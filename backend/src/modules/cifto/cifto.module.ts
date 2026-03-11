@@ -18,7 +18,9 @@ import {
   QuestionAnswerSchema,
 } from '../../schemas/question-answer.schema';
 import { QuizResult, QuizResultSchema } from '../../schemas/quiz-result.schema';
+import { Mood, MoodSchema } from '../../schemas/mood.schema';
 import { EventsModule } from '../events/events.module';
+import { PlanLimitsModule } from '../plan-limits/plan-limits.module';
 
 @Module({
   imports: [
@@ -30,8 +32,10 @@ import { EventsModule } from '../events/events.module';
       { name: DailyQuestion.name, schema: DailyQuestionSchema },
       { name: QuestionAnswer.name, schema: QuestionAnswerSchema },
       { name: QuizResult.name, schema: QuizResultSchema },
+      { name: Mood.name, schema: MoodSchema },
     ]),
     EventsModule,
+    PlanLimitsModule,
   ],
   controllers: [CiftoController],
   providers: [CiftoService],

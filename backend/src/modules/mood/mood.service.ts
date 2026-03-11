@@ -2,12 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Mood, MoodDocument } from '../../schemas/mood.schema';
+import { User, UserDocument } from '../../schemas/user.schema';
 import { CreateMoodDto } from './dto/mood.dto';
 
 @Injectable()
 export class MoodService {
   constructor(
     @InjectModel(Mood.name) private moodModel: Model<MoodDocument>,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
   ) {}
 
   async createOrUpdateMood(userId: string, coupleId: string, createMoodDto: CreateMoodDto): Promise<Mood> {
@@ -15,7 +17,7 @@ export class MoodService {
     const moodDate = new Date(date);
     moodDate.setUTCHours(0, 0, 0, 0);
 
-    return this.moodModel.findOneAndUpdate(
+    const mood = await this.moodModel.findOneAndUpdate(
       {
         userId: new Types.ObjectId(userId),
         coupleId: new Types.ObjectId(coupleId),
@@ -27,6 +29,13 @@ export class MoodService {
       },
       { upsert: true, new: true },
     ).exec();
+
+    await this.userModel.updateOne(
+      { _id: new Types.ObjectId(userId) },
+      { $set: { lastMoodAt: new Date() } },
+    );
+
+    return mood;
   }
 
   async getMoodsByDateRange(coupleId: string, startDate: Date, endDate: Date): Promise<Mood[]> {

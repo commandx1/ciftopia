@@ -28,7 +28,9 @@ import {
   QuizResult,
   QuizResultDocument,
 } from '../../schemas/quiz-result.schema';
+import { Mood, MoodDocument } from '../../schemas/mood.schema';
 import { AppGateway } from '../events/events.gateway';
+import { PlanLimitsService } from '../plan-limits/plan-limits.service';
 
 @Injectable()
 export class CiftoService {
@@ -49,8 +51,10 @@ export class CiftoService {
     private questionAnswerModel: Model<QuestionAnswerDocument>,
     @InjectModel(QuizResult.name)
     private quizResultModel: Model<QuizResultDocument>,
+    @InjectModel(Mood.name) private moodModel: Model<MoodDocument>,
     private configService: ConfigService,
     private appGateway: AppGateway,
+    private planLimitsService: PlanLimitsService,
   ) {
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
     if (!apiKey) {
@@ -99,6 +103,28 @@ export class CiftoService {
       });
     }
 
+    const couple = user.coupleId
+      ? await this.coupleModel.findById(user.coupleId)
+      : null;
+    const planCode = couple?.planCode || 'free';
+    const limits = await this.planLimitsService.getLimits(planCode);
+    const dailyLimit = limits.ciftoDailyMessages;
+    if (typeof dailyLimit === 'number' && dailyLimit >= 0) {
+      const { startOfToday, endOfToday } = this.getTodayRange();
+      const count =
+        conversation?.messages.filter(
+          (msg) =>
+            msg.role === 'user' &&
+            msg.createdAt >= startOfToday &&
+            msg.createdAt <= endOfToday,
+        ).length || 0;
+      if (count >= dailyLimit) {
+        throw new BadRequestException(
+          'Günlük Çifto mesaj limitine ulaştınız.',
+        );
+      }
+    }
+
     const now = new Date();
     conversation.messages.push({
       role: 'user',
@@ -106,8 +132,6 @@ export class CiftoService {
       createdAt: now,
     });
     conversation.lastMessageAt = now;
-
-    this.trimMessages(conversation);
 
     this.trimMessages(conversation);
     await conversation.save();
@@ -279,6 +303,21 @@ ${coupleContext}`.trim();
     );
   }
 
+  private getTodayRange(): { startOfToday: Date; endOfToday: Date } {
+    const now = new Date();
+    const startOfToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      0,
+      0,
+      0,
+      0,
+    );
+    const endOfToday = new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000 - 1);
+    return { startOfToday, endOfToday };
+  }
+
   private async buildCoupleContext(
     coupleId: string | undefined,
     user: UserDocument,
@@ -357,6 +396,30 @@ ${coupleContext}`.trim();
           })
         : ['- Kayıt yok.'];
 
+    const { startDate: moodStart, endDate: moodEnd } =
+      this.getLastNDaysRange(3);
+    const moodEntries = await this.moodModel
+      .find({
+        coupleId: coupleObjectId,
+        date: { $gte: moodStart, $lte: moodEnd },
+      })
+      .sort({ date: -1 })
+      .select('emoji note userId date')
+      .lean();
+
+    const userMoodLines = this.buildMoodLines(
+      moodEntries,
+      user._id.toString(),
+      userName,
+    );
+    const partnerMoodLines = partner?._id
+      ? this.buildMoodLines(
+          moodEntries,
+          partner._id.toString(),
+          partnerName,
+        )
+      : ['- Kayıt yok.'];
+
     const quizResults = (await this.quizResultModel
       .find({ coupleId: coupleObjectId })
       .sort({ finishedAt: -1, createdAt: -1 })
@@ -381,6 +444,11 @@ ${coupleContext}`.trim();
     return [
       'İlişki belleği (son 3 anı):',
       ...memoryLines,
+      'Ruh hali (son 3 gün):',
+      `${userName}:`,
+      ...userMoodLines,
+      `${partnerName}:`,
+      ...partnerMoodLines,
       'Günlük sorular (son 5):',
       ...questionLines,
       'Quiz sonuçları (son 3):',
@@ -397,6 +465,36 @@ ${coupleContext}`.trim();
   private formatDate(value?: Date) {
     if (!value) return '';
     return value.toISOString().split('T')[0];
+  }
+
+  private getLastNDaysRange(days: number): {
+    startDate: Date;
+    endDate: Date;
+  } {
+    const now = new Date();
+    const endDate = new Date(now);
+    endDate.setUTCHours(23, 59, 59, 999);
+    const startDate = new Date(now);
+    startDate.setUTCHours(0, 0, 0, 0);
+    startDate.setUTCDate(startDate.getUTCDate() - (days - 1));
+    return { startDate, endDate };
+  }
+
+  private buildMoodLines(
+    moods: Array<{ emoji?: string; note?: string; userId: Types.ObjectId; date: Date }>,
+    targetUserId: string,
+    label: string,
+  ) {
+    const filtered = moods.filter(
+      (m) => m.userId?.toString() === targetUserId,
+    );
+    if (filtered.length === 0) return ['- Kayıt yok.'];
+
+    return filtered.map((mood) => {
+      const date = this.formatDate(mood.date);
+      const note = mood.note ? ` — ${this.truncate(mood.note, 120)}` : '';
+      return `- ${date} ${mood.emoji || ''}${note}`;
+    });
   }
 
   private extractScores(scores: QuizResultDocument['scores']) {
