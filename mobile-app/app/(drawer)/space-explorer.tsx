@@ -9,6 +9,7 @@ import { JoystickOverlay } from '../../components/JoystickOverlay'
 import { SpaceExplorerModal } from '../../components/space/SpaceExplorerModal'
 import { SpaceIntroAnimation } from '../../components/space/SpaceIntroAnimation'
 import { SpaceOnboarding } from '../../components/space/SpaceOnboarding'
+import { SpaceEmptyState } from '../../components/space/SpaceEmptyState'
 import { Text } from '../../components/ui/Text'
 import { ArrowLeft } from 'lucide-react-native'
 import { useRouter } from 'expo-router'
@@ -35,6 +36,15 @@ interface SpaceItem {
   floatSpeed: number
   floatAmplitude: number
 }
+
+const emptyStateItems = [
+  { id: 'poems', title: 'Şiirler', cta: 'Şiir Ekle', type: 'star', route: '/poems' },
+  { id: 'memories', title: 'Anılar', cta: 'Anı Ekle', type: 'planet_a', route: '/memories' },
+  { id: 'albums', title: 'Galeri', cta: 'Foto Ekle', type: 'planet_b', route: '/gallery' },
+  { id: 'questions', title: 'Günün Sorusu', cta: 'Soru Cevapla', type: 'planet_c', route: '/daily-question' },
+  { id: 'bucket', title: 'Bucket List', cta: 'Hayal Ekle', type: 'comet', route: '/bucket-list' },
+  { id: 'time', title: 'Zaman Kapsülü', cta: 'Kapsül Ekle', type: 'ufo', route: '/time-capsule' }
+]
 
 function generateRandomPosition(range: number, minDistance = 15): [number, number, number] {
   return [
@@ -63,10 +73,10 @@ function TouchLookControls({ lookInput }: { lookInput: React.MutableRefObject<{ 
   return null
 }
 
-const MIN_BOUNDARY = 200
+const MIN_BOUNDARY = 100
 const MAX_BOUNDARY = 360
 /** Nesne sayısına sqrt ile bağlı büyüme: aşırı büyüme olmaz, yoğunluk makul kalır */
-const BOUNDARY_SQRT_SCALE = 48
+const BOUNDARY_SQRT_SCALE = 30
 
 function MovementControls({
   moveInput,
@@ -241,6 +251,7 @@ export default function SpaceExplorerScreen() {
   const [loading, setLoading] = useState(true)
   const [showIntro, setShowIntro] = useState(true)
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [showEmptyState, setShowEmptyState] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [selectedItem, setSelectedItem] = useState<SpaceItem | null>(null)
   const [spaceData, setSpaceData] = useState<any>(null)
@@ -316,19 +327,48 @@ export default function SpaceExplorerScreen() {
     tapPos.current = { x, y }
   }, [])
 
-  const spaceBoundary = useMemo(() => {
-    if (!spaceData) return MIN_BOUNDARY
+  const totalObjects = useMemo(() => {
+    if (!spaceData) return 0
     const count = (d: { fullItems: number; remainder: number }) => d.fullItems + (d.remainder > 0 ? 1 : 0)
-    const totalObjects =
+    return (
       count(spaceData.poems) +
       count(spaceData.memories) +
       count(spaceData.albums) +
       count(spaceData.questions) +
       count(spaceData.bucketList) +
       count(spaceData.timeCapsules ?? { fullItems: 0, remainder: 0 })
+    )
+  }, [spaceData])
+
+  const spaceBoundary = useMemo(() => {
+    if (!spaceData) return MIN_BOUNDARY
     const boundary = MIN_BOUNDARY + BOUNDARY_SQRT_SCALE * Math.sqrt(Math.max(0, totalObjects))
     return Math.min(MAX_BOUNDARY, Math.max(MIN_BOUNDARY, boundary))
-  }, [spaceData])
+  }, [spaceData, totalObjects])
+
+  const isEmptySpace = !loading && totalObjects === 0
+
+  useEffect(() => {
+    if (!isEmptySpace || showIntro) return
+    let active = true
+    const checkEmptyState = async () => {
+      try {
+        const hasSeen = await AsyncStorage.getItem('hasSeenSpaceEmptyState')
+        if (!hasSeen && active) setShowEmptyState(true)
+      } catch (e) {
+        // Hata durumunda empty state göstermeden devam et
+      }
+    }
+    checkEmptyState()
+    return () => {
+      active = false
+    }
+  }, [isEmptySpace, showIntro])
+
+  useEffect(() => {
+    if (!isEmptySpace && showEmptyState) setShowEmptyState(false)
+    if (isEmptySpace && showOnboarding) setShowOnboarding(false)
+  }, [isEmptySpace, showEmptyState, showOnboarding])
 
   const spaceObjects = useMemo<SpaceItem[]>(() => {
     if (!spaceData) return []
@@ -469,13 +509,13 @@ export default function SpaceExplorerScreen() {
     setShowIntro(false)
     try {
       const hasSeen = await AsyncStorage.getItem('hasSeenSpaceOnboarding')
-      if (!hasSeen) {
+      if (!hasSeen && !isEmptySpace) {
         setShowOnboarding(true)
       }
     } catch (e) {
       // Hata durumunda onboarding göstermeden devam et
     }
-  }, [])
+  }, [isEmptySpace])
 
   const handleOnboardingComplete = useCallback(async () => {
     try {
@@ -484,6 +524,24 @@ export default function SpaceExplorerScreen() {
     setShowOnboarding(false)
   }, [])
 
+  const handleEmptyStateClose = useCallback(async () => {
+    try {
+      await AsyncStorage.setItem('hasSeenSpaceEmptyState', 'true')
+    } catch (e) {}
+    setShowEmptyState(false)
+  }, [])
+
+  const handleEmptyItemPress = useCallback(
+    async (route: string) => {
+      try {
+        await AsyncStorage.setItem('hasSeenSpaceEmptyState', 'true')
+      } catch (e) {}
+      setShowEmptyState(false)
+      router.push(route as any)
+    },
+    [router]
+  )
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.container}>
@@ -491,7 +549,14 @@ export default function SpaceExplorerScreen() {
 
         {showIntro && <SpaceIntroAnimation onComplete={handleIntroComplete} />}
 
-        <SpaceOnboarding isVisible={showOnboarding} onComplete={handleOnboardingComplete} />
+        <SpaceOnboarding isVisible={showOnboarding && !showEmptyState} onComplete={handleOnboardingComplete} />
+
+        <SpaceEmptyState
+          isVisible={showEmptyState}
+          items={emptyStateItems as any}
+          onItemPress={handleEmptyItemPress}
+          onClose={handleEmptyStateClose}
+        />
 
         <View style={styles.canvasContainer}>
           <Canvas
