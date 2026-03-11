@@ -20,6 +20,7 @@ import {
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
 import { NotificationService } from '../notification/notification.service';
 import { PlanLimitsService } from '../plan-limits/plan-limits.service';
+import { EncryptionService } from '../security/security.service';
 
 @Injectable()
 export class QuizService {
@@ -37,9 +38,43 @@ export class QuizService {
     private configService: ConfigService,
     private notificationService: NotificationService,
     private planLimitsService: PlanLimitsService,
+    private encryptionService: EncryptionService,
   ) {
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
     this.openai = new OpenAI({ apiKey: apiKey || '' });
+  }
+
+  private mapToObject(value: any): Record<string, string> {
+    if (!value) return {};
+    if (value instanceof Map) {
+      return Object.fromEntries(value.entries());
+    }
+    if (typeof value === 'object') {
+      return { ...value };
+    }
+    return {};
+  }
+
+  private async encryptMap(coupleId: string, value: any) {
+    const obj = this.mapToObject(value);
+    const entries = await Promise.all(
+      Object.entries(obj).map(async ([key, val]) => [
+        key,
+        await this.encryptionService.encryptForCouple(coupleId, val),
+      ]),
+    );
+    return Object.fromEntries(entries);
+  }
+
+  private async decryptMap(coupleId: string, value: any) {
+    const obj = this.mapToObject(value);
+    const entries = await Promise.all(
+      Object.entries(obj).map(async ([key, val]) => [
+        key,
+        await this.encryptionService.decryptForCouple(coupleId, val),
+      ]),
+    );
+    return Object.fromEntries(entries);
   }
 
   async createSession(
@@ -214,6 +249,19 @@ The questions will be asked to BOTH partners about themselves first, then they w
       .findById(resultId)
       .populate('quizId');
     if (!result) throw new NotFoundException('Result not found');
+    if (result.details?.length) {
+      result.details = await Promise.all(
+        result.details.map(async (item: any) => ({
+          ...item,
+          selfAnswers: item?.selfAnswers
+            ? await this.decryptMap(result.coupleId.toString(), item.selfAnswers)
+            : item?.selfAnswers,
+          guesses: item?.guesses
+            ? await this.decryptMap(result.coupleId.toString(), item.guesses)
+            : item?.guesses,
+        })),
+      );
+    }
     return result;
   }
 
@@ -224,20 +272,41 @@ The questions will be asked to BOTH partners about themselves first, then they w
   }
 
   async getRecentSessions(coupleId: string, offset: number = 0, limit: number = 5): Promise<QuizResultDocument[]> {
-    return this.quizResultModel
+    const results = await this.quizResultModel
       .find({ coupleId: new Types.ObjectId(coupleId) })
       .sort({ createdAt: -1 })
       .skip(offset)
       .limit(limit);
+    return Promise.all(
+      results.map(async (result) => {
+        const obj = result.toObject ? result.toObject() : result;
+        if (obj.details?.length) {
+          obj.details = await Promise.all(
+            obj.details.map(async (item: any) => ({
+              ...item,
+              selfAnswers: item?.selfAnswers
+                ? await this.decryptMap(coupleId, item.selfAnswers)
+                : item?.selfAnswers,
+              guesses: item?.guesses
+                ? await this.decryptMap(coupleId, item.guesses)
+                : item?.guesses,
+            })),
+          );
+        }
+        return obj;
+      }),
+    ) as any;
   }
 
   async getActiveSession(coupleId: string): Promise<QuizSessionDocument | null> {
-    return this.quizSessionModel
+    const session = await this.quizSessionModel
       .findOne({
         coupleId: new Types.ObjectId(coupleId),
         status: { $in: ['waiting', 'in_progress'] },
       })
       .populate('quizId');
+    if (!session) return null;
+    return session;
   }
 
   async cancelSession(sessionId: string): Promise<void> {
@@ -258,13 +327,26 @@ The questions will be asked to BOTH partners about themselves first, then they w
     const existing = await this.quizResultModel.findOne({ sessionId: session._id });
     if (existing) return existing;
 
+    const coupleId = session.coupleId.toString();
+    const encryptedDetails = await Promise.all(
+      session.questionsData.map(async (item: any) => ({
+        ...item,
+        selfAnswers: item?.selfAnswers
+          ? await this.encryptMap(coupleId, item.selfAnswers)
+          : item?.selfAnswers,
+        guesses: item?.guesses
+          ? await this.encryptMap(coupleId, item.guesses)
+          : item?.guesses,
+      })),
+    );
+
     return this.quizResultModel.create({
       quizId: session.quizId,
       sessionId: session._id,
       coupleId: session.coupleId,
       scores: session.scores,
       category: session.category,
-      details: session.questionsData,
+      details: encryptedDetails,
       finishedAt: new Date(),
     });
   }

@@ -29,6 +29,7 @@ import {
 } from '../../schemas/question-answer.schema';
 import { UploadService } from '../upload/upload.service';
 import { PlanLimitsService } from '../plan-limits/plan-limits.service';
+import { EncryptionService } from '../security/security.service';
 
 @Injectable()
 export class DashboardService {
@@ -51,7 +52,42 @@ export class DashboardService {
     private questionAnswerModel: Model<QuestionAnswerDocument>,
     private uploadService: UploadService,
     private planLimitsService: PlanLimitsService,
+    private encryptionService: EncryptionService,
   ) {}
+
+  private isObjectId(value: any) {
+    return (
+      value instanceof Types.ObjectId ||
+      value?._bsontype === 'ObjectId' ||
+      typeof value?.toHexString === 'function'
+    );
+  }
+
+  private async decryptValue(coupleId: string, value: any): Promise<any> {
+    if (typeof value === 'string') {
+      return this.encryptionService.decryptForCouple(coupleId, value);
+    }
+    if (Array.isArray(value)) {
+      return Promise.all(value.map((item) => this.decryptValue(coupleId, item)));
+    }
+    if (value instanceof Date || this.isObjectId(value)) {
+      return value;
+    }
+    if (
+      value &&
+      typeof value === 'object' &&
+      Object.prototype.toString.call(value) === '[object Object]'
+    ) {
+      const entries = await Promise.all(
+        Object.entries(value).map(async ([key, val]) => [
+          key,
+          await this.decryptValue(coupleId, val),
+        ]),
+      );
+      return Object.fromEntries(entries);
+    }
+    return value;
+  }
 
   async getStats(coupleId: string) {
     try {
@@ -232,6 +268,20 @@ export class DashboardService {
 
       await this.uploadService.transformAvatars(recentActivities, 'userId');
 
+      const decryptedActivities = await Promise.all(
+        recentActivities.map(async (activity) => {
+          const obj = activity.toObject ? activity.toObject() : activity;
+          obj.description = await this.encryptionService.decryptForCouple(
+            coupleId,
+            obj.description,
+          );
+          if (obj.metadata) {
+            obj.metadata = await this.decryptValue(coupleId, obj.metadata);
+          }
+          return obj;
+        }),
+      );
+
       const planCode = (coupleObj?.planCode as string) || 'free';
       const limits = await this.planLimitsService.getLimits(planCode);
 
@@ -254,7 +304,7 @@ export class DashboardService {
           partner1: coupleObj?.partner1,
           partner2: coupleObj?.partner2,
         },
-        recentActivities,
+        recentActivities: decryptedActivities,
         weeklyActivity,
         distribution,
       };

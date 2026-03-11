@@ -11,6 +11,7 @@ import { User, UserSchema } from '../../schemas/user.schema';
 import { Couple, CoupleSchema } from '../../schemas/couple.schema';
 import { UploadModule } from '../upload/upload.module';
 import { ActivityModule } from '../activity/activity.module';
+import { SecurityModule } from '../security/security.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { ActivityModule } from '../activity/activity.module';
     ]),
     UploadModule,
     ActivityModule,
+    SecurityModule,
   ],
   controllers: [GalleryController],
   providers: [GalleryService],

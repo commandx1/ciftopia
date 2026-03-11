@@ -26,6 +26,7 @@ import { ActivityService } from '../activity/activity.service';
 import { NotificationService } from '../notification/notification.service';
 import { AppGateway } from '../events/events.gateway';
 import { User } from '../../schemas/user.schema';
+import { EncryptionService } from '../security/security.service';
 
 interface QueryParams {
   mood?: string;
@@ -55,6 +56,7 @@ export class MemoriesService {
     private notificationService: NotificationService,
     private configService: ConfigService,
     private appGateway: AppGateway,
+    private encryptionService: EncryptionService,
   ) {
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
     this.openai = new OpenAI({ apiKey: apiKey || '' });
@@ -75,6 +77,8 @@ export class MemoriesService {
     const transformed = await Promise.all(
       memoryList.map(async (memory) => {
         const memoryObj = memory.toObject ? memory.toObject() : memory;
+
+        await this.decryptMemoryObject(memoryObj);
 
         // Keep raw photo keys/objects for editing
         memoryObj.rawPhotos = memoryObj.photos || [];
@@ -159,6 +163,31 @@ Mood: ${mood || 'Bilinmiyor'}
 Konum: ${locationName || 'Bilinmiyor'}
 Fotoğraf sayısı: ${photoCount}
 İçerik: ${content || 'Yok'}`;
+  }
+
+  private async decryptMemoryObject(memoryObj: any) {
+    const coupleId = memoryObj?.coupleId?.toString?.() || memoryObj?.coupleId;
+    if (!coupleId) return memoryObj;
+    memoryObj.title = await this.encryptionService.decryptForCouple(
+      coupleId,
+      memoryObj.title,
+    );
+    memoryObj.content = await this.encryptionService.decryptForCouple(
+      coupleId,
+      memoryObj.content,
+    );
+    if (memoryObj.location?.name) {
+      memoryObj.location.name = await this.encryptionService.decryptForCouple(
+        coupleId,
+        memoryObj.location.name,
+      );
+    }
+    return memoryObj;
+  }
+
+  private async decryptMemoryDoc(memory: MemoryDocument) {
+    const memoryObj = memory.toObject ? memory.toObject() : memory;
+    return this.decryptMemoryObject(memoryObj);
   }
 
   private tryParseJson<T>(text: string): T | null {
@@ -251,13 +280,17 @@ Fotoğraf sayısı: ${photoCount}
     memory: MemoryDocument,
   ): Promise<void> {
     try {
+      const decryptedMemory = (await this.decryptMemoryDoc(
+        memory,
+      )) as MemoryDocument;
+
       const existing = await this.memoryReminderModel
         .findOne({ memoryId: memory._id })
         .select('_id')
         .lean();
       if (existing) return;
 
-      const prompt = this.buildReminderAnalysisPrompt(memory);
+      const prompt = this.buildReminderAnalysisPrompt(decryptedMemory);
 
       let result:
         | {
@@ -294,7 +327,7 @@ Fotoğraf sayısı: ${photoCount}
 
       const message = this.normalizeReminderMessage(
         result.reminderMessage,
-        memory,
+        decryptedMemory,
       );
       const nextNotifyAt = new Date();
       nextNotifyAt.setDate(
@@ -474,7 +507,15 @@ Fotoğraf sayısı: ${photoCount}
         .find({ _id: { $in: uniqueIds.map((id) => new Types.ObjectId(id)) } })
         .select('_id title')
         .lean();
-      memories.forEach((m: any) => memoryMap.set(m._id.toString(), m.title || 'Anı'));
+      await Promise.all(
+        memories.map(async (m: any) => {
+          const title = await this.encryptionService.decryptForCouple(
+            coupleId,
+            m.title,
+          );
+          memoryMap.set(m._id.toString(), title || 'Anı');
+        }),
+      );
     }
     return list.map((s) => {
       const plain = (s as any).content.replace(/#{1,6}\s*/g, '').replace(/\*\*([^*]+)\*\*/g, '$1').trim();
@@ -524,10 +565,16 @@ Fotoğraf sayısı: ${photoCount}
         .find({ _id: { $in: story.memoryIds } })
         .select('_id title')
         .lean();
-      usedMemories = memories.map((m: any) => ({
-        _id: m._id.toString(),
-        title: m.title || 'Anı',
-      }));
+      usedMemories = await Promise.all(
+        memories.map(async (m: any) => ({
+          _id: m._id.toString(),
+          title:
+            (await this.encryptionService.decryptForCouple(
+              couple._id.toString(),
+              m.title,
+            )) || 'Anı',
+        })),
+      );
     }
     return {
       _id: story._id.toString(),
@@ -550,14 +597,30 @@ Fotoğraf sayısı: ${photoCount}
       throw new NotFoundException('Çift hesabı bulunamadı.');
     }
 
+    const coupleIdStr = couple._id.toString();
+    const encryptedTitle = await this.encryptionService.encryptForCouple(
+      coupleIdStr,
+      createMemoryDto.title,
+    );
+    const encryptedContent = await this.encryptionService.encryptForCouple(
+      coupleIdStr,
+      createMemoryDto.content,
+    );
+    const encryptedLocationName = createMemoryDto.locationName
+      ? await this.encryptionService.encryptForCouple(
+          coupleIdStr,
+          createMemoryDto.locationName,
+        )
+      : undefined;
+
     const memory = new this.memoryModel({
       ...createMemoryDto,
+      title: encryptedTitle,
+      content: encryptedContent,
       coupleId: couple._id,
       authorId: new Types.ObjectId(userId),
       date: new Date(createMemoryDto.date),
-      location: createMemoryDto.locationName
-        ? { name: createMemoryDto.locationName }
-        : undefined,
+      location: encryptedLocationName ? { name: encryptedLocationName } : undefined,
       favorites: createMemoryDto.favorites
         ? createMemoryDto.favorites.map((id) => new Types.ObjectId(id))
         : [],
@@ -576,20 +639,23 @@ Fotoğraf sayısı: ${photoCount}
       module: 'memories',
       actionType: 'create',
       resourceId: populated._id.toString(),
-      description: `${user?.firstName || 'Biri'} "${populated.title}" isimli yeni bir anı ekledi.`,
-      metadata: { title: populated.title },
+      description: `${user?.firstName || 'Biri'} "${createMemoryDto.title}" isimli yeni bir anı ekledi.`,
+      metadata: { title: createMemoryDto.title },
     });
 
     // Send notification to partner
     this.notificationService.sendToPartner(
       userId,
       'Yeni Bir Anı! 📸',
-      `${user?.firstName} yeni bir anı paylaştı: "${populated.title}"`,
+      `${user?.firstName} yeni bir anı paylaştı: "${createMemoryDto.title}"`,
       { screen: 'memories' },
     );
 
     // Analyze and queue reminder (async, non-blocking)
-    this.analyzeAndQueueReminder(savedMemory).catch(() => {});
+    const decryptedMemory = await this.decryptMemoryDoc(savedMemory);
+    this.analyzeAndQueueReminder(decryptedMemory as MemoryDocument).catch(
+      () => {},
+    );
 
     // Fetch updated storage for the couple
     const updatedCouple = await this.coupleModel.findById(couple._id);
@@ -621,9 +687,21 @@ Fotoğraf sayısı: ${photoCount}
       throw new NotFoundException('Bu anıyı güncelleme yetkiniz yok.');
     }
 
+    const coupleIdStr = couple._id.toString();
+
     // Update fields
-    if (updateMemoryDto.title) memory.title = updateMemoryDto.title;
-    if (updateMemoryDto.content) memory.content = updateMemoryDto.content;
+    if (updateMemoryDto.title) {
+      memory.title = await this.encryptionService.encryptForCouple(
+        coupleIdStr,
+        updateMemoryDto.title,
+      );
+    }
+    if (updateMemoryDto.content) {
+      memory.content = await this.encryptionService.encryptForCouple(
+        coupleIdStr,
+        updateMemoryDto.content,
+      );
+    }
     if (updateMemoryDto.date) memory.date = new Date(updateMemoryDto.date);
     if (updateMemoryDto.mood) memory.mood = updateMemoryDto.mood;
 
@@ -634,9 +712,16 @@ Fotoğraf sayısı: ${photoCount}
     }
 
     if (updateMemoryDto.locationName !== undefined) {
-      memory.location = updateMemoryDto.locationName
-        ? { name: updateMemoryDto.locationName }
-        : undefined;
+      if (updateMemoryDto.locationName) {
+        const encryptedLocationName =
+          await this.encryptionService.encryptForCouple(
+            coupleIdStr,
+            updateMemoryDto.locationName,
+          );
+        memory.location = { name: encryptedLocationName };
+      } else {
+        memory.location = undefined;
+      }
     }
 
     if (updateMemoryDto.photos) {
@@ -688,14 +773,18 @@ Fotoğraf sayısı: ${photoCount}
     );
 
     const user = await this.coupleModel.db.model('User').findById(userId);
+    const decryptedTitle = await this.encryptionService.decryptForCouple(
+      memory.coupleId.toString(),
+      populated.title,
+    );
     await this.activityService.logActivity({
       userId,
       coupleId: memory.coupleId.toString(),
       module: 'memories',
       actionType: 'update',
       resourceId: memoryId,
-      description: `${user?.firstName || 'Biri'} "${populated.title}" anısını güncelledi.`,
-      metadata: { title: populated.title },
+      description: `${user?.firstName || 'Biri'} "${decryptedTitle}" anısını güncelledi.`,
+      metadata: { title: decryptedTitle },
     });
 
     // Fetch updated storage for the couple
@@ -725,14 +814,18 @@ Fotoğraf sayısı: ${photoCount}
     await memory.save();
 
     const user = await this.coupleModel.db.model('User').findById(userId);
+    const decryptedTitle = await this.encryptionService.decryptForCouple(
+      memory.coupleId.toString(),
+      memory.title,
+    );
     await this.activityService.logActivity({
       userId,
       coupleId: memory.coupleId.toString(),
       module: 'memories',
       actionType: 'favorite',
       resourceId: memoryId,
-      description: `${user?.firstName || 'Biri'} "${memory.title}" anısını ${index === -1 ? 'favorilerine ekledi' : 'favorilerinden çıkardı'}.`,
-      metadata: { title: memory.title, isFavorite: index === -1 },
+      description: `${user?.firstName || 'Biri'} "${decryptedTitle}" anısını ${index === -1 ? 'favorilerine ekledi' : 'favorilerinden çıkardı'}.`,
+      metadata: { title: decryptedTitle, isFavorite: index === -1 },
     });
 
     return { isFavorite: index === -1 };
@@ -752,6 +845,8 @@ Fotoğraf sayısı: ${photoCount}
       .find({ coupleId: new Types.ObjectId(coupleId) })
       .sort({ date: -1 })
       .exec();
+
+    await Promise.all(memories.map((m) => this.decryptMemoryObject(m)));
 
     return new Promise(async (resolve, reject) => {
       try {
@@ -999,7 +1094,11 @@ Fotoğraf sayısı: ${photoCount}
       );
     }
 
-    const blocks = memories.map((m) => {
+    const decryptedMemories = await Promise.all(
+      memories.map((m) => this.decryptMemoryDoc(m)),
+    );
+
+    const blocks = decryptedMemories.map((m: any) => {
       const author = m.authorId as unknown as User | undefined;
       const authorName = author ? author.firstName.trim() : undefined;
       const dateStr = m.date
@@ -1241,10 +1340,16 @@ Heyecanlı yerlerde tonu biraz yükselt, sakin yerlerde tekrar yumuşat.`,
     try {
       const memory = await this.memoryModel.findById(memoryId);
       if (!memory) return;
+      const decryptedMemory = (await this.decryptMemoryDoc(
+        memory,
+      )) as MemoryDocument;
+      const decryptedTitle = decryptedMemory.title || '';
 
       emit('analyzing');
 
-      const lyricsPrompt = await this.buildLyricsPromptWithGpt(memory);
+      const lyricsPrompt = await this.buildLyricsPromptWithGpt(
+        decryptedMemory,
+      );
 
       const lyricsRes = await axios.post<{
         code?: number;
@@ -1329,7 +1434,7 @@ Heyecanlı yerlerde tonu biraz yükselt, sakin yerlerde tekrar yumuşat.`,
           callBackUrl: 'https://api.ciftopia.local/callback',
           prompt: lyricsText.slice(0, 5000),
           style: 'romantic, emotional, soft, Turkish',
-          title: memory.title.slice(0, 80),
+          title: decryptedTitle.slice(0, 80),
         },
         { headers, timeout: 15000 },
       );
@@ -1469,7 +1574,10 @@ Heyecanlı yerlerde tonu biraz yükselt, sakin yerlerde tekrar yumuşat.`,
       });
     }
 
-    const memoryTitle = memory.title;
+    const memoryTitle = await this.encryptionService.decryptForCouple(
+      memory.coupleId.toString(),
+      memory.title,
+    );
     await this.memoryModel.findByIdAndDelete(memoryId);
 
     const user = await this.coupleModel.db.model('User').findById(userId);

@@ -26,6 +26,7 @@ import { StoreModule } from './modules/store/store.module';
 import { PlanLimitsModule } from './modules/plan-limits/plan-limits.module';
 import { EventsModule } from './modules/events/events.module';
 import { CiftoModule } from './modules/cifto/cifto.module';
+import { SecurityModule } from './modules/security/security.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { CiftoModule } from './modules/cifto/cifto.module';
     PlanLimitsModule,
     EventsModule,
     CiftoModule,
+    SecurityModule,
   ],
   controllers: [AppController],
   providers: [AppService],

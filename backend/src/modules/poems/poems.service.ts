@@ -12,6 +12,7 @@ import { CreatePoemDto } from './dto/poems.dto';
 import { ActivityService } from '../activity/activity.service';
 import { NotificationService } from '../notification/notification.service';
 import { UploadService } from '../upload/upload.service';
+import { EncryptionService } from '../security/security.service';
 
 @Injectable()
 export class PoemsService {
@@ -22,12 +23,27 @@ export class PoemsService {
     private activityService: ActivityService,
     private notificationService: NotificationService,
     private uploadService: UploadService,
+    private encryptionService: EncryptionService,
   ) {}
 
   /** authorId ve dedicatedTo avatar URL'lerini presigned yapar. */
   private async transformPoemAvatars(poem: any): Promise<void> {
     if (poem?.authorId) await this.uploadService.transformAvatar(poem.authorId);
     if (poem?.dedicatedTo) await this.uploadService.transformAvatar(poem.dedicatedTo);
+  }
+
+  private async decryptPoemObject(poem: any) {
+    const coupleId = poem?.coupleId?.toString?.() || poem?.coupleId;
+    if (!coupleId) return poem;
+    poem.title = await this.encryptionService.decryptForCouple(
+      coupleId,
+      poem.title,
+    );
+    poem.content = await this.encryptionService.decryptForCouple(
+      coupleId,
+      poem.content,
+    );
+    return poem;
   }
 
   async findAllByCoupleId(
@@ -93,9 +109,14 @@ export class PoemsService {
     const totalFilteredCount = await this.poemModel.countDocuments(query);
 
     await Promise.all(poems.map((p) => this.transformPoemAvatars(p)));
+    const decryptedPoems = await Promise.all(
+      poems.map((p) =>
+        this.decryptPoemObject(p.toObject ? p.toObject() : p),
+      ),
+    );
 
     return {
-      poems,
+      poems: decryptedPoems,
       totalCount,
       authorStats,
       hasMore: totalFilteredCount > skip + poems.length,
@@ -118,9 +139,14 @@ export class PoemsService {
     ]);
 
     await Promise.all(poems.map((p) => this.transformPoemAvatars(p)));
+    const decryptedPoems = await Promise.all(
+      poems.map((p) =>
+        this.decryptPoemObject(p.toObject ? p.toObject() : p),
+      ),
+    );
 
     return {
-      poems,
+      poems: decryptedPoems,
       totalCount,
       hasMore: totalCount > skip + poems.length,
     };
@@ -152,8 +178,20 @@ export class PoemsService {
 
     const partner = partnerId ? await this.userModel.findById(partnerId) : null;
 
+    const coupleIdStr = user.coupleId.toString();
+    const encryptedTitle = await this.encryptionService.encryptForCouple(
+      coupleIdStr,
+      createPoemDto.title,
+    );
+    const encryptedContent = await this.encryptionService.encryptForCouple(
+      coupleIdStr,
+      createPoemDto.content,
+    );
+
     const poem = new this.poemModel({
       ...createPoemDto,
+      title: encryptedTitle,
+      content: encryptedContent,
       authorId: new Types.ObjectId(userId),
       dedicatedTo: partner
         ? new Types.ObjectId(partner._id.toString())
@@ -169,15 +207,15 @@ export class PoemsService {
       module: 'poems',
       actionType: 'create',
       resourceId: savedPoem._id.toString(),
-      description: `${user.firstName} yeni bir şiir paylaştı: "${savedPoem.title}"`,
-      metadata: { title: savedPoem.title },
+      description: `${user.firstName} yeni bir şiir paylaştı: "${createPoemDto.title}"`,
+      metadata: { title: createPoemDto.title },
     });
 
     // Send notification to partner
     this.notificationService.sendToPartner(
       userId,
       'Yeni Bir Şiir! ✍️',
-      `${user.firstName} senin için yeni bir şiir paylaştı: "${savedPoem.title}"`,
+      `${user.firstName} senin için yeni bir şiir paylaştı: "${createPoemDto.title}"`,
       { screen: 'poems' },
     );
 
@@ -186,7 +224,9 @@ export class PoemsService {
       { path: 'dedicatedTo', select: 'firstName lastName avatar gender' },
     ]);
     await this.transformPoemAvatars(populated);
-    return populated;
+    return this.decryptPoemObject(
+      populated.toObject ? populated.toObject() : populated,
+    );
   }
 
   async update(
@@ -203,18 +243,37 @@ export class PoemsService {
       throw new ForbiddenException('Bu şiiri düzenleme yetkiniz yok');
     }
 
-    Object.assign(poem, updatePoemDto);
+    const coupleIdStr = poem.coupleId.toString();
+    if (updatePoemDto.title) {
+      poem.title = await this.encryptionService.encryptForCouple(
+        coupleIdStr,
+        updatePoemDto.title,
+      );
+    }
+    if (updatePoemDto.content) {
+      poem.content = await this.encryptionService.encryptForCouple(
+        coupleIdStr,
+        updatePoemDto.content,
+      );
+    }
+    if (updatePoemDto.tags) poem.tags = updatePoemDto.tags;
+    if (updatePoemDto.isPublic !== undefined) poem.isPublic = updatePoemDto.isPublic;
+
     const updatedPoem = await poem.save();
 
     const author = await this.userModel.findById(userId);
+    const decryptedTitle = await this.encryptionService.decryptForCouple(
+      coupleIdStr,
+      updatedPoem.title,
+    );
     await this.activityService.logActivity({
       userId,
       coupleId: updatedPoem.coupleId.toString(),
       module: 'poems',
       actionType: 'update',
       resourceId: poemId,
-      description: `${author?.firstName || 'Biri'} "${updatedPoem.title}" şiirini güncelledi.`,
-      metadata: { title: updatedPoem.title },
+      description: `${author?.firstName || 'Biri'} "${decryptedTitle}" şiirini güncelledi.`,
+      metadata: { title: decryptedTitle },
     });
 
     const populated = await updatedPoem.populate([
@@ -222,7 +281,9 @@ export class PoemsService {
       { path: 'dedicatedTo', select: 'firstName lastName avatar gender' },
     ]);
     await this.transformPoemAvatars(populated);
-    return populated;
+    return this.decryptPoemObject(
+      populated.toObject ? populated.toObject() : populated,
+    );
   }
 
   async delete(userId: string, poemId: string) {
@@ -236,7 +297,10 @@ export class PoemsService {
       throw new ForbiddenException('Bu şiiri silme yetkiniz yok');
     }
 
-    const poemTitle = poem.title;
+    const poemTitle = await this.encryptionService.decryptForCouple(
+      poem.coupleId.toString(),
+      poem.title,
+    );
     const coupleId = poem.coupleId;
     await this.poemModel.findByIdAndDelete(poemId);
 

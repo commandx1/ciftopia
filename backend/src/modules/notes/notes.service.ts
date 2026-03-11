@@ -11,6 +11,7 @@ import { Couple, CoupleDocument } from '../../schemas/couple.schema';
 import { CreateNoteDto, UpdateNotePositionDto } from './dto/notes.dto';
 import { ActivityService } from '../activity/activity.service';
 import { NotificationService } from '../notification/notification.service';
+import { EncryptionService } from '../security/security.service';
 
 @Injectable()
 export class NotesService {
@@ -20,7 +21,18 @@ export class NotesService {
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
     private activityService: ActivityService,
     private notificationService: NotificationService,
+    private encryptionService: EncryptionService,
   ) {}
+
+  private async decryptNoteObject(note: any) {
+    const coupleId = note?.coupleId?.toString?.() || note?.coupleId;
+    if (!coupleId) return note;
+    note.content = await this.encryptionService.decryptForCouple(
+      coupleId,
+      note.content,
+    );
+    return note;
+  }
 
   async findAllByCoupleId(coupleId: string) {
     const notes = await this.noteModel
@@ -29,7 +41,12 @@ export class NotesService {
       .sort({ createdAt: -1 })
       .exec();
 
-    return notes;
+    const decrypted = await Promise.all(
+      notes.map((note) =>
+        this.decryptNoteObject(note.toObject ? note.toObject() : note),
+      ),
+    );
+    return decrypted;
   }
 
   async create(userId: string, createNoteDto: CreateNoteDto) {
@@ -38,8 +55,13 @@ export class NotesService {
       throw new ForbiddenException('Bir çift kaydı bulunamadı');
     }
 
+    const encryptedContent = await this.encryptionService.encryptForCouple(
+      user.coupleId.toString(),
+      createNoteDto.content,
+    );
     const note = new this.noteModel({
       ...createNoteDto,
+      content: encryptedContent,
       authorId: new Types.ObjectId(userId),
       coupleId: user.coupleId,
     });
@@ -53,18 +75,24 @@ export class NotesService {
       actionType: 'create',
       resourceId: savedNote._id.toString(),
       description: `${user.firstName} panoya yeni bir not bıraktı.`,
-      metadata: { content: savedNote.content.substring(0, 50) },
+      metadata: { content: createNoteDto.content.substring(0, 50) },
     });
 
     // Send notification to partner
     this.notificationService.sendToPartner(
       userId,
       'Yeni Bir Not! 📝',
-      `${user.firstName} senin için bir not bıraktı: "${savedNote.content.substring(0, 50)}${savedNote.content.length > 50 ? '...' : ''}"`,
+      `${user.firstName} senin için bir not bıraktı: "${createNoteDto.content.substring(0, 50)}${createNoteDto.content.length > 50 ? '...' : ''}"`,
       { screen: 'notes' },
     );
 
-    return savedNote.populate('authorId', 'firstName lastName avatar gender');
+    const populated = await savedNote.populate(
+      'authorId',
+      'firstName lastName avatar gender',
+    );
+    return this.decryptNoteObject(
+      populated.toObject ? populated.toObject() : populated,
+    );
   }
 
   async update(
@@ -81,10 +109,24 @@ export class NotesService {
       throw new ForbiddenException('Bu notu düzenleme yetkiniz yok');
     }
 
-    Object.assign(note, updateNoteDto);
+    const { content, ...rest } = updateNoteDto;
+    if (content !== undefined) {
+      note.content = await this.encryptionService.encryptForCouple(
+        note.coupleId.toString(),
+        content,
+      );
+    }
+    Object.assign(note, rest);
     const updatedNote = await note.save();
 
     const author = await this.userModel.findById(userId);
+    const decryptedContent =
+      content !== undefined
+        ? content
+        : await this.encryptionService.decryptForCouple(
+            updatedNote.coupleId.toString(),
+            updatedNote.content,
+          );
     await this.activityService.logActivity({
       userId,
       coupleId: updatedNote.coupleId.toString(),
@@ -92,10 +134,16 @@ export class NotesService {
       actionType: 'update',
       resourceId: noteId,
       description: `${author?.firstName || 'Biri'} bir notu güncelledi.`,
-      metadata: { content: updatedNote.content.substring(0, 50) },
+      metadata: { content: decryptedContent.substring(0, 50) },
     });
 
-    return updatedNote.populate('authorId', 'firstName lastName avatar gender');
+    const populated = await updatedNote.populate(
+      'authorId',
+      'firstName lastName avatar gender',
+    );
+    return this.decryptNoteObject(
+      populated.toObject ? populated.toObject() : populated,
+    );
   }
 
   async updatePosition(
@@ -116,7 +164,8 @@ export class NotesService {
     }
 
     note.position = position;
-    return note.save();
+    const saved = await note.save();
+    return this.decryptNoteObject(saved.toObject ? saved.toObject() : saved);
   }
 
   async markAsRead(userId: string, noteId: string) {
@@ -138,7 +187,7 @@ export class NotesService {
       note.readAt = new Date();
       await note.save();
     }
-    return note;
+    return this.decryptNoteObject(note.toObject ? note.toObject() : note);
   }
 
   async delete(userId: string, noteId: string) {

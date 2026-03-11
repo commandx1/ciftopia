@@ -10,6 +10,7 @@ import { Couple, CoupleSchema } from '../../schemas/couple.schema';
 import { UploadModule } from '../upload/upload.module';
 import { ActivityModule } from '../activity/activity.module';
 import { NotificationModule } from '../notification/notification.module';
+import { SecurityModule } from '../security/security.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { NotificationModule } from '../notification/notification.module';
     UploadModule,
     ActivityModule,
     NotificationModule,
+    SecurityModule,
   ],
   controllers: [ImportantDatesController],
   providers: [ImportantDatesService],

@@ -31,6 +31,7 @@ import {
 import { Mood, MoodDocument } from '../../schemas/mood.schema';
 import { AppGateway } from '../events/events.gateway';
 import { PlanLimitsService } from '../plan-limits/plan-limits.service';
+import { EncryptionService } from '../security/security.service';
 
 @Injectable()
 export class CiftoService {
@@ -55,6 +56,7 @@ export class CiftoService {
     private configService: ConfigService,
     private appGateway: AppGateway,
     private planLimitsService: PlanLimitsService,
+    private encryptionService: EncryptionService,
   ) {
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
     if (!apiKey) {
@@ -81,7 +83,7 @@ export class CiftoService {
       });
     }
 
-    return conversation;
+    return this.decryptConversation(conversation, user.coupleId?.toString());
   }
 
   async sendMessage(userId: string, content: string) {
@@ -126,9 +128,14 @@ export class CiftoService {
     }
 
     const now = new Date();
+    const coupleIdStr = user.coupleId?.toString();
+    const encryptedContent =
+      coupleIdStr
+        ? await this.encryptionService.encryptForCouple(coupleIdStr, text)
+        : text;
     conversation.messages.push({
       role: 'user',
-      content: text,
+      content: encryptedContent,
       createdAt: now,
     });
     conversation.lastMessageAt = now;
@@ -138,17 +145,25 @@ export class CiftoService {
 
     const streamId = new Types.ObjectId().toString();
     const systemPrompt = await this.buildSystemPrompt(user);
-    const contextMessages = this.buildContextMessages(conversation.messages);
+    const plaintextMessages = await this.decryptMessages(
+      conversation.messages,
+      coupleIdStr,
+    );
+    const contextMessages = this.buildContextMessages(plaintextMessages);
 
     void this.streamAssistantResponse({
       userId: user._id.toString(),
       conversationId: conversation._id.toString(),
       streamId,
+      coupleId: coupleIdStr,
       systemPrompt,
       contextMessages,
     });
 
-    return { conversation, streamId };
+    return {
+      conversation: await this.decryptConversation(conversation, coupleIdStr),
+      streamId,
+    };
   }
 
   private buildContextMessages(messages: CiftoMessage[]) {
@@ -159,16 +174,44 @@ export class CiftoService {
     }));
   }
 
+  private async decryptMessages(
+    messages: CiftoMessage[],
+    coupleId?: string,
+  ) {
+    if (!coupleId) return messages;
+    return Promise.all(
+      messages.map(async (msg) => ({
+        ...msg,
+        content: await this.encryptionService.decryptForCouple(
+          coupleId,
+          msg.content,
+        ),
+      })),
+    );
+  }
+
+  private async decryptConversation(
+    conversation: CiftoConversationDocument,
+    coupleId?: string,
+  ) {
+    if (!coupleId) return conversation;
+    const obj = conversation.toObject() as any;
+    obj.messages = await this.decryptMessages(obj.messages || [], coupleId);
+    return obj;
+  }
+
   private async streamAssistantResponse({
     userId,
     conversationId,
     streamId,
+    coupleId,
     systemPrompt,
     contextMessages,
   }: {
     userId: string;
     conversationId: string;
     streamId: string;
+    coupleId?: string;
     systemPrompt: string;
     contextMessages: { role: 'user' | 'assistant'; content: string }[];
   }) {
@@ -216,9 +259,16 @@ export class CiftoService {
       const conversation =
         await this.conversationModel.findById(conversationId);
       if (conversation) {
+        const encryptedAssistant =
+          coupleId
+            ? await this.encryptionService.encryptForCouple(
+                coupleId,
+                assistantText,
+              )
+            : assistantText;
         conversation.messages.push({
           role: 'assistant',
-          content: assistantText,
+          content: encryptedAssistant,
           createdAt: new Date(),
         });
         conversation.lastMessageAt = new Date();
@@ -345,21 +395,39 @@ ${coupleContext}`.trim();
           })
         : ['- Kayıt yok.'];
 
-    const recentQuestions = await this.dailyQuestionModel
+    const recentQuestionsRaw = await this.dailyQuestionModel
       .find({ coupleId: coupleObjectId })
       .sort({ date: -1 })
       .limit(5)
       .select('question category emoji date')
       .lean();
+    const recentQuestions = await Promise.all(
+      recentQuestionsRaw.map(async (question) => ({
+        ...question,
+        question: await this.encryptionService.decryptForCouple(
+          coupleId,
+          question.question,
+        ),
+      })),
+    );
 
     const questionIds = recentQuestions.map((q) => q._id);
-    const answers = questionIds.length
+    const answersRaw = questionIds.length
       ? await this.questionAnswerModel
           .find({ coupleId: coupleObjectId, questionId: { $in: questionIds } })
           .populate('userId', 'firstName')
           .select('answer userId questionId answeredAt')
           .lean()
       : [];
+    const answers = await Promise.all(
+      answersRaw.map(async (answer) => ({
+        ...answer,
+        answer: await this.encryptionService.decryptForCouple(
+          coupleId,
+          answer.answer,
+        ),
+      })),
+    );
 
     const answersByQuestion = new Map<
       string,
@@ -406,15 +474,26 @@ ${coupleContext}`.trim();
       .sort({ date: -1 })
       .select('emoji note userId date')
       .lean();
+    const decryptedMoodEntries = await Promise.all(
+      moodEntries.map(async (entry) => ({
+        ...entry,
+        note: entry.note
+          ? await this.encryptionService.decryptForCouple(
+              coupleId,
+              entry.note,
+            )
+          : entry.note,
+      })),
+    );
 
     const userMoodLines = this.buildMoodLines(
-      moodEntries,
+      decryptedMoodEntries,
       user._id.toString(),
       userName,
     );
     const partnerMoodLines = partner?._id
       ? this.buildMoodLines(
-          moodEntries,
+          decryptedMoodEntries,
           partner._id.toString(),
           partnerName,
         )

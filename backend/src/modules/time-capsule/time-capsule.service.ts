@@ -16,6 +16,7 @@ import {
 } from './dto/time-capsule.dto';
 import { UploadService } from '../upload/upload.service';
 import { ActivityService } from '../activity/activity.service';
+import { EncryptionService } from '../security/security.service';
 
 @Injectable()
 export class TimeCapsuleService {
@@ -25,7 +26,37 @@ export class TimeCapsuleService {
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
     private uploadService: UploadService,
     private activityService: ActivityService,
+    private encryptionService: EncryptionService,
   ) {}
+
+  private async decryptCapsuleObject(capsule: any) {
+    const coupleId = capsule?.coupleId?.toString?.() || capsule?.coupleId;
+    if (!coupleId) return capsule;
+    if (capsule.title) {
+      capsule.title = await this.encryptionService.decryptForCouple(
+        coupleId,
+        capsule.title,
+      );
+    }
+    if (capsule.content) {
+      capsule.content = await this.encryptionService.decryptForCouple(
+        coupleId,
+        capsule.content,
+      );
+    }
+    if (capsule.reflections && capsule.reflections.length > 0) {
+      capsule.reflections = await Promise.all(
+        capsule.reflections.map(async (refl: any) => ({
+          ...refl,
+          content: await this.encryptionService.decryptForCouple(
+            coupleId,
+            refl.content,
+          ),
+        })),
+      );
+    }
+    return capsule;
+  }
 
   private async transformCapsule(capsule: TimeCapsuleDocument) {
     const obj: any = capsule.toObject();
@@ -58,6 +89,8 @@ export class TimeCapsuleService {
         obj.video.url = presignedUrl;
       }
     }
+
+    await this.decryptCapsuleObject(obj);
 
     // Transform author avatar if populated
     if (obj.authorId) {
@@ -133,8 +166,19 @@ export class TimeCapsuleService {
     });
     if (!couple) throw new NotFoundException('Çift hesabı bulunamadı.');
 
+    const encryptedTitle = await this.encryptionService.encryptForCouple(
+      couple._id.toString(),
+      dto.title,
+    );
+    const encryptedContent = await this.encryptionService.encryptForCouple(
+      couple._id.toString(),
+      dto.content,
+    );
+
     const capsule = new this.timeCapsuleModel({
       ...dto,
+      title: encryptedTitle,
+      content: encryptedContent,
       coupleId: couple._id,
       authorId: new Types.ObjectId(userId),
       unlockDate: new Date(dto.unlockDate),
@@ -150,8 +194,8 @@ export class TimeCapsuleService {
       module: 'time-capsule',
       actionType: 'create',
       resourceId: saved._id.toString(),
-      description: `${user?.firstName || 'Biri'} yeni bir zaman kapsülü oluşturdu: "${saved.title}"`,
-      metadata: { title: saved.title, unlockDate: saved.unlockDate },
+      description: `${user?.firstName || 'Biri'} yeni bir zaman kapsülü oluşturdu: "${dto.title}"`,
+      metadata: { title: dto.title, unlockDate: saved.unlockDate },
     });
     
     // Populate author info before returning
@@ -191,23 +235,42 @@ export class TimeCapsuleService {
       );
     }
 
-    Object.assign(capsule, dto);
+    const { title, content, ...rest } = dto;
+    if (title !== undefined) {
+      capsule.title = await this.encryptionService.encryptForCouple(
+        capsule.coupleId.toString(),
+        title,
+      );
+    }
+    if (content !== undefined) {
+      capsule.content = await this.encryptionService.encryptForCouple(
+        capsule.coupleId.toString(),
+        content,
+      );
+    }
+    Object.assign(capsule, rest);
     if (dto.unlockDate) capsule.unlockDate = new Date(dto.unlockDate);
 
     const saved = await capsule.save();
 
     const user = await this.coupleModel.db.model('User').findById(userId);
+    const titleForLog =
+      title ??
+      (await this.encryptionService.decryptForCouple(
+        capsule.coupleId.toString(),
+        saved.title,
+      ));
     await this.activityService.logActivity({
       userId,
       coupleId: capsule.coupleId.toString(),
       module: 'time-capsule',
       actionType: 'update',
       resourceId: id,
-      description: `${user?.firstName || 'Biri'} "${saved.title}" zaman kapsülünü güncelledi.`,
-      metadata: { title: saved.title },
+      description: `${user?.firstName || 'Biri'} "${titleForLog}" zaman kapsülünü güncelledi.`,
+      metadata: { title: titleForLog },
     });
 
-    return saved;
+    return this.transformCapsule(saved);
   }
 
   async remove(id: string, userId: string) {
@@ -245,7 +308,10 @@ export class TimeCapsuleService {
       });
     }
 
-    const capsuleTitle = capsule.title;
+    const capsuleTitle = await this.encryptionService.decryptForCouple(
+      capsule.coupleId.toString(),
+      capsule.title,
+    );
     await this.timeCapsuleModel.findByIdAndDelete(id);
 
     const user = await this.coupleModel.db.model('User').findById(userId);
@@ -274,23 +340,31 @@ export class TimeCapsuleService {
       );
     }
 
+    const encryptedContent = await this.encryptionService.encryptForCouple(
+      capsule.coupleId.toString(),
+      dto.content,
+    );
     capsule.reflections.push({
       authorId: new Types.ObjectId(userId),
-      content: dto.content,
+      content: encryptedContent,
       createdAt: new Date(),
     });
 
     await capsule.save();
 
     const user = await this.coupleModel.db.model('User').findById(userId);
+    const titleForLog = await this.encryptionService.decryptForCouple(
+      capsule.coupleId.toString(),
+      capsule.title,
+    );
     await this.activityService.logActivity({
       userId,
       coupleId: capsule.coupleId.toString(),
       module: 'time-capsule',
       actionType: 'answer',
       resourceId: id,
-      description: `${user?.firstName || 'Biri'} "${capsule.title}" zaman kapsülüne bir düşünce ekledi.`,
-      metadata: { title: capsule.title },
+      description: `${user?.firstName || 'Biri'} "${titleForLog}" zaman kapsülüne bir düşünce ekledi.`,
+      metadata: { title: titleForLog },
     });
 
     // Return the updated capsule with populated authors

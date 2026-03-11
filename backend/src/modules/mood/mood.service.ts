@@ -4,18 +4,37 @@ import { Model, Types } from 'mongoose';
 import { Mood, MoodDocument } from '../../schemas/mood.schema';
 import { User, UserDocument } from '../../schemas/user.schema';
 import { CreateMoodDto } from './dto/mood.dto';
+import { EncryptionService } from '../security/security.service';
 
 @Injectable()
 export class MoodService {
   constructor(
     @InjectModel(Mood.name) private moodModel: Model<MoodDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    private encryptionService: EncryptionService,
   ) {}
+
+  private async decryptMoodObject(mood: any) {
+    const coupleId = mood?.coupleId?.toString?.() || mood?.coupleId;
+    if (!coupleId) return mood;
+    if (mood.note) {
+      mood.note = await this.encryptionService.decryptForCouple(
+        coupleId,
+        mood.note,
+      );
+    }
+    return mood;
+  }
 
   async createOrUpdateMood(userId: string, coupleId: string, createMoodDto: CreateMoodDto): Promise<Mood> {
     const { emoji, note, date } = createMoodDto;
     const moodDate = new Date(date);
     moodDate.setUTCHours(0, 0, 0, 0);
+
+    const encryptedNote =
+      note !== undefined
+        ? await this.encryptionService.encryptForCouple(coupleId, note)
+        : undefined;
 
     const mood = await this.moodModel.findOneAndUpdate(
       {
@@ -25,7 +44,7 @@ export class MoodService {
       },
       {
         emoji,
-        note,
+        note: encryptedNote,
       },
       { upsert: true, new: true },
     ).exec();
@@ -35,17 +54,24 @@ export class MoodService {
       { $set: { lastMoodAt: new Date() } },
     );
 
-    return mood;
+    return (await this.decryptMoodObject(
+      mood.toObject ? mood.toObject() : mood,
+    )) as any;
   }
 
   async getMoodsByDateRange(coupleId: string, startDate: Date, endDate: Date): Promise<Mood[]> {
-    return this.moodModel
+    const moods = await this.moodModel
       .find({
         coupleId: new Types.ObjectId(coupleId),
         date: { $gte: startDate, $lte: endDate },
       })
       .sort({ date: 1 })
       .exec();
+    return Promise.all(
+      moods.map((m) =>
+        this.decryptMoodObject(m.toObject ? m.toObject() : m),
+      ),
+    ) as any;
   }
 
   async getMonthlyStats(coupleId: string, year: number, month: number) {
@@ -83,8 +109,14 @@ export class MoodService {
       note: { $exists: true, $ne: '' },
     });
 
+    const decryptedNotes = await Promise.all(
+      notes.map((n) =>
+        this.decryptMoodObject(n.toObject ? n.toObject() : n),
+      ),
+    );
+
     return {
-      notes,
+      notes: decryptedNotes,
       total,
       hasMore: total > skip + notes.length,
     };

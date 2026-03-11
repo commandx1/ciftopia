@@ -28,6 +28,7 @@ import { AnswerQuestionDto } from './dto/daily-question.dto';
 import { ActivityService } from '../activity/activity.service';
 import { NotificationService } from '../notification/notification.service';
 import { UploadService } from '../upload/upload.service';
+import { EncryptionService } from '../security/security.service';
 
 @Injectable()
 export class DailyQuestionService {
@@ -47,6 +48,7 @@ export class DailyQuestionService {
     private activityService: ActivityService,
     private notificationService: NotificationService,
     private uploadService: UploadService,
+    private encryptionService: EncryptionService,
   ) {
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
     if (!apiKey) {
@@ -57,6 +59,34 @@ export class DailyQuestionService {
     this.openai = new OpenAI({
       apiKey: apiKey || '',
     });
+  }
+
+  private async decryptQuestionObject(question: any, coupleId?: string) {
+    if (!coupleId || !question) return question;
+    if (question.question) {
+      question.question = await this.encryptionService.decryptForCouple(
+        coupleId,
+        question.question,
+      );
+    }
+    if (question.aiAnalysis) {
+      question.aiAnalysis = await this.encryptionService.decryptForCouple(
+        coupleId,
+        question.aiAnalysis,
+      );
+    }
+    return question;
+  }
+
+  private async decryptAnswerObject(answer: any, coupleId?: string) {
+    if (!coupleId || !answer) return answer;
+    if (answer.answer) {
+      answer.answer = await this.encryptionService.decryptForCouple(
+        coupleId,
+        answer.answer,
+      );
+    }
+    return answer;
   }
 
   async generateForCouple(couple: CoupleDocument) {
@@ -77,6 +107,14 @@ export class DailyQuestionService {
       .sort({ date: -1 })
       .limit(10)
       .select('question');
+    const recentQuestionTexts = await Promise.all(
+      recentQuestions.map((q) =>
+        this.encryptionService.decryptForCouple(
+          couple._id.toString(),
+          q.question,
+        ),
+      ),
+    );
 
     const prompt = `Sen çiftler için Onedio tarzında, aşırı yaratıcı, eğlenceli ve merak uyandırıcı günlük sorular üreten bir asistansın.
 
@@ -110,7 +148,7 @@ Partner 2 (${partner2.firstName}):
    - Future: "Piyangodan 100 milyon çıksa ilk hangi şehre kaçarız?" gibi hayal kurdurucu.
    - Challenge: Birbirini tatlı tatlı zorlayan sorular.
 4. Çiftin profiline (çatışma tarzı, hassas alanlar) dikkat et ama bunu profesyonel bir terapist gibi değil, en yakın arkadaşlarıymışsın gibi yansıt.
-5. Son sorulanlara benzememeli: ${recentQuestions.map((q) => q.question).join(', ')}
+5. Son sorulanlara benzememeli: ${recentQuestionTexts.join(', ')}
 6. Türkçe diline, esprilere ve samimiyete önem ver.
 7. Türkçe dil bilgisi (imla, noktalama, fiil çekimi, kelime sırası, yazım) açısından düzgün ve doğru olsun.
 
@@ -142,9 +180,13 @@ JSON formatında döndür:
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    const encryptedQuestion = await this.encryptionService.encryptForCouple(
+      couple._id.toString(),
+      content.question,
+    );
     await this.dailyQuestionModel.create({
       coupleId: couple._id,
-      question: content.question,
+      question: encryptedQuestion,
       category: content.category,
       emoji: content.emoji,
       date: today,
@@ -228,11 +270,26 @@ JSON formatında döndür:
     delete questionObj.likedBy;
     delete questionObj.dislikedBy;
 
+    await this.decryptQuestionObject(questionObj, coupleId);
+
+    const userAnswerObj = userAnswer
+      ? await this.decryptAnswerObject(
+          userAnswer.toObject ? userAnswer.toObject() : userAnswer,
+          coupleId,
+        )
+      : null;
+    const partnerAnswerObj = partnerAnswer
+      ? await this.decryptAnswerObject(
+          partnerAnswer.toObject ? partnerAnswer.toObject() : partnerAnswer,
+          coupleId,
+        )
+      : null;
+
     return {
       question: questionObj,
-      userAnswer,
+      userAnswer: userAnswerObj,
       partnerAnswered: !!partnerAnswer,
-      partnerAnswer: userAnswer ? partnerAnswer?.answer : null, // Lock: only show partner's answer if user has answered
+      partnerAnswer: userAnswer ? partnerAnswerObj?.answer : null, // Lock: only show partner's answer if user has answered
     };
   }
 
@@ -353,7 +410,7 @@ JSON formatında döndür:
       questionId: new Types.ObjectId(questionId),
       userId: new Types.ObjectId(userId),
       coupleId: new Types.ObjectId(coupleId),
-      answer,
+      answer: await this.encryptionService.encryptForCouple(coupleId, answer),
       answeredAt: new Date(),
     });
 
@@ -361,14 +418,20 @@ JSON formatında döndür:
 
     const user = await this.userModel.findById(userId);
     const question = await this.dailyQuestionModel.findById(questionId);
+    const questionText = question
+      ? await this.encryptionService.decryptForCouple(
+          coupleId,
+          question.question,
+        )
+      : '';
     await this.activityService.logActivity({
       userId,
       coupleId,
       module: 'daily-question',
       actionType: 'answer',
       resourceId: questionId,
-      description: `${user?.firstName || 'Biri'} günün sorusunu cevapladı: "${question?.question}"`,
-      metadata: { question: question?.question },
+      description: `${user?.firstName || 'Biri'} günün sorusunu cevapladı: "${questionText}"`,
+      metadata: { question: questionText },
     });
 
     // Send notification to partner
@@ -414,11 +477,30 @@ JSON formatında döndür:
       (a) => a.userId['_id'].toString() === partner2._id.toString(),
     );
 
+    const questionText = question
+      ? await this.encryptionService.decryptForCouple(
+          coupleId,
+          question.question,
+        )
+      : '';
+    const ans1Text = ans1
+      ? await this.encryptionService.decryptForCouple(
+          coupleId,
+          ans1.answer,
+        )
+      : '';
+    const ans2Text = ans2
+      ? await this.encryptionService.decryptForCouple(
+          coupleId,
+          ans2.answer,
+        )
+      : '';
+
     const prompt = `Sen çiftler için uzman bir ilişki danışmanısın. Aşağıdaki günün sorusuna çiftin verdiği cevapları analiz et.
 
-Soru: ${question.question}
-${partner1.firstName} adlı partnerin cevabı: "${ans1?.answer}"
-${partner2.firstName} adlı partnerin cevabı: "${ans2?.answer}"
+Soru: ${questionText}
+${partner1.firstName} adlı partnerin cevabı: "${ans1Text}"
+${partner2.firstName} adlı partnerin cevabı: "${ans2Text}"
 
 Kurallar:
 1. Bu iki cevabı analiz et ve aralarındaki bağı güçlendirecek, ortak noktaları vurgulayacak veya farklılıkları nazikçe yorumlayacak samimi bir yorum yap.
@@ -438,7 +520,10 @@ Sadece yorum metnini döndür.`;
 
       const analysis = response.choices[0].message.content;
       if (analysis) {
-        question.aiAnalysis = analysis;
+        question.aiAnalysis = await this.encryptionService.encryptForCouple(
+          coupleId,
+          analysis,
+        );
         await question.save();
       }
     } catch (error) {
@@ -492,6 +577,29 @@ Sadece yorum metnini döndür.`;
         'PDF oluşturmak için her iki partnerin de cevap vermesi gerekmektedir.',
       );
     }
+
+    const decryptedQuestion = await this.encryptionService.decryptForCouple(
+      coupleId,
+      question.question,
+    );
+    const decryptedAnalysis = question.aiAnalysis
+      ? await this.encryptionService.decryptForCouple(
+          coupleId,
+          question.aiAnalysis,
+        )
+      : '';
+    const decryptedAnswers = await Promise.all(
+      answers.map(async (ans) => {
+        const obj = ans.toObject ? ans.toObject() : ans;
+        return {
+          ...obj,
+          answer: await this.encryptionService.decryptForCouple(
+            coupleId,
+            obj.answer,
+          ),
+        };
+      }),
+    );
 
     return new Promise((resolve, reject) => {
       const doc = new PDFDocument({
@@ -566,7 +674,7 @@ Sadece yorum metnini döndür.`;
 
       // --- QUESTION SECTION ---
       const questionBoxY = doc.y;
-      const questionText = `"${question.question}"`;
+      const questionText = `"${decryptedQuestion}"`;
 
       // Calculate question height
       doc.font('IndieFlower').fontSize(10);
@@ -605,7 +713,7 @@ Sadece yorum metnini döndür.`;
         .text('CEVAPLARINIZ', 50, doc.y, { characterSpacing: 1 })
         .moveDown(1);
 
-      answers.forEach((ans, index) => {
+      decryptedAnswers.forEach((ans, index) => {
         const user = ans.userId as unknown as UserDocument;
         const isMale = user.gender === 'male';
         const accentColor = isMale ? '#4f46e5' : '#e11d48';
@@ -643,12 +751,12 @@ Sadece yorum metnini döndür.`;
       });
 
       // --- AI ANALYSIS SECTION ---
-      if (question.aiAnalysis) {
+      if (decryptedAnalysis) {
         // Ensure analysis starts on a good spot or new page if needed
         if (doc.y > 600) doc.addPage();
 
         const analysisY = doc.y;
-        const analysisHeight = doc.heightOfString(`"${question.aiAnalysis}"`, {
+        const analysisHeight = doc.heightOfString(`"${decryptedAnalysis}"`, {
           width: 445,
           lineGap: 5,
         });
@@ -674,7 +782,7 @@ Sadece yorum metnini döndür.`;
         doc
           .fillColor('#1f2937')
           .font('IndieFlower')
-          .text(`"${question.aiAnalysis}"`, 75, analysisY + 35, {
+          .text(`"${decryptedAnalysis}"`, 75, analysisY + 35, {
             width: 445,
             lineGap: 5,
             align: 'justify',

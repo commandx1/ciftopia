@@ -19,6 +19,7 @@ import {
 } from './dto/gallery.dto';
 import { UploadService } from '../upload/upload.service';
 import { ActivityService } from '../activity/activity.service';
+import { EncryptionService } from '../security/security.service';
 
 @Injectable()
 export class GalleryService {
@@ -30,7 +31,50 @@ export class GalleryService {
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
     private uploadService: UploadService,
     private activityService: ActivityService,
+    private encryptionService: EncryptionService,
   ) {}
+
+  private getCoupleIdValue(value: any): string | undefined {
+    if (!value) return undefined;
+    if (typeof value === 'string') return value;
+    if (value instanceof Types.ObjectId) return value.toString();
+    if (value._id) {
+      if (typeof value._id === 'string') return value._id;
+      if (value._id?.toString) return value._id.toString();
+    }
+    if (value.toString) return value.toString();
+    return undefined;
+  }
+
+  private async decryptAlbumObject(album: any) {
+    const coupleId = this.getCoupleIdValue(album?.coupleId);
+    if (!coupleId) return album;
+    if (album.title) {
+      album.title = await this.encryptionService.decryptForCouple(
+        coupleId,
+        album.title,
+      );
+    }
+    if (album.description) {
+      album.description = await this.encryptionService.decryptForCouple(
+        coupleId,
+        album.description,
+      );
+    }
+    return album;
+  }
+
+  private async decryptPhotoObject(photo: any) {
+    const coupleId = this.getCoupleIdValue(photo?.coupleId);
+    if (!coupleId) return photo;
+    if (photo.caption) {
+      photo.caption = await this.encryptionService.decryptForCouple(
+        coupleId,
+        photo.caption,
+      );
+    }
+    return photo;
+  }
 
   private async transformAlbum(
     albums: AlbumDocument | AlbumDocument[],
@@ -48,7 +92,7 @@ export class GalleryService {
             albumObj.coverPhoto.url as string,
           );
         }
-        return albumObj;
+        return this.decryptAlbumObject(albumObj);
       }),
     );
 
@@ -71,7 +115,7 @@ export class GalleryService {
             photoObj.photo.url as string,
           );
         }
-        return photoObj;
+        return this.decryptPhotoObject(photoObj);
       }),
     );
 
@@ -194,8 +238,22 @@ export class GalleryService {
       throw new ForbiddenException('Bir çift kaydı bulunamadı');
     }
 
+    const encryptedTitle = await this.encryptionService.encryptForCouple(
+      user.coupleId.toString(),
+      createAlbumDto.title,
+    );
+    const encryptedDescription =
+      createAlbumDto.description !== undefined
+        ? await this.encryptionService.encryptForCouple(
+            user.coupleId.toString(),
+            createAlbumDto.description,
+          )
+        : undefined;
+
     const album = new this.albumModel({
       ...createAlbumDto,
+      title: encryptedTitle,
+      description: encryptedDescription,
       authorId: new Types.ObjectId(userId),
       coupleId: user.coupleId,
     });
@@ -225,9 +283,17 @@ export class GalleryService {
     const couple = await this.coupleModel.findById(user.coupleId);
     if (!couple) throw new NotFoundException('Çift bulunamadı');
 
+    const encryptedCaption =
+      uploadDto.caption !== undefined
+        ? await this.encryptionService.encryptForCouple(
+            user.coupleId.toString(),
+            uploadDto.caption,
+          )
+        : undefined;
+
     const photoData = uploadDto.photos.map((p: any) => ({
       photo: p,
-      caption: uploadDto.caption,
+      caption: encryptedCaption,
       albumId: uploadDto.albumId
         ? new Types.ObjectId(uploadDto.albumId)
         : undefined,
@@ -242,7 +308,10 @@ export class GalleryService {
     if (uploadDto.albumId) {
       const album = await this.albumModel.findById(uploadDto.albumId);
       if (album) {
-        albumTitle = album.title;
+        albumTitle = await this.encryptionService.decryptForCouple(
+          user.coupleId.toString(),
+          album.title,
+        );
         album.photoCount += savedPhotos.length;
         if (!album.coverPhoto && savedPhotos.length > 0) {
           album.coverPhoto = (savedPhotos[0] as any).photo;
@@ -283,20 +352,44 @@ export class GalleryService {
       throw new ForbiddenException('Bu albümü düzenleme yetkiniz yok');
     }
 
-    const oldTitle = album.title;
-    Object.assign(album, updateDto);
+    const oldTitle = await this.encryptionService.decryptForCouple(
+      album.coupleId.toString(),
+      album.title,
+    );
+    const { title, description, ...rest } = updateDto;
+    if (title !== undefined) {
+      album.title = await this.encryptionService.encryptForCouple(
+        album.coupleId.toString(),
+        title,
+      );
+    }
+    if (description !== undefined) {
+      album.description = await this.encryptionService.encryptForCouple(
+        album.coupleId.toString(),
+        description,
+      );
+    }
+    Object.assign(album, rest);
     const updatedAlbum = await album.save();
     const populated = await updatedAlbum.populate('authorId', 'firstName lastName avatar gender');
 
     const user = await this.userModel.findById(userId);
+    const coupleIdValue =
+      this.getCoupleIdValue(populated.coupleId) || album.coupleId.toString();
+    const newTitle =
+      title ??
+      (await this.encryptionService.decryptForCouple(
+        coupleIdValue,
+        populated.title,
+      ));
     await this.activityService.logActivity({
       userId,
-      coupleId: populated.coupleId.toString(),
+      coupleId: coupleIdValue,
       module: 'gallery',
       actionType: 'update',
       resourceId: albumId,
       description: `${user?.firstName || 'Biri'} "${oldTitle}" albümünü güncelledi.`,
-      metadata: { albumId, oldTitle, newTitle: populated.title },
+      metadata: { albumId, oldTitle, newTitle },
     });
 
     return await this.transformAlbum(populated);
@@ -311,7 +404,10 @@ export class GalleryService {
       throw new ForbiddenException('Bu albümü silme yetkiniz yok');
     }
 
-    const albumTitle = album.title;
+    const albumTitle = await this.encryptionService.decryptForCouple(
+      album.coupleId.toString(),
+      album.title,
+    );
 
     // Delete all photos in the album from S3 and update storage
     const photos = await this.photoModel.find({ albumId: album._id });

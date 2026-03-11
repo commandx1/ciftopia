@@ -4,11 +4,13 @@ import { ActivityService } from './activity.service';
 import { Activity, ActivitySchema } from '../../schemas/activity.schema';
 import { ActivityController } from './activity.controller';
 import { UploadModule } from '../upload/upload.module';
+import { SecurityModule } from '../security/security.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Activity.name, schema: ActivitySchema }]),
     UploadModule,
+    SecurityModule,
   ],
   providers: [ActivityService],
   controllers: [ActivityController],

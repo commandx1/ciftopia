@@ -21,6 +21,7 @@ import { QuizResult, QuizResultSchema } from '../../schemas/quiz-result.schema';
 import { Mood, MoodSchema } from '../../schemas/mood.schema';
 import { EventsModule } from '../events/events.module';
 import { PlanLimitsModule } from '../plan-limits/plan-limits.module';
+import { SecurityModule } from '../security/security.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { PlanLimitsModule } from '../plan-limits/plan-limits.module';
     ]),
     EventsModule,
     PlanLimitsModule,
+    SecurityModule,
   ],
   controllers: [CiftoController],
   providers: [CiftoService],

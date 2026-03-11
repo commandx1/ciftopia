@@ -56,6 +56,7 @@ import {
   CiftoConversation,
   CiftoConversationDocument,
 } from '../../schemas/cifto-conversation.schema';
+import { CoupleKey, CoupleKeyDocument } from '../../schemas/couple-key.schema';
 import { CreateCoupleDto } from './dto/onboarding.dto';
 import { UploadService } from '../upload/upload.service';
 import { ActivityService } from '../activity/activity.service';
@@ -93,6 +94,8 @@ export class OnboardingService {
     @InjectModel(Mood.name) private moodModel: Model<MoodDocument>,
     @InjectModel(CiftoConversation.name)
     private ciftoConversationModel: Model<CiftoConversationDocument>,
+    @InjectModel(CoupleKey.name)
+    private coupleKeyModel: Model<CoupleKeyDocument>,
     private uploadService: UploadService,
     private activityService: ActivityService,
   ) {}
@@ -302,6 +305,7 @@ export class OnboardingService {
       this.feedbackModel.deleteMany({ coupleId }),
       this.moodModel.deleteMany({ coupleId }),
       this.ciftoConversationModel.deleteMany({ coupleId }),
+      this.coupleKeyModel.deleteMany({ coupleId }),
       this.userModel.deleteMany({ coupleId }),
       this.coupleModel.findByIdAndDelete(coupleId),
     ]);

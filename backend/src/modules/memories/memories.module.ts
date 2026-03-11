@@ -13,6 +13,7 @@ import { UploadModule } from '../upload/upload.module';
 import { ActivityModule } from '../activity/activity.module';
 import { NotificationModule } from '../notification/notification.module';
 import { EventsModule } from '../events/events.module';
+import { SecurityModule } from '../security/security.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { EventsModule } from '../events/events.module';
     ActivityModule,
     NotificationModule,
     EventsModule,
+    SecurityModule,
   ],
   controllers: [MemoriesController],
   providers: [MemoriesService],

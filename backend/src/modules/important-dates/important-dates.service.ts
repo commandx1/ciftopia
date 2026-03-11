@@ -7,6 +7,7 @@ import { CreateImportantDateDto, UpdateImportantDateDto } from './dto/important-
 import { UploadService } from '../upload/upload.service';
 import { ActivityService } from '../activity/activity.service';
 import { NotificationService } from '../notification/notification.service';
+import { EncryptionService } from '../security/security.service';
 
 @Injectable()
 export class ImportantDatesService {
@@ -16,7 +17,26 @@ export class ImportantDatesService {
     private uploadService: UploadService,
     private activityService: ActivityService,
     private notificationService: NotificationService,
+    private encryptionService: EncryptionService,
   ) {}
+
+  private async decryptDateObject(date: any) {
+    const coupleId = date?.coupleId?.toString?.() || date?.coupleId;
+    if (!coupleId) return date;
+    if (date.title) {
+      date.title = await this.encryptionService.decryptForCouple(
+        coupleId,
+        date.title,
+      );
+    }
+    if (date.description) {
+      date.description = await this.encryptionService.decryptForCouple(
+        coupleId,
+        date.description,
+      );
+    }
+    return date;
+  }
 
   async findAllByCoupleId(coupleId: string) {
     const dates = await this.importantDateModel
@@ -24,7 +44,11 @@ export class ImportantDatesService {
       .populate('authorId', 'firstName lastName avatar gender')
       .sort({ date: 1 });
 
-    return Promise.all(dates.map(date => this.transformDate(date)));
+    return Promise.all(
+      dates.map(async (date) =>
+        this.decryptDateObject(await this.transformDate(date)),
+      ),
+    );
   }
 
   async create(coupleId: string, userId: string, createDto: CreateImportantDateDto) {
@@ -41,8 +65,22 @@ export class ImportantDatesService {
       await couple.save();
     }
 
+    const encryptedTitle = await this.encryptionService.encryptForCouple(
+      coupleId,
+      createDto.title,
+    );
+    const encryptedDescription =
+      createDto.description !== undefined
+        ? await this.encryptionService.encryptForCouple(
+            coupleId,
+            createDto.description,
+          )
+        : undefined;
+
     const newDate = new this.importantDateModel({
       ...createDto,
+      title: encryptedTitle,
+      description: encryptedDescription,
       coupleId: new Types.ObjectId(coupleId),
       authorId: new Types.ObjectId(userId),
     });
@@ -57,19 +95,21 @@ export class ImportantDatesService {
       module: 'important-dates',
       actionType: 'create',
       resourceId: populated._id.toString(),
-      description: `${user?.firstName || 'Biri'} yeni bir önemli tarih ekledi: "${populated.title}"`,
-      metadata: { title: populated.title, date: populated.date },
+      description: `${user?.firstName || 'Biri'} yeni bir önemli tarih ekledi: "${createDto.title}"`,
+      metadata: { title: createDto.title, date: populated.date },
     });
 
     // Send notification to partner
     this.notificationService.sendToPartner(
       userId,
       'Yeni Bir Tarih! 📅',
-      `${user?.firstName} takvime yeni bir tarih ekledi: "${populated.title}"`,
+      `${user?.firstName} takvime yeni bir tarih ekledi: "${createDto.title}"`,
       { screen: 'important-dates' },
     );
 
-    const transformed = await this.transformDate(populated);
+    const transformed = await this.decryptDateObject(
+      await this.transformDate(populated),
+    );
     return {
       date: transformed,
       storageUsed: couple.storageUsed,
@@ -105,22 +145,44 @@ export class ImportantDatesService {
       Object.entries(updateDto).filter(([_, v]) => v !== undefined)
     );
 
-    item.set(cleanUpdateDto);
+    const { title, description, ...rest } = cleanUpdateDto;
+    if (title !== undefined) {
+      item.title = await this.encryptionService.encryptForCouple(
+        item.coupleId.toString(),
+        title,
+      );
+    }
+    if (description !== undefined) {
+      item.description = await this.encryptionService.encryptForCouple(
+        item.coupleId.toString(),
+        description,
+      );
+    }
+    item.set(rest);
     const updated = await item.save();
     const populated = await updated.populate('authorId', 'firstName lastName avatar gender');
 
     const user = await this.coupleModel.db.model('User').findById(userId);
+    const titleForLog =
+      updateDto.title !== undefined
+        ? updateDto.title
+        : await this.encryptionService.decryptForCouple(
+            updated.coupleId.toString(),
+            updated.title,
+          );
     await this.activityService.logActivity({
       userId,
       coupleId: populated.coupleId.toString(),
       module: 'important-dates',
       actionType: 'update',
       resourceId: id,
-      description: `${user?.firstName || 'Biri'} "${populated.title}" önemli tarihini güncelledi.`,
-      metadata: { title: populated.title },
+      description: `${user?.firstName || 'Biri'} "${titleForLog}" önemli tarihini güncelledi.`,
+      metadata: { title: titleForLog },
     });
 
-    const transformed = await this.transformDate(populated);
+    const transformed = await this.decryptDateObject(
+      await this.transformDate(populated),
+    );
     return {
       date: transformed,
       storageUsed: couple.storageUsed,
@@ -144,7 +206,10 @@ export class ImportantDatesService {
       await couple.save();
     }
 
-    const dateTitle = item.title;
+    const dateTitle = await this.encryptionService.decryptForCouple(
+      item.coupleId.toString(),
+      item.title,
+    );
     const coupleId = item.coupleId;
     await item.deleteOne();
 

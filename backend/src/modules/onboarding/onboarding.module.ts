@@ -49,6 +49,7 @@ import {
   CiftoConversation,
   CiftoConversationSchema,
 } from '../../schemas/cifto-conversation.schema';
+import { CoupleKey, CoupleKeySchema } from '../../schemas/couple-key.schema';
 import { AuthModule } from '../auth/auth.module';
 import { UploadModule } from '../upload/upload.module';
 import { ActivityModule } from '../activity/activity.module';
@@ -76,6 +77,7 @@ import { ActivityModule } from '../activity/activity.module';
       { name: Feedback.name, schema: FeedbackSchema },
       { name: Mood.name, schema: MoodSchema },
       { name: CiftoConversation.name, schema: CiftoConversationSchema },
+      { name: CoupleKey.name, schema: CoupleKeySchema },
     ]),
     AuthModule,
     UploadModule,
