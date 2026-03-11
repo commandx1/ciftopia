@@ -7,6 +7,7 @@ export interface PlanLimits {
   photosPerContent?: number;
   photosPerAlbum?: number;
   dailyQuiz?: number;
+  ciftoDailyMessages?: number;
   storageBytes?: number;
   videoUpload?: boolean;
   maxVideoDuration?: number;
@@ -38,6 +39,7 @@ const defaultLimits: PlanLimits = {
   photosPerContent: 1,
   photosPerAlbum: 7,
   dailyQuiz: 2,
+  ciftoDailyMessages: 10,
   storageBytes: 52428800,
   videoUpload: false,
   adFree: false,

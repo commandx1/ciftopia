@@ -42,6 +42,7 @@ export class PlanLimit {
       photosPerContent: Number,
       photosPerAlbum: Number,
       dailyQuiz: Number,
+      ciftoDailyMessages: Number,
       storageBytes: Number,
       videoUpload: Boolean,
       maxVideoDuration: Number,
@@ -56,6 +57,7 @@ export class PlanLimit {
     photosPerContent?: number;
     photosPerAlbum?: number;
     dailyQuiz?: number; // Sınırsız için istersen -1 veya çok büyük bir sayı tut
+    ciftoDailyMessages?: number; // -1 = sınırsız
     storageBytes?: number;
     videoUpload?: boolean;
     maxVideoDuration?: number; // saniye

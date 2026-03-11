@@ -6,6 +6,7 @@ export interface PlanLimitsDto {
   photosPerContent?: number;
   photosPerAlbum?: number;
   dailyQuiz?: number; // -1 = sınırsız
+  ciftoDailyMessages?: number; // -1 = sınırsız
   storageBytes?: number;
   videoUpload?: boolean;
   maxVideoDuration?: number;
@@ -21,6 +22,7 @@ const DEFAULT_FREE_LIMITS: PlanLimitsDto = {
   photosPerContent: 1,
   photosPerAlbum: 7,
   dailyQuiz: 2,
+  ciftoDailyMessages: 10,
   storageBytes: 52428800, // 50MB
   videoUpload: false,
   adFree: false,

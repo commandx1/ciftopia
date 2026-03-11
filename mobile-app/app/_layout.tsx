@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from '../context/AuthContext';
 import { PlanLimitsProvider } from '../context/PlanLimitsContext';
 import { AppSocketProvider } from '../context/AppSocketContext';
 import { ToastProvider } from '../components/ui/ToastProvider';
+import DailyMoodPrompt from '../components/mood/DailyMoodPrompt';
 import { useEffect } from 'react';
 import { useRouter, useSegments } from 'expo-router';
 import { View, ActivityIndicator } from 'react-native';
@@ -90,6 +91,7 @@ export default function RootLayout() {
           <PlanLimitsProvider>
             <ToastProvider>
               <RootLayoutNav />
+              <DailyMoodPrompt />
             </ToastProvider>
           </PlanLimitsProvider>
         </AppSocketProvider>

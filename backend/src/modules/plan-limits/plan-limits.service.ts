@@ -23,7 +23,14 @@ export class PlanLimitsService {
       .exec();
 
     if (doc?.limits && typeof doc.limits === 'object') {
-      return { ...DEFAULT_FREE_LIMITS, ...doc.limits } as PlanLimitsDto;
+      const merged = { ...DEFAULT_FREE_LIMITS, ...doc.limits } as PlanLimitsDto;
+      if (
+        normalized !== 'free' &&
+        doc.limits.ciftoDailyMessages === undefined
+      ) {
+        merged.ciftoDailyMessages = -1;
+      }
+      return merged;
     }
 
     if (normalized !== 'free') {

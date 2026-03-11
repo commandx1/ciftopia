@@ -18,6 +18,7 @@ export interface PlanLimit {
     photosPerContent?: number;
     photosPerAlbum?: number;
     dailyQuiz?: number;
+    ciftoDailyMessages?: number;
     /** Backend'den number veya MongoDB Long object gelebilir */
     storageBytes?: number | { $numberLong: string };
     videoUpload?: boolean;
@@ -57,4 +58,3 @@ export const storeApi = {
     return response.data;
   },
 };
-

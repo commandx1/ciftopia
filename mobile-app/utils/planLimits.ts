@@ -69,6 +69,12 @@ export function buildFreeFeatureItems(plan: PlanLimit): { text: string; check: b
     check: true,
   });
 
+  const cifto = l.ciftoDailyMessages ?? 0;
+  items.push({
+    text: cifto < 0 ? 'Çifto sınırsız mesaj' : `Günlük ${cifto} Çifto mesajı`,
+    check: true,
+  });
+
   items.push({
     text: l.aiCommentFree ? 'AI yorumu reklamsız' : 'AI yorumu reklam izleyerek',
     check: true,
@@ -109,6 +115,10 @@ export function buildSubscriptionFeatureItems(plan: PlanLimit): { emoji: string;
   const quiz = l.dailyQuiz ?? 0;
   const quizStr = quiz < 0 ? 'Sınırsız günlük soru' : `Günlük ${quiz} quiz`;
   items.push({ emoji: '❓', text: quizStr });
+
+  const cifto = l.ciftoDailyMessages ?? 0;
+  const ciftoStr = cifto < 0 ? 'Sınırsız Çifto mesajı' : `Günlük ${cifto} Çifto mesajı`;
+  items.push({ emoji: '💬', text: ciftoStr });
 
   const storageStr = formatStorageBytes(l.storageBytes);
   items.push({ emoji: '💾', text: `${storageStr} medya alanı` });
