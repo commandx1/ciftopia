@@ -1,5 +1,5 @@
-import React, { useRef, useCallback } from 'react'
-import { View, StyleSheet, Dimensions } from 'react-native'
+import React, { useRef, useCallback, useState } from 'react'
+import { View, StyleSheet, Dimensions, Platform } from 'react-native'
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react-native'
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window')
@@ -46,24 +46,36 @@ function clamp(dx: number, dy: number, max: number) {
   return { cx: dx, cy: dy }
 }
 
+const isWeb = Platform.OS === 'web'
+
 export function JoystickOverlay({ onMoveChange, onLookChange, onTap }: JoystickOverlayProps) {
   const touchMap = useRef<Map<number, TrackedTouch>>(new Map())
   const moveKnobRef = useRef<View>(null)
   const lookKnobRef = useRef<View>(null)
+  const [moveOffset, setMoveOffset] = useState({ x: 0, y: 0 })
+  const [lookOffset, setLookOffset] = useState({ x: 0, y: 0 })
 
   const updateKnob = useCallback(
     (side: 'left' | 'right', dx: number, dy: number) => {
       if (side === 'left') {
         const { cx, cy } = clamp(dx, dy, MOVE_MAX)
-        moveKnobRef.current?.setNativeProps({
-          style: { transform: [{ translateX: cx }, { translateY: cy }] }
-        })
+        if (isWeb) {
+          setMoveOffset({ x: cx, y: cy })
+        } else {
+          moveKnobRef.current?.setNativeProps?.({
+            style: { transform: [{ translateX: cx }, { translateY: cy }] }
+          })
+        }
         onMoveChange(cx / MOVE_MAX, cy / MOVE_MAX)
       } else {
         const { cx, cy } = clamp(dx, dy, LOOK_MAX)
-        lookKnobRef.current?.setNativeProps({
-          style: { transform: [{ translateX: cx }, { translateY: cy }] }
-        })
+        if (isWeb) {
+          setLookOffset({ x: cx, y: cy })
+        } else {
+          lookKnobRef.current?.setNativeProps?.({
+            style: { transform: [{ translateX: cx }, { translateY: cy }] }
+          })
+        }
         onLookChange(cx / LOOK_MAX, cy / LOOK_MAX)
       }
     },
@@ -73,14 +85,22 @@ export function JoystickOverlay({ onMoveChange, onLookChange, onTap }: JoystickO
   const resetKnob = useCallback(
     (side: 'left' | 'right') => {
       if (side === 'left') {
-        moveKnobRef.current?.setNativeProps({
-          style: { transform: [{ translateX: 0 }, { translateY: 0 }] }
-        })
+        if (isWeb) {
+          setMoveOffset({ x: 0, y: 0 })
+        } else {
+          moveKnobRef.current?.setNativeProps?.({
+            style: { transform: [{ translateX: 0 }, { translateY: 0 }] }
+          })
+        }
         onMoveChange(0, 0)
       } else {
-        lookKnobRef.current?.setNativeProps({
-          style: { transform: [{ translateX: 0 }, { translateY: 0 }] }
-        })
+        if (isWeb) {
+          setLookOffset({ x: 0, y: 0 })
+        } else {
+          lookKnobRef.current?.setNativeProps?.({
+            style: { transform: [{ translateX: 0 }, { translateY: 0 }] }
+          })
+        }
         onLookChange(0, 0)
       }
     },
