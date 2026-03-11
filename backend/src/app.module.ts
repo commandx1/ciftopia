@@ -25,6 +25,7 @@ import { QuizModule } from './modules/quiz/quiz.module';
 import { StoreModule } from './modules/store/store.module';
 import { PlanLimitsModule } from './modules/plan-limits/plan-limits.module';
 import { EventsModule } from './modules/events/events.module';
+import { CiftoModule } from './modules/cifto/cifto.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { EventsModule } from './modules/events/events.module';
     StoreModule,
     PlanLimitsModule,
     EventsModule,
+    CiftoModule,
   ],
   controllers: [AppController],
   providers: [AppService],

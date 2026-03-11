@@ -52,6 +52,10 @@ import {
 } from '../../schemas/quiz-result.schema';
 import { Feedback } from '../../schemas/feedback.schema';
 import { Mood, MoodDocument } from '../../schemas/mood.schema';
+import {
+  CiftoConversation,
+  CiftoConversationDocument,
+} from '../../schemas/cifto-conversation.schema';
 import { CreateCoupleDto } from './dto/onboarding.dto';
 import { UploadService } from '../upload/upload.service';
 import { ActivityService } from '../activity/activity.service';
@@ -87,6 +91,8 @@ export class OnboardingService {
     private quizResultModel: Model<QuizResultDocument>,
     @InjectModel(Feedback.name) private feedbackModel: Model<Feedback>,
     @InjectModel(Mood.name) private moodModel: Model<MoodDocument>,
+    @InjectModel(CiftoConversation.name)
+    private ciftoConversationModel: Model<CiftoConversationDocument>,
     private uploadService: UploadService,
     private activityService: ActivityService,
   ) {}
@@ -295,6 +301,7 @@ export class OnboardingService {
       this.quizSessionModel.deleteMany({ coupleId }),
       this.feedbackModel.deleteMany({ coupleId }),
       this.moodModel.deleteMany({ coupleId }),
+      this.ciftoConversationModel.deleteMany({ coupleId }),
       this.userModel.deleteMany({ coupleId }),
       this.coupleModel.findByIdAndDelete(coupleId),
     ]);

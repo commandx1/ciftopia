@@ -45,6 +45,10 @@ import {
 import { QuizResult, QuizResultSchema } from '../../schemas/quiz-result.schema';
 import { Feedback, FeedbackSchema } from '../../schemas/feedback.schema';
 import { Mood, MoodSchema } from '../../schemas/mood.schema';
+import {
+  CiftoConversation,
+  CiftoConversationSchema,
+} from '../../schemas/cifto-conversation.schema';
 import { AuthModule } from '../auth/auth.module';
 import { UploadModule } from '../upload/upload.module';
 import { ActivityModule } from '../activity/activity.module';
@@ -71,6 +75,7 @@ import { ActivityModule } from '../activity/activity.module';
       { name: QuizResult.name, schema: QuizResultSchema },
       { name: Feedback.name, schema: FeedbackSchema },
       { name: Mood.name, schema: MoodSchema },
+      { name: CiftoConversation.name, schema: CiftoConversationSchema },
     ]),
     AuthModule,
     UploadModule,

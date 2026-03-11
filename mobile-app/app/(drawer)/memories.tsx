@@ -767,7 +767,6 @@ const styles = StyleSheet.create({
   storiesLinkText: {
     fontSize: 15,
     color: theme.accent,
-    fontWeight: '600'
   },
   generateNovelBtnGradient: {
     paddingHorizontal: 14,

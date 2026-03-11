@@ -40,6 +40,7 @@ export default function DrawerLayout() {
         <Stack.Screen name='memories' options={{ title: 'Anılarımız' }} />
         <Stack.Screen name='stories' options={{ title: 'Hikayelerimiz' }} />
         <Stack.Screen name='gallery' options={{ title: 'Aşk Galerisi' }} />
+        <Stack.Screen name='cifto' options={{ title: 'Çifto' }} />
         <Stack.Screen 
           name='gallery/[id]' 
           options={{ 

@@ -414,7 +414,6 @@ const styles = StyleSheet.create({
   backBtnText: {
     fontSize: 16,
     color: theme.accent,
-    fontWeight: '600',
   },
   hero: {
     padding: 24,
@@ -433,7 +432,7 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     fontSize: 28,
-    fontWeight: '700',
+    ht: '700',
     color: theme.textPrimary,
     marginBottom: 8,
   },
@@ -464,7 +463,7 @@ const styles = StyleSheet.create({
   },
   statPillText: {
     fontSize: 12,
-    fontWeight: '600',
+    ht: '600',
     color: theme.textPrimary,
   },
   toolbar: {
@@ -499,7 +498,7 @@ const styles = StyleSheet.create({
   },
   sortBtnTextActive: {
     color: theme.accent,
-    fontWeight: '600',
+    ht: '600',
   },
   createBtn: {
     borderRadius: 14,
@@ -514,7 +513,7 @@ const styles = StyleSheet.create({
   },
   createBtnText: {
     fontSize: 14,
-    fontWeight: '700',
+    ht: '700',
     color: 'white',
   },
   loadingWrap: {
@@ -528,7 +527,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    ht: '600',
     color: theme.textPrimary,
     marginTop: 16,
   },
@@ -548,7 +547,7 @@ const styles = StyleSheet.create({
   },
   emptyBtnText: {
     fontSize: 15,
-    fontWeight: '600',
+    ht: '600',
     color: 'white',
   },
   list: {
@@ -595,7 +594,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    ht: '700',
     color: theme.textPrimary,
     marginBottom: 8,
   },
@@ -624,7 +623,7 @@ const styles = StyleSheet.create({
   },
   usedMemoriesLabel: {
     fontSize: 12,
-    fontWeight: '600',
+    ht: '600',
     color: theme.textSecondary,
     marginBottom: 8,
   },
@@ -643,7 +642,7 @@ const styles = StyleSheet.create({
   memoryChipText: {
     fontSize: 12,
     color: theme.accent,
-    fontWeight: '500',
+    ht: '500',
   },
   memoryChipMore: {
     fontSize: 12,
@@ -665,7 +664,7 @@ const styles = StyleSheet.create({
   },
   readBtnText: {
     fontSize: 14,
-    fontWeight: '600',
+    ht: '600',
     color: 'white',
   },
   modalContainer: {
@@ -698,7 +697,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    ht: '600',
     color: theme.textPrimary,
   },
   modalCloseBtn: {
@@ -708,7 +707,7 @@ const styles = StyleSheet.create({
   modalCloseText: {
     fontSize: 15,
     color: theme.accent,
-    fontWeight: '600',
+    ht: '600',
   },
   modalScroll: {
     flex: 1,
@@ -725,7 +724,7 @@ const styles = StyleSheet.create({
   },
   modalUsedMemoriesLabel: {
     fontSize: 12,
-    fontWeight: '600',
+    ht: '600',
     color: theme.textSecondary,
     marginBottom: 8,
   },
@@ -743,6 +742,6 @@ const styles = StyleSheet.create({
   modalMemoryChipText: {
     fontSize: 13,
     color: theme.accent,
-    fontWeight: '500',
+    ht: '500',
   },
 })

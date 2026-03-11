@@ -32,7 +32,8 @@ import {
   HelpCircle,
   Trophy,
   Smile,
-  Activity
+  Activity,
+  MessageCircle
 } from 'lucide-react-native'
 import { useAuth } from '../context/AuthContext'
 import { Text } from './ui/Text'
@@ -284,6 +285,15 @@ export default function FullScreenMenu({ visible, onClose }: FullScreenMenuProps
             </View>
 
             <View style={styles.extraMenu}>
+              <MenuItem
+                route='cifto'
+                title='Çifto'
+                subtitle='İlişki asistanı'
+                icon={MessageCircle}
+                gradient={['#F472B6', '#EC4899']}
+                onPress={() => navigateAndClose('cifto')}
+                delay={485}
+              />
               <MenuItem
                 route='daily-question'
                 title='Günün Sorusu'

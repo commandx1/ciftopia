@@ -36,4 +36,8 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   emitToCouple(coupleId: string, event: string, payload: unknown) {
     this.server?.to(`couple:${coupleId}`).emit(event, payload);
   }
+
+  emitToUser(userId: string, event: string, payload: unknown) {
+    this.server?.to(`user:${userId}`).emit(event, payload);
+  }
 }
