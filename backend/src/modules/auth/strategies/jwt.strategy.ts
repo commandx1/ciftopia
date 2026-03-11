@@ -43,6 +43,18 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException();
     }
 
+    const now = new Date();
+    if (
+      !user.lastActivityAt ||
+      now.getTime() - user.lastActivityAt.getTime() > 5 * 60 * 1000
+    ) {
+      await this.userModel.updateOne(
+        { _id: user._id },
+        { $set: { lastActivityAt: now } },
+      );
+      user.lastActivityAt = now;
+    }
+
     const userObj = user.toObject() as any;
 
     await this.uploadService.transformAvatar(userObj);

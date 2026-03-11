@@ -57,6 +57,12 @@ export class User {
   @Prop()
   lastLoginAt?: Date;
 
+  @Prop()
+  lastActivityAt?: Date;
+
+  @Prop()
+  lastMoodAt?: Date;
+
   @Prop({
     type: {
       conflictStyle: String,
