@@ -4,6 +4,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, SortOrder } from 'mongoose';
 import * as PDFDocument from 'pdfkit';
@@ -13,6 +14,10 @@ import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { GoogleGenAI } from '@google/genai';
 import { Memory, MemoryDocument } from '../../schemas/memory.schema';
+import {
+  MemoryReminder,
+  MemoryReminderDocument,
+} from '../../schemas/memory-reminder.schema';
 import { Couple, CoupleDocument } from '../../schemas/couple.schema';
 import { Story, StoryDocument } from '../../schemas/story.schema';
 import { CreateMemoryDto } from './dto/memories.dto';
@@ -36,9 +41,13 @@ export class MemoriesService {
   private openai: OpenAI;
   private gemini: GoogleGenAI | null = null;
   private readonly geminiModel: string;
+  private readonly logger = new Logger(MemoriesService.name);
+  private readonly reminderIntervalDays = 40;
 
   constructor(
     @InjectModel(Memory.name) private memoryModel: Model<MemoryDocument>,
+    @InjectModel(MemoryReminder.name)
+    private memoryReminderModel: Model<MemoryReminderDocument>,
     @InjectModel(Couple.name) private coupleModel: Model<CoupleDocument>,
     @InjectModel(Story.name) private storyModel: Model<StoryDocument>,
     private uploadService: UploadService,
@@ -108,6 +117,262 @@ export class MemoriesService {
     );
 
     return isArray ? transformed : transformed[0];
+  }
+
+  private buildReminderAnalysisPrompt(memory: MemoryDocument): string {
+    const dateStr = memory.date
+      ? new Date(memory.date).toLocaleDateString('tr-TR', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        })
+      : '';
+    const rawContent = (memory.content || '').replace(/\s+/g, ' ').trim();
+    const content =
+      rawContent.length > 1200 ? `${rawContent.slice(0, 1200)}...` : rawContent;
+    const title = (memory.title || '').trim();
+    const mood = memory.mood || '';
+    const locationName = memory.location?.name || '';
+    const photoCount = memory.photos?.length ?? 0;
+
+    return `Sen bir ilişki uygulamasında "anı hatırlatma" asistanısın. Görevin:
+1) Aşağıdaki anının 40 günde bir hatırlatmaya DEĞİP DEĞMEYECEĞİNE karar ver.
+2) Eğer değiyorsa, kullanıcıya gönderilecek tek cümlelik, sıcak ve samimi bir hatırlatma mesajı üret.
+
+Karar kriterleri:
+- Değerli: özel anlar, dönüm noktaları, ilkler, duygusal anlar, romantik/komik/unutulmaz deneyimler.
+- Değersiz: sıradan günlük işler, planlar, alışveriş, kısa lojistik notlar, muğlak içerik.
+- Mesaj tek cümle olmalı; Türkçe, kısa ve net.
+
+JSON formatında döndür:
+{
+  "shouldRemind": true|false,
+  "reminderMessage": "tek cümle",
+  "reason": "kısa gerekçe",
+  "score": 0-1
+}
+
+Anı detayları:
+Başlık: ${title}
+Tarih: ${dateStr || 'Bilinmiyor'}
+Mood: ${mood || 'Bilinmiyor'}
+Konum: ${locationName || 'Bilinmiyor'}
+Fotoğraf sayısı: ${photoCount}
+İçerik: ${content || 'Yok'}`;
+  }
+
+  private tryParseJson<T>(text: string): T | null {
+    if (!text) return null;
+    const trimmed = text.trim();
+    try {
+      return JSON.parse(trimmed) as T;
+    } catch {
+      const match = trimmed.match(/\{[\s\S]*\}/);
+      if (!match) return null;
+      try {
+        return JSON.parse(match[0]) as T;
+      } catch {
+        return null;
+      }
+    }
+  }
+
+  private normalizeReminderMessage(
+    message: string | undefined,
+    memory: MemoryDocument,
+  ): string {
+    const fallbackTitle = (memory.title || '').trim();
+    const fallback = fallbackTitle
+      ? `Bugün "${fallbackTitle}" anınızı hatırlayıp gülümseyin.`
+      : 'Bugün birlikte yaşadığınız güzel bir anıyı hatırlayın.';
+
+    let text = (message || '').replace(/\s+/g, ' ').trim();
+    if (!text) text = fallback;
+
+    const sentenceEnd = text.search(/[.!?]/);
+    if (sentenceEnd >= 0) {
+      text = text.slice(0, sentenceEnd + 1).trim();
+    }
+
+    if (text.length > 180) {
+      text = `${text.slice(0, 177).trimEnd()}...`;
+    }
+
+    return text;
+  }
+
+  private async analyzeReminderWithGemini(prompt: string): Promise<{
+    shouldRemind: boolean;
+    reminderMessage?: string;
+    reason?: string;
+    score?: number;
+  }> {
+    if (!this.gemini) throw new Error('Gemini client not configured');
+    const response = await this.gemini.models.generateContent({
+      model: this.geminiModel,
+      contents: prompt,
+    });
+    const text = response.text?.trim();
+    if (!text) throw new Error('Gemini returned empty content');
+    const parsed = this.tryParseJson<{
+      shouldRemind: boolean;
+      reminderMessage?: string;
+      reason?: string;
+      score?: number;
+    }>(text);
+    if (!parsed) throw new Error('Gemini returned non-JSON response');
+    return parsed;
+  }
+
+  private async analyzeReminderWithOpenAI(prompt: string): Promise<{
+    shouldRemind: boolean;
+    reminderMessage?: string;
+    reason?: string;
+    score?: number;
+  }> {
+    const response = await this.openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      response_format: { type: 'json_object' },
+      max_tokens: 200,
+    });
+    const contentString = response.choices[0]?.message?.content?.trim();
+    if (!contentString) throw new Error('OpenAI returned empty content');
+    const parsed = JSON.parse(contentString) as {
+      shouldRemind: boolean;
+      reminderMessage?: string;
+      reason?: string;
+      score?: number;
+    };
+    return parsed;
+  }
+
+  private async analyzeAndQueueReminder(
+    memory: MemoryDocument,
+  ): Promise<void> {
+    try {
+      const existing = await this.memoryReminderModel
+        .findOne({ memoryId: memory._id })
+        .select('_id')
+        .lean();
+      if (existing) return;
+
+      const prompt = this.buildReminderAnalysisPrompt(memory);
+
+      let result:
+        | {
+            shouldRemind: boolean;
+            reminderMessage?: string;
+            reason?: string;
+            score?: number;
+            provider?: string;
+            model?: string;
+          }
+        | null = null;
+
+      if (this.gemini) {
+        try {
+          const parsed = await this.analyzeReminderWithGemini(prompt);
+          result = {
+            ...parsed,
+            provider: 'gemini',
+            model: this.geminiModel,
+          };
+        } catch (geminiErr) {
+          this.logger.warn('Gemini reminder analysis failed, falling back.', {
+            error: geminiErr instanceof Error ? geminiErr.message : geminiErr,
+          });
+        }
+      }
+
+      if (!result) {
+        const parsed = await this.analyzeReminderWithOpenAI(prompt);
+        result = { ...parsed, provider: 'openai', model: 'gpt-4o-mini' };
+      }
+
+      if (!result?.shouldRemind) return;
+
+      const message = this.normalizeReminderMessage(
+        result.reminderMessage,
+        memory,
+      );
+      const nextNotifyAt = new Date();
+      nextNotifyAt.setDate(
+        nextNotifyAt.getDate() + this.reminderIntervalDays,
+      );
+
+      const score =
+        typeof result.score === 'number'
+          ? Math.max(0, Math.min(1, result.score))
+          : undefined;
+
+      await this.memoryReminderModel.create({
+        coupleId: memory.coupleId,
+        memoryId: memory._id,
+        message,
+        intervalDays: this.reminderIntervalDays,
+        nextNotifyAt,
+        aiScore: score,
+        aiReason: result.reason,
+        aiProvider: result.provider,
+        aiModel: result.model,
+      });
+    } catch (err) {
+      this.logger.warn('Memory reminder analysis failed.', {
+        error: err instanceof Error ? err.message : err,
+        memoryId: memory._id?.toString?.(),
+      });
+    }
+  }
+
+  @Cron('0 13 * * *', { timeZone: 'Europe/Istanbul' })
+  async processDueReminders(): Promise<void> {
+    const now = new Date();
+    const maxBatch = 200;
+    let processed = 0;
+
+    while (processed < maxBatch) {
+      const nextNotifyAt = new Date(now);
+      nextNotifyAt.setDate(
+        nextNotifyAt.getDate() + this.reminderIntervalDays,
+      );
+
+      const reminder = await this.memoryReminderModel.findOneAndUpdate(
+        { isActive: true, nextNotifyAt: { $lte: now } },
+        { $set: { lastNotifiedAt: now, nextNotifyAt } },
+        { sort: { nextNotifyAt: 1 }, new: true },
+      );
+
+      if (!reminder) break;
+
+      try {
+        await this.notificationService.sendToCouple(
+          reminder.coupleId.toString(),
+          'Anı Hatırlatma 💫',
+          reminder.message,
+          {
+            screen: 'memories',
+            memoryId: reminder.memoryId?.toString?.(),
+          },
+        );
+      } catch (err) {
+        this.logger.warn('Memory reminder send failed.', {
+          error: err instanceof Error ? err.message : err,
+          reminderId: reminder._id?.toString?.(),
+        });
+        await this.memoryReminderModel.findByIdAndUpdate(reminder._id, {
+          $set: { nextNotifyAt: now },
+        });
+      }
+
+      processed += 1;
+    }
+
+    if (processed === maxBatch) {
+      this.logger.warn('Memory reminder cron reached max batch size.', {
+        processed,
+      });
+    }
   }
 
   async findAllByCoupleId(coupleId: string, query: QueryParams) {
@@ -322,6 +587,9 @@ export class MemoriesService {
       `${user?.firstName} yeni bir anı paylaştı: "${populated.title}"`,
       { screen: 'memories' },
     );
+
+    // Analyze and queue reminder (async, non-blocking)
+    this.analyzeAndQueueReminder(savedMemory).catch(() => {});
 
     // Fetch updated storage for the couple
     const updatedCouple = await this.coupleModel.findById(couple._id);
