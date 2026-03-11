@@ -19,8 +19,11 @@ cd ..
 
 APK_PATH="android/app/build/outputs/apk/release/app-release.apk"
 if [ -f "$APK_PATH" ]; then
+  PARENT_DIR="$(dirname "$SCRIPT_DIR")"
+  DEST="$PARENT_DIR/app-release.apk"
+  cp "$APK_PATH" "$DEST"
   echo ""
-  echo "✅ APK hazır: $SCRIPT_DIR/$APK_PATH"
+  echo "✅ APK hazır: $DEST"
 else
   echo "❌ APK bulunamadı: $APK_PATH"
   exit 1
